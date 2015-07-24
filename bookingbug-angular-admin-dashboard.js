@@ -39,10 +39,10 @@ this.bodyTable=this.el.find("table"),this.colMinWidths=this.computeColMinWidths(
                 end_date: end.format('YYYY-MM-DD')
               };
               return AdminBookingService.query(params).then(function(bookings) {
-                var b, i, len;
+                var b, _i, _len;
                 $scope.loading = false;
-                for (i = 0, len = bookings.length; i < len; i++) {
-                  b = bookings[i];
+                for (_i = 0, _len = bookings.length; _i < _len; _i++) {
+                  b = bookings[_i];
                   b.resourceId = b.person_id;
                 }
                 return callback(bookings);
@@ -90,18 +90,18 @@ this.bodyTable=this.el.find("table"),this.colMinWidths=this.computeColMinWidths(
             return $scope.editBooking(event);
           },
           resourceRender: function(resource, resourceTDs, dataTDs) {
-            var dataTD, i, j, len, len1, resourceTD, results;
-            for (i = 0, len = resourceTDs.length; i < len; i++) {
-              resourceTD = resourceTDs[i];
+            var dataTD, resourceTD, _i, _j, _len, _len1, _results;
+            for (_i = 0, _len = resourceTDs.length; _i < _len; _i++) {
+              resourceTD = resourceTDs[_i];
               resourceTD.style.height = "44px";
               resourceTD.style.verticalAlign = "middle";
             }
-            results = [];
-            for (j = 0, len1 = dataTDs.length; j < len1; j++) {
-              dataTD = dataTDs[j];
-              results.push(dataTD.style.height = "44px");
+            _results = [];
+            for (_j = 0, _len1 = dataTDs.length; _j < _len1; _j++) {
+              dataTD = dataTDs[_j];
+              _results.push(dataTD.style.height = "44px");
             }
-            return results;
+            return _results;
           },
           eventRender: function(event, element) {
             var service;
@@ -113,10 +113,10 @@ this.bodyTable=this.el.find("table"),this.colMinWidths=this.computeColMinWidths(
             return element.css('border-color', service.textColor);
           },
           eventAfterRender: function(event, elements, view) {
-            var element, i, len;
+            var element, _i, _len;
             if (view.type === "timelineDay") {
-              for (i = 0, len = elements.length; i < len; i++) {
-                element = elements[i];
+              for (_i = 0, _len = elements.length; _i < _len; _i++) {
+                element = elements[_i];
                 element.style.height = "27px";
               }
             }
@@ -142,12 +142,12 @@ this.bodyTable=this.el.find("table"),this.colMinWidths=this.computeColMinWidths(
             company: company
           };
           return AdminPersonService.query(params).then(function(people) {
-            var i, len, p, ref;
+            var p, _i, _len, _ref;
             $scope.loading = false;
             $scope.people = _.sortBy(people, 'name');
-            ref = $scope.people;
-            for (i = 0, len = ref.length; i < len; i++) {
-              p = ref[i];
+            _ref = $scope.people;
+            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+              p = _ref[_i];
               p.title = p.name;
             }
             uiCalendarConfig.calendars.resourceCalendar.fullCalendar('refetchEvents');
@@ -243,13 +243,13 @@ this.bodyTable=this.el.find("table"),this.colMinWidths=this.computeColMinWidths(
           return collection.$get('services').then(function(services) {
             var s;
             scope.services = (function() {
-              var i, len, results;
-              results = [];
-              for (i = 0, len = services.length; i < len; i++) {
-                s = services[i];
-                results.push(new BBModel.Admin.Service(s));
+              var _i, _len, _results;
+              _results = [];
+              for (_i = 0, _len = services.length; _i < _len; _i++) {
+                s = services[_i];
+                _results.push(new BBModel.Admin.Service(s));
               }
-              return results;
+              return _results;
             })();
             return ColorPalette.setColors(scope.services);
           });
