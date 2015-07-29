@@ -251,9 +251,7 @@ this.bodyTable=this.el.find("table"),this.colMinWidths=this.computeColMinWidths(
                 element.style.height = "27px";
               }
             }
-            if (elements.draggable) {
-              return elements.draggable();
-            }
+            return elements.draggable();
           },
           select: function(start, end, jsEvent, view, resource) {
             view.calendar.unselect();
