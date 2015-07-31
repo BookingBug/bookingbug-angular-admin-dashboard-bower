@@ -336,14 +336,7 @@ this.bodyTable=this.el.find("table"),this.colMinWidths=this.computeColMinWidths(
               $scope.pusher_channel = $scope.pusher.subscribe(channelName);
               pusherEvent = function(res) {
                 if (res.id != null) {
-                  return setTimeout((function() {
-                    var prms;
-                    prms = {
-                      company: $scope.company,
-                      id: res.id
-                    };
-                    return AdminBookingService.getBooking(prms).then(function(booking) {});
-                  }), 2000);
+                  return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('refetchEvents');
                 }
               };
               $scope.pusher_channel.bind('booking', pusherEvent);
