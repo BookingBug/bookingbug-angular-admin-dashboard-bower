@@ -254,11 +254,18 @@ this.bodyTable=this.el.find("table"),this.colMinWidths=this.computeColMinWidths(
             return elements.draggable();
           },
           select: function(start, end, jsEvent, view, resource) {
+            var rid;
             view.calendar.unselect();
+            rid = null;
+            if (resource) {
+              rid = resource.id;
+            }
             return AdminBookingPopup.open({
-              date: start.format('YYYY-MM-DD'),
-              time: start.format('HH:mm'),
-              person: resource ? resource.id : void 0
+              item_defaults: {
+                date: start.format('YYYY-MM-DD'),
+                time: start.hour() * 60 + start.minute(),
+                person: rid
+              }
             });
           },
           viewRender: function(view, element) {
