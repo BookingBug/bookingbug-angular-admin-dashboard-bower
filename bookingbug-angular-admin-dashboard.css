@@ -274,3 +274,10 @@ tr.fc-collapsed > td > div {
 .fc-rtl .fc-body .fc-time-area .fc-following:before, .fc-rtl .fc-timeline-event.fc-not-start .fc-title:before {
   border-right: 0;
   right: 2px; }
+
+[bb-resource-calendar] .datepicker {
+  width: 230px; }
+  [bb-resource-calendar] .datepicker button.datepicker-popup {
+    height: 34px;
+    padding: 6px 12px;
+    font-size: 14px; }
