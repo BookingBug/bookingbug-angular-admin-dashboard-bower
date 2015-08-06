@@ -159,13 +159,14 @@ this.bodyTable=this.el.find("table"),this.colMinWidths=this.computeColMinWidths(
                 end_date: end.format('YYYY-MM-DD')
               };
               return AdminBookingService.query(params).then(function(bookings) {
-                var b, i, len;
+                var b, i, len, ref;
                 $scope.loading = false;
-                for (i = 0, len = bookings.length; i < len; i++) {
-                  b = bookings[i];
+                ref = bookings.items;
+                for (i = 0, len = ref.length; i < len; i++) {
+                  b = ref[i];
                   b.resourceId = b.person_id;
                 }
-                return callback(bookings);
+                return callback(bookings.items);
               });
             });
           }
@@ -239,9 +240,11 @@ this.bodyTable=this.el.find("table"),this.colMinWidths=this.computeColMinWidths(
             service = _.findWhere($scope.services, {
               id: event.service_id
             });
-            element.css('background-color', service.color);
-            element.css('color', service.textColor);
-            return element.css('border-color', service.textColor);
+            if (service) {
+              element.css('background-color', service.color);
+              element.css('color', service.textColor);
+              return element.css('border-color', service.textColor);
+            }
           },
           eventAfterRender: function(event, elements, view) {
             var element, i, len;
