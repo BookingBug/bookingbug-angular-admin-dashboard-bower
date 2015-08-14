@@ -143,7 +143,7 @@ this.bodyTable=this.el.find("table"),this.colMinWidths=this.computeColMinWidths(
 }).call(this);
 
 (function() {
-  angular.module('BBAdminDashboard').directive('bbResourceCalendar', function(uiCalendarConfig, AdminCompanyService, AdminBookingService, AdminPersonService, $q, $sessionStorage, ModalForm, BBModel, AdminBookingPopup, $window, $bbug, ColorPalette, AppConfig, Dialog, $timeout, $compile, $templateCache) {
+  angular.module('BBAdminDashboard').directive('bbResourceCalendar', function(uiCalendarConfig, AdminCompanyService, AdminBookingService, AdminPersonService, $q, $sessionStorage, ModalForm, BBModel, AdminBookingPopup, $window, $bbug, ColorPalette, AppConfig, Dialog, $timeout, $compile, $templateCache, BookingCollections) {
     var controller, link;
     controller = function($scope, $attrs) {
       var height;
@@ -166,7 +166,8 @@ this.bodyTable=this.el.find("table"),this.colMinWidths=this.computeColMinWidths(
                   b = ref[i];
                   b.resourceId = b.person_id;
                 }
-                return callback(bookings.items);
+                $scope.bookings = bookings.items;
+                return callback($scope.bookings);
               });
             });
           }
@@ -329,30 +330,18 @@ this.bodyTable=this.el.find("table"),this.colMinWidths=this.computeColMinWidths(
       };
       $scope.pusherSubscribe = (function(_this) {
         return function() {
-          var channelName, pusherEvent;
-          if (($scope.company != null) && (typeof Pusher !== "undefined" && Pusher !== null) && ($scope.pusher == null)) {
-            $scope.pusher = new Pusher('c8d8cea659cc46060608', {
-              authEndpoint: $scope.company.$link('pusher').href,
-              auth: {
-                headers: {
-                  'App-Id': AppConfig.appId,
-                  'App-Key': AppConfig.appKey,
-                  'Auth-Token': $sessionStorage.getItem('auth_token')
+          if ($scope.company) {
+            return $scope.company.pusherSubscribe(function(res) {
+              var booking;
+              if (res.id != null) {
+                booking = _.first(uiCalendarConfig.calendars.resourceCalendar.fullCalendar('clientEvents', res.id));
+                if (booking) {
+                  return booking.$refetch().then(function() {
+                    return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('updateEvent', booking);
+                  });
                 }
               }
             });
-            channelName = "private-c" + $scope.company.id + "-w" + $scope.company.numeric_widget_id;
-            if ($scope.pusher.channel(channelName) == null) {
-              $scope.pusher_channel = $scope.pusher.subscribe(channelName);
-              pusherEvent = function(res) {
-                if (res.id != null) {
-                  return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('refetchEvents');
-                }
-              };
-              $scope.pusher_channel.bind('booking', pusherEvent);
-              $scope.pusher_channel.bind('cancellation', pusherEvent);
-              return $scope.pusher_channel.bind('updating', pusherEvent);
-            }
           }
         };
       })(this);
@@ -383,7 +372,6 @@ this.bodyTable=this.el.find("table"),this.colMinWidths=this.computeColMinWidths(
         } else {
           AdminCompanyService.query(attrs).then(function(company) {
             scope.company = company;
-            scope.pusherSubscribe();
             return defer.resolve(scope.company);
           });
         }
@@ -405,6 +393,9 @@ this.bodyTable=this.el.find("table"),this.colMinWidths=this.computeColMinWidths(
             return ColorPalette.setColors(scope.services);
           });
         });
+      });
+      scope.getCompanyPromise().then(function(company) {
+        return scope.pusherSubscribe();
       });
       return $timeout(function() {
         var datePickerElement, toolbarElement, toolbarLeftElement, uiCalElement;
