@@ -108,7 +108,7 @@ FullCalendar Scheduler v1.0.0-beta
   left: -3px; }
 
 tr.fc-transitioning > td > div {
-  transition: margin-top 0.2s; }
+  transition: margin-top .2s; }
 
 tr.fc-collapsed > td > div {
   margin-top: -10px; }
