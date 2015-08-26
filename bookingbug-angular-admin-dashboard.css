@@ -1,6 +1,8 @@
 /*!
-FullCalendar Scheduler v1.0.0-beta
-*/
+ * FullCalendar Scheduler v1.0.0
+ * Docs & License: http://fullcalendar.io/scheduler/
+ * (c) 2015 Adam Shaw
+ */
 .fc-timeline .fc-body .fc-divider.ui-widget-header, .fc-timeline .fc-body .ui-widget-content {
   background-image: none; }
 
@@ -274,6 +276,19 @@ tr.fc-collapsed > td > div {
 .fc-rtl .fc-body .fc-time-area .fc-following:before, .fc-rtl .fc-timeline-event.fc-not-start .fc-title:before {
   border-right: 0;
   right: 2px; }
+
+.fc-license-message {
+  position: absolute;
+  z-index: 99999;
+  bottom: 1px;
+  left: 1px;
+  background: #eee;
+  border-color: #ddd;
+  border-style: solid;
+  border-width: 1px 1px 0 0;
+  padding: 2px 4px;
+  font-size: 12px;
+  border-top-right-radius: 3px; }
 
 [bb-resource-calendar] .datepicker {
   width: 230px; }
