@@ -259,8 +259,18 @@ r+="<tr>",i=!0,o=l=0,u=e.length;u>l;o=++l)a=e[o],n=o===e.length-1,r+='<th class=
                   return booking.$refetch().then(function() {
                     return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('updateEvent', booking);
                   });
+                } else {
+                  return $scope.company.$get('bookings', {
+                    id: res.id
+                  }).then(function(response) {
+                    booking = new BBModel.Admin.Booking(response);
+                    BookingCollections.checkItems(booking);
+                    return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('refetchEvents');
+                  });
                 }
               }
+            }, {
+              encrypted: false
             });
           }
         };
