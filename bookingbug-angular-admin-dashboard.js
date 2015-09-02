@@ -61,7 +61,7 @@ this.bodyTable=this.el.find("table"),this.colMinWidths=this.computeColMinWidths(
 }).call(this);
 
 (function() {
-  angular.module('BBAdminDashboard').directive('bbResourceCalendar', function(uiCalendarConfig, AdminCompanyService, AdminBookingService, AdminPersonService, $q, $sessionStorage, ModalForm, BBModel, AdminBookingPopup, $window, $bbug, ColorPalette, AppConfig, Dialog, $timeout, $compile, $templateCache, BookingCollections) {
+  angular.module('BBAdminDashboard').directive('bbResourceCalendar', function(uiCalendarConfig, AdminCompanyService, AdminBookingService, AdminPersonService, $q, $sessionStorage, ModalForm, BBModel, AdminBookingPopup, $window, $bbug, ColorPalette, AppConfig, Dialog, $interval, $http, $timeout, $compile, $templateCache, BookingCollections) {
     var controller, link;
     controller = function($scope, $attrs) {
       var height;
@@ -249,27 +249,37 @@ this.bodyTable=this.el.find("table"),this.colMinWidths=this.computeColMinWidths(
       $scope.pusherSubscribe = (function(_this) {
         return function() {
           if ($scope.company) {
-            return $scope.company.pusherSubscribe(function(res) {
-              var booking;
-              if (res.id != null) {
-                booking = _.first(uiCalendarConfig.calendars.resourceCalendar.fullCalendar('clientEvents', res.id));
-                if (booking) {
-                  return booking.$refetch().then(function() {
-                    return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('updateEvent', booking);
-                  });
-                } else {
-                  return $scope.company.$get('bookings', {
-                    id: res.id
-                  }).then(function(response) {
-                    booking = new BBModel.Admin.Booking(response);
-                    BookingCollections.checkItems(booking);
+            return $interval(function() {
+              return $http.get($scope.bb.api_url + ("/api/v1/audit/bookings/?id=" + $scope.company.id + "&channel_id=" + $scope.company.numeric_widget_id)).then(function(res) {
+                var booking, i, id, len, ref, refetch;
+                if (res && res.data) {
+                  refetch = false;
+                  ref = res.data;
+                  for (i = 0, len = ref.length; i < len; i++) {
+                    id = ref[i];
+                    console.log(id);
+                    booking = _.first(uiCalendarConfig.calendars.resourceCalendar.fullCalendar('clientEvents', id));
+                    if (booking) {
+                      booking.$refetch().then(function() {
+                        booking.resourceId = booking.person_id;
+                        return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('updateEvent', booking);
+                      });
+                    } else {
+                      $scope.company.$get('bookings', {
+                        id: id
+                      }).then(function(response) {
+                        booking = new BBModel.Admin.Booking(response);
+                        BookingCollections.checkItems(booking);
+                        return refetch = true;
+                      });
+                    }
+                  }
+                  if (refetch) {
                     return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('refetchEvents');
-                  });
+                  }
                 }
-              }
-            }, {
-              encrypted: false
-            });
+              });
+            }, 5000);
           }
         };
       })(this);
