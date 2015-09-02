@@ -251,32 +251,32 @@ this.bodyTable=this.el.find("table"),this.colMinWidths=this.computeColMinWidths(
           if ($scope.company) {
             return $interval(function() {
               return $http.get($scope.bb.api_url + ("/api/v1/audit/bookings/?id=" + $scope.company.id + "&channel_id=" + $scope.company.numeric_widget_id)).then(function(res) {
-                var booking, i, id, len, ref, refetch;
+                var booking, i, id, len, ref, results;
                 if (res && res.data) {
-                  refetch = false;
                   ref = res.data;
+                  results = [];
                   for (i = 0, len = ref.length; i < len; i++) {
                     id = ref[i];
                     console.log(id);
                     booking = _.first(uiCalendarConfig.calendars.resourceCalendar.fullCalendar('clientEvents', id));
                     if (booking) {
-                      booking.$refetch().then(function() {
+                      results.push(booking.$refetch().then(function() {
                         booking.resourceId = booking.person_id;
                         return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('updateEvent', booking);
-                      });
+                      }));
                     } else {
-                      $scope.company.$get('bookings', {
+                      results.push($scope.company.$get('bookings', {
                         id: id
                       }).then(function(response) {
                         booking = new BBModel.Admin.Booking(response);
                         BookingCollections.checkItems(booking);
-                        return refetch = true;
-                      });
+                        return $timeout(function() {
+                          return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('refetchEvents');
+                        }, 100);
+                      }));
                     }
                   }
-                  if (refetch) {
-                    return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('refetchEvents');
-                  }
+                  return results;
                 }
               });
             }, 5000);
