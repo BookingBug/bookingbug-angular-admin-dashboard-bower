@@ -34,16 +34,17 @@
       resolve: {
         user: function($q, AdminLoginService, $timeout, $state) {
           var defer;
+          console.log('root user');
           defer = $q.defer();
-          $q.when(AdminLoginService.checkLogin()).then(function() {
-            if (!AdminLoginService.isLoggedIn()) {
+          AdminLoginService.user().then(function(user) {
+            if (user) {
+              return defer.resolve(user);
+            } else {
               return $timeout(function() {
                 return $state.go('login', {}, {
                   reload: true
                 });
               });
-            } else {
-              return defer.resolve(AdminLoginService.user());
             }
           }, function(err) {
             return $timeout(function() {
@@ -56,10 +57,19 @@
         },
         company: function(user, $q, $timeout, $state) {
           var defer;
-          console.log(user);
+          console.log('user ', user);
           defer = $q.defer();
           user.getCompanyPromise().then(function(company) {
-            return defer.resolve(company);
+            console.log('company ', company);
+            if (company.companies && company.companies.length > 0) {
+              return $timeout(function() {
+                return $state.go('departments', {}, {
+                  reload: true
+                });
+              });
+            } else {
+              return defer.resolve(company);
+            }
           }, function(err) {
             return $timeout(function() {
               console.log('failed to get company');
@@ -69,21 +79,66 @@
             });
           });
           return defer.promise;
-        },
-        services: function(company) {
-          return [];
-        },
-        resources: function(company) {
-          return [];
-        },
-        people: function(company) {
-          return [];
-        },
-        addresses: function(company, AdminAddressService) {
-          return [];
         }
       },
       controller: 'bbAdminRootPageController'
+    }).state('departments', {
+      url: "/departments",
+      controller: function($scope, company, departments, AdminLoginService, $state, $timeout) {
+        $scope.company = company;
+        $scope.departments = departments;
+        return $scope.selectDepartment = function(department) {
+          return AdminLoginService.setCompany(department.id).then(function(user) {
+            return $timeout(function() {
+              return $state.go('dashboard', {}, {
+                reload: true
+              });
+            });
+          });
+        };
+      },
+      templateUrl: "admin_departments_page.html",
+      resolve: {
+        user: function($q, AdminLoginService, $timeout, $state) {
+          var defer;
+          defer = $q.defer();
+          AdminLoginService.user().then(function(user) {
+            if (user) {
+              return defer.resolve(user);
+            } else {
+              return $timeout(function() {
+                return $state.go('login', {}, {
+                  reload: true
+                });
+              });
+            }
+          }, function(err) {
+            return $timeout(function() {
+              return $state.go('login', {}, {
+                reload: true
+              });
+            });
+          });
+          return defer.promise;
+        },
+        company: function(user) {
+          return user.getCompanyPromise();
+        },
+        departments: function(company, $q, $timeout, $state) {
+          var defer;
+          defer = $q.defer();
+          if (company.companies && company.companies.length > 0) {
+            defer.resolve(company.companies);
+          } else {
+            $timeout(function() {
+              return $state.go('dashboard', {}, {
+                reload: true
+              });
+            });
+          }
+          return defer.promise;
+        }
+      }
     }).state('dashboard', {
       parent: "root",
       url: "/dashboard",
@@ -299,103 +354,9 @@
 }).call(this);
 
 (function() {
-  angular.module('BBAdminDashboard').controller('bbAdminRootPageController', function($scope, BookingCollections, user, company, services, resources, people, addresses) {
+  angular.module('BBAdminDashboard').controller('bbAdminRootPageController', function($scope, user, company) {
     $scope.company = company;
-    $scope.bb.company = company;
-    $scope.services = services;
-    $scope.resources = resources;
-    $scope.people = people;
-    $scope.addresses = addresses;
-    $scope.include_unallocated = true;
-    $scope.selectedAll = true;
-    $scope.togglePerson = (function(_this) {
-      return function(item) {
-        item.show = !item.show;
-        $scope.selectedAll = ($scope.shownPeople().length === $scope.people.length) && $scope.include_unallocated;
-        return $scope.$broadcast("refetchEvents");
-      };
-    })(this);
-    $scope.show_all_people = function() {
-      var i, len, p, ref;
-      ref = $scope.people;
-      for (i = 0, len = ref.length; i < len; i++) {
-        p = ref[i];
-        p.show = true;
-      }
-      $scope.selectedAll = true;
-      return $scope.$broadcast("refetchEvents");
-    };
-    $scope.hide_all_people = function() {
-      var i, len, p, ref;
-      ref = $scope.people;
-      for (i = 0, len = ref.length; i < len; i++) {
-        p = ref[i];
-        p.show = false;
-      }
-      $scope.selectedAll = false;
-      return $scope.$broadcast("refetchEvents");
-    };
-    $scope.shownPeople = function() {
-      return $scope.people.filter(function(p) {
-        return p.show === true;
-      });
-    };
-    $scope.notShownPeople = function() {
-      return $scope.people.filter(function(p) {
-        return p.show === false;
-      });
-    };
-    $scope.toggleUnallocated = function() {
-      $scope.include_unallocated = !$scope.include_unallocated;
-      return $scope.$broadcast("refetchEvents");
-    };
-    $scope.toggle_all_people = function() {
-      if ($scope.selectedAll) {
-        return $scope.hide_all_people();
-      } else {
-        return $scope.show_all_people();
-      }
-    };
-    $scope.set_current_clinic = function(clinic) {
-      return $scope.current_clinic = clinic;
-    };
-    $scope.set_current_client = function(client) {
-      return $scope.current_client = client;
-    };
-    return $scope.$on('newCheckout', (function(_this) {
-      return function(event, total) {
-        if (total.$has('admin_bookings') && BookingCollections.count() > 0) {
-          total.$get('admin_bookings').then(function(bookings) {});
-        }
-        $scope.shownPeople = function() {
-          return $scope.people.filter(function(p) {
-            return p.show === true;
-          });
-        };
-        $scope.notShownPeople = function() {
-          var b, booking, i, len, results;
-          results = [];
-          for (i = 0, len = bookings.length; i < len; i++) {
-            booking = bookings[i];
-            b = new BBModel.Admin.Booking(booking);
-            results.push(BookingCollections.checkItems(b));
-          }
-          return results;
-        };
-        if (total.$has('admin_slots') && SlotCollections.count() > 0) {
-          return total.$get('admin_slots').then(function(slots) {
-            var i, len, results, s, slot;
-            results = [];
-            for (i = 0, len = slots.length; i < len; i++) {
-              slot = slots[i];
-              s = new BBModel.Admin.Slot(slot);
-              results.push(SlotCollections.checkItems(s));
-            }
-            return results;
-          });
-        }
-      };
-    })(this));
+    return $scope.bb.company = company;
   });
 
 }).call(this);
