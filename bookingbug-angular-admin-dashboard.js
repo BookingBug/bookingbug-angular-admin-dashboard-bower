@@ -34,7 +34,6 @@
       resolve: {
         user: function($q, AdminLoginService, $timeout, $state) {
           var defer;
-          console.log('root user');
           defer = $q.defer();
           AdminLoginService.user().then(function(user) {
             if (user) {
@@ -57,10 +56,8 @@
         },
         company: function(user, $q, $timeout, $state) {
           var defer;
-          console.log('user ', user);
           defer = $q.defer();
           user.getCompanyPromise().then(function(company) {
-            console.log('company ', company);
             if (company.companies && company.companies.length > 0) {
               return $timeout(function() {
                 return $state.go('departments', {}, {
@@ -226,10 +223,12 @@
       templateUrl: "admin_login_page.html"
     }).state('logout', {
       url: "/logout",
-      controller: function(AdminLoginService, $state) {
+      controller: function(AdminLoginService, $state, $timeout) {
         AdminLoginService.logout();
-        return $state.go('login', {}, {
-          reload: true
+        return $timeout(function() {
+          return $state.go('login', {}, {
+            reload: true
+          });
         });
       }
     });
@@ -532,14 +531,15 @@
     return {
       restrict: 'AE',
       link: function(scope, element, attrs) {
-        var pos;
+        var padding, pos;
         if (scope.adminlte.fixed_page) {
           scope.adminlte.iframe_style = "";
           pos = $bbug(element).position();
-          $bbug(element).height("" + ($window.innerHeight - pos.top) + "px");
+          padding = element.closest('.content').length ? element.closest('.content').css('padding-bottom').replace("px", "") : 0;
+          $bbug(element).height(($window.innerHeight - pos.top - padding) + "px");
           return angular.element($window).bind('resize', function() {
             pos = $bbug(element).position();
-            return $bbug(element).height("" + ($window.innerHeight - pos.top) + "px");
+            return $bbug(element).height(($window.innerHeight - pos.top(-padding)) + "px");
           });
         }
       }
@@ -616,11 +616,11 @@
                 end_date: end.format('YYYY-MM-DD')
               };
               return AdminBookingService.query(params).then(function(bookings) {
-                var b, i, len, ref;
+                var b, _i, _len, _ref;
                 $scope.loading = false;
-                ref = bookings.items;
-                for (i = 0, len = ref.length; i < len; i++) {
-                  b = ref[i];
+                _ref = bookings.items;
+                for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+                  b = _ref[_i];
                   b.resourceId = b.person_id;
                 }
                 $scope.bookings = bookings.items;
@@ -680,18 +680,18 @@
             return $scope.editBooking(event);
           },
           resourceRender: function(resource, resourceTDs, dataTDs) {
-            var dataTD, i, j, len, len1, resourceTD, results;
-            for (i = 0, len = resourceTDs.length; i < len; i++) {
-              resourceTD = resourceTDs[i];
+            var dataTD, resourceTD, _i, _j, _len, _len1, _results;
+            for (_i = 0, _len = resourceTDs.length; _i < _len; _i++) {
+              resourceTD = resourceTDs[_i];
               resourceTD.style.height = "44px";
               resourceTD.style.verticalAlign = "middle";
             }
-            results = [];
-            for (j = 0, len1 = dataTDs.length; j < len1; j++) {
-              dataTD = dataTDs[j];
-              results.push(dataTD.style.height = "44px");
+            _results = [];
+            for (_j = 0, _len1 = dataTDs.length; _j < _len1; _j++) {
+              dataTD = dataTDs[_j];
+              _results.push(dataTD.style.height = "44px");
             }
-            return results;
+            return _results;
           },
           eventRender: function(event, element) {
             var service;
@@ -705,10 +705,10 @@
             }
           },
           eventAfterRender: function(event, elements, view) {
-            var element, i, len;
+            var element, _i, _len;
             if (view.type === "timelineDay") {
-              for (i = 0, len = elements.length; i < len; i++) {
-                element = elements[i];
+              for (_i = 0, _len = elements.length; _i < _len; _i++) {
+                element = elements[_i];
                 element.style.height = "27px";
               }
             }
@@ -748,12 +748,12 @@
             company: company
           };
           return AdminPersonService.query(params).then(function(people) {
-            var i, len, p, ref;
+            var p, _i, _len, _ref;
             $scope.loading = false;
             $scope.people = _.sortBy(people, 'name');
-            ref = $scope.people;
-            for (i = 0, len = ref.length; i < len; i++) {
-              p = ref[i];
+            _ref = $scope.people;
+            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+              p = _ref[_i];
               p.title = p.name;
             }
             uiCalendarConfig.calendars.resourceCalendar.fullCalendar('refetchEvents');
@@ -849,13 +849,13 @@
           return collection.$get('services').then(function(services) {
             var s;
             scope.services = (function() {
-              var i, len, results;
-              results = [];
-              for (i = 0, len = services.length; i < len; i++) {
-                s = services[i];
-                results.push(new BBModel.Admin.Service(s));
+              var _i, _len, _results;
+              _results = [];
+              for (_i = 0, _len = services.length; _i < _len; _i++) {
+                s = services[_i];
+                _results.push(new BBModel.Admin.Service(s));
               }
-              return results;
+              return _results;
             })();
             return ColorPalette.setColors(scope.services);
           });
