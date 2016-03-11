@@ -179,6 +179,12 @@
 .skin-bb.sidebar-mini.sidebar-collapse.no-side-menu .content-wrapper {
   margin-left: 0px !important; }
 
+.tr-ng-grid .tr-ng-column-header .tr-ng-title {
+  padding-top: 0 !important; }
+
+.tr-ng-grid .tr-ng-sort .tr-ng-sort-active, .tr-ng-grid .tr-ng-sort .tr-ng-sort-inactive {
+  top: 5px !important; }
+
 .bb-page-frame {
   width: 100%;
   height: auto;

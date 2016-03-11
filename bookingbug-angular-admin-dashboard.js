@@ -539,7 +539,7 @@
           $bbug(element).height(($window.innerHeight - pos.top - padding) + "px");
           return angular.element($window).bind('resize', function() {
             pos = $bbug(element).position();
-            return $bbug(element).height(($window.innerHeight - pos.top(-padding)) + "px");
+            return $bbug(element).height(($window.innerHeight - pos.top - padding) + "px");
           });
         }
       }
