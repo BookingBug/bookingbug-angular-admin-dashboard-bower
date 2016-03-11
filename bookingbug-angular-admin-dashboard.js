@@ -2,7 +2,7 @@
   'use strict';
   var adminbookingapp;
 
-  adminbookingapp = angular.module('BBAdminDashboard', ['trNgGrid', 'BBAdmin', 'BBAdminServices', 'ui.calendar', 'ngStorage', 'BBAdminBooking', 'BBAdminDashboard', 'BBAdmin.Directives', 'ui.calendar', 'ngResource', 'ui.bootstrap', 'ui.router', 'ngTouch', 'ngInputDate', 'ngSanitize', 'xeditable', 'ngIdle', 'ngLocalData']);
+  adminbookingapp = angular.module('BBAdminDashboard', ['trNgGrid', 'BBAdmin', 'BBAdminServices', 'ui.calendar', 'ngStorage', 'BBAdminBooking', 'BBAdminDashboard', 'BBAdmin.Directives', 'ui.calendar', 'ngResource', 'ui.bootstrap', 'ui.router', 'ct.ui.router.extras', 'ngTouch', 'ngInputDate', 'ngSanitize', 'xeditable', 'ngIdle', 'ngLocalData']);
 
   angular.module('BBAdminDashboard').config(function($logProvider) {
     return $logProvider.debugEnabled(true);
@@ -197,7 +197,16 @@
     }).state('settings', {
       parent: "root",
       url: "/settings",
-      templateUrl: "admin_settings_page.html"
+      templateUrl: "admin_settings_page.html",
+      deepStateRedirect: {
+        "default": {
+          state: "settings.page",
+          params: {
+            path: "person"
+          }
+        },
+        params: true
+      }
     }).state('settings.page', {
       parent: "settings",
       url: "/page/:path",
@@ -736,8 +745,11 @@
       height = $scope.options.header_height ? $bbug($window).height() - $scope.options.header_height : 800;
       $scope.uiCalOptions = {
         calendar: {
+          schedulerLicenseKey: 'GPL-My-Project-Is-Open-Source',
           eventStartEditable: true,
           eventDurationEditable: false,
+          minTime: $scope.options.minTime || "09:00",
+          maxTime: $scope.options.maxTime || "18:00",
           height: height,
           header: {
             left: 'today,prev,next',
@@ -822,12 +834,15 @@
             if (resource) {
               rid = resource.id;
             }
-            return AdminBookingPopup.open({
-              item_defaults: {
-                date: start.format('YYYY-MM-DD'),
-                time: start.hour() * 60 + start.minute(),
-                person: rid
-              }
+            return $scope.getCompanyPromise().then(function(company) {
+              return AdminBookingPopup.open({
+                item_defaults: {
+                  date: start.format('YYYY-MM-DD'),
+                  time: start.hour() * 60 + start.minute(),
+                  person: rid
+                },
+                company_id: company.id
+              });
             });
           },
           viewRender: function(view, element) {
