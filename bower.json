@@ -1,6 +1,6 @@
 {
   "name": "bookingbug-angular-admin-dashboard",
-  "version": "0.0.329",
+  "version": "0.0.330",
   "homepage": "https://github.com/BookingBug/bookingbug-angular-admin-dashboard-bower",
   "authors": [
     "Glenn Shoosmith <glenn@bookingbug.com>",
@@ -20,8 +20,8 @@
     "tests"
   ],
   "dependencies": {
-    "bookingbug-angular-core": "0.0.329",
-    "bookingbug-angular-admin": "0.0.329",
+    "bookingbug-angular-core": "0.0.330",
+    "bookingbug-angular-admin": "0.0.330",
     "fullcalendar": "2.4.0",
     "jqueryui-touch-punch": "*",
     "pusher": "~2.2.4",
