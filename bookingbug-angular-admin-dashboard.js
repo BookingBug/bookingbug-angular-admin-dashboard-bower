@@ -4,8 +4,9 @@
 
   adminbookingapp = angular.module('BBAdminDashboard', ['trNgGrid', 'BBAdmin', 'BBAdminServices', 'ui.calendar', 'ngStorage', 'BBAdminBooking', 'BBAdminDashboard', 'BBAdmin.Directives', 'ui.calendar', 'ngResource', 'ui.bootstrap', 'ui.router', 'ct.ui.router.extras', 'ngTouch', 'ngInputDate', 'ngSanitize', 'xeditable', 'ngIdle', 'ngLocalData']);
 
-  angular.module('BBAdminDashboard').config(function($logProvider) {
-    return $logProvider.debugEnabled(true);
+  angular.module('BBAdminDashboard').config(function($logProvider, $httpProvider) {
+    $logProvider.debugEnabled(true);
+    return $httpProvider.defaults.withCredentials = true;
   });
 
   angular.module('BBAdminDashboard.Directives', []);
@@ -368,7 +369,8 @@
 (function() {
   angular.module('BBAdminDashboard').controller('bbAdminRootPageController', function($scope, user, company) {
     $scope.company = company;
-    return $scope.bb.company = company;
+    $scope.bb.company = company;
+    return moment.tz.setDefault(company.timezone);
   });
 
 }).call(this);
@@ -599,13 +601,13 @@
         };
         prms.url = $scope.bb.api_url;
         return AdminBookingService.query(prms).then(function(res) {
-          var item, _i, _len, _ref;
+          var i, item, len, ref;
           $scope.booking_collection = res;
           $scope.bookings = [];
           $scope.bmap = {};
-          _ref = res.items;
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            item = _ref[_i];
+          ref = res.items;
+          for (i = 0, len = ref.length; i < len; i++) {
+            item = ref[i];
             item.unixTime = item.datetime.unix();
             if (item.status !== 3) {
               $scope.bookings.push(item.id);
@@ -616,12 +618,12 @@
           BusyService.setLoaded($scope);
           BusyService.setPageLoaded($scope);
           return $scope.booking_collection.addCallback($scope, function(booking, status) {
-            var _j, _len1, _ref1;
+            var j, len1, ref1;
             $scope.bookings = [];
             $scope.bmap = {};
-            _ref1 = $scope.booking_collection.items;
-            for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-              item = _ref1[_j];
+            ref1 = $scope.booking_collection.items;
+            for (j = 0, len1 = ref1.length; j < len1; j++) {
+              item = ref1[j];
               item.unixTime = item.datetime.unix();
               if (item.status !== 3) {
                 $scope.bookings.push(item.id);
@@ -726,11 +728,11 @@
                 end_date: end.format('YYYY-MM-DD')
               };
               return AdminBookingService.query(params).then(function(bookings) {
-                var b, _i, _len, _ref;
+                var b, i, len, ref;
                 $scope.loading = false;
-                _ref = bookings.items;
-                for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-                  b = _ref[_i];
+                ref = bookings.items;
+                for (i = 0, len = ref.length; i < len; i++) {
+                  b = ref[i];
                   b.resourceId = b.person_id;
                 }
                 $scope.bookings = bookings.items;
@@ -793,18 +795,18 @@
             return $scope.editBooking(event);
           },
           resourceRender: function(resource, resourceTDs, dataTDs) {
-            var dataTD, resourceTD, _i, _j, _len, _len1, _results;
-            for (_i = 0, _len = resourceTDs.length; _i < _len; _i++) {
-              resourceTD = resourceTDs[_i];
+            var dataTD, i, j, len, len1, resourceTD, results;
+            for (i = 0, len = resourceTDs.length; i < len; i++) {
+              resourceTD = resourceTDs[i];
               resourceTD.style.height = "44px";
               resourceTD.style.verticalAlign = "middle";
             }
-            _results = [];
-            for (_j = 0, _len1 = dataTDs.length; _j < _len1; _j++) {
-              dataTD = dataTDs[_j];
-              _results.push(dataTD.style.height = "44px");
+            results = [];
+            for (j = 0, len1 = dataTDs.length; j < len1; j++) {
+              dataTD = dataTDs[j];
+              results.push(dataTD.style.height = "44px");
             }
-            return _results;
+            return results;
           },
           eventRender: function(event, element) {
             var service;
@@ -818,10 +820,10 @@
             }
           },
           eventAfterRender: function(event, elements, view) {
-            var element, _i, _len;
+            var element, i, len;
             if (view.type === "timelineDay") {
-              for (_i = 0, _len = elements.length; _i < _len; _i++) {
-                element = elements[_i];
+              for (i = 0, len = elements.length; i < len; i++) {
+                element = elements[i];
                 element.style.height = "27px";
               }
             }
@@ -864,12 +866,12 @@
             company: company
           };
           return AdminPersonService.query(params).then(function(people) {
-            var p, _i, _len, _ref;
+            var i, len, p, ref;
             $scope.loading = false;
             $scope.people = _.sortBy(people, 'name');
-            _ref = $scope.people;
-            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-              p = _ref[_i];
+            ref = $scope.people;
+            for (i = 0, len = ref.length; i < len; i++) {
+              p = ref[i];
               p.title = p.name;
             }
             uiCalendarConfig.calendars.resourceCalendar.fullCalendar('refetchEvents');
@@ -965,13 +967,13 @@
           return collection.$get('services').then(function(services) {
             var s;
             scope.services = (function() {
-              var _i, _len, _results;
-              _results = [];
-              for (_i = 0, _len = services.length; _i < _len; _i++) {
-                s = services[_i];
-                _results.push(new BBModel.Admin.Service(s));
+              var i, len, results;
+              results = [];
+              for (i = 0, len = services.length; i < len; i++) {
+                s = services[i];
+                results.push(new BBModel.Admin.Service(s));
               }
-              return _results;
+              return results;
             })();
             return ColorPalette.setColors(scope.services);
           });
