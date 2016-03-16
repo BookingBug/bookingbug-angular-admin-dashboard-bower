@@ -2,10 +2,11 @@
   'use strict';
   var adminbookingapp;
 
-  adminbookingapp = angular.module('BBAdminDashboard', ['trNgGrid', 'BBAdmin', 'BBAdminServices', 'ui.calendar', 'ngStorage', 'BBAdminBooking', 'BBAdminDashboard', 'BBAdmin.Directives', 'ui.calendar', 'ngResource', 'ui.bootstrap', 'ui.router', 'ngTouch', 'ngInputDate', 'ngSanitize', 'xeditable', 'ngIdle', 'ngLocalData']);
+  adminbookingapp = angular.module('BBAdminDashboard', ['trNgGrid', 'BBAdmin', 'BBAdminServices', 'ui.calendar', 'ngStorage', 'BBAdminBooking', 'BBAdminDashboard', 'BBAdmin.Directives', 'ui.calendar', 'ngResource', 'ui.bootstrap', 'ui.router', 'ct.ui.router.extras', 'ngTouch', 'ngInputDate', 'ngSanitize', 'xeditable', 'ngIdle', 'ngLocalData']);
 
-  angular.module('BBAdminDashboard').config(function($logProvider) {
-    return $logProvider.debugEnabled(true);
+  angular.module('BBAdminDashboard').config(function($logProvider, $httpProvider) {
+    $logProvider.debugEnabled(true);
+    return $httpProvider.defaults.withCredentials = true;
   });
 
   angular.module('BBAdminDashboard.Directives', []);
@@ -28,7 +29,8 @@
   });
 
   angular.module('BBAdminDashboard').config(function($stateProvider, $urlRouterProvider) {
-    $urlRouterProvider.otherwise("/dashboard");
+    $stateProvider.root_state = "dashboard";
+    $urlRouterProvider.otherwise("/" + $stateProvider.root_state);
     return $stateProvider.state('root', {
       template: "<div ui-view></div>",
       resolve: {
@@ -87,7 +89,7 @@
         return $scope.selectDepartment = function(department) {
           return AdminLoginService.setCompany(department.id).then(function(user) {
             return $timeout(function() {
-              return $state.go('dashboard', {}, {
+              return $state.go($stateProvider.root_state, {}, {
                 reload: true
               });
             });
@@ -128,7 +130,7 @@
             defer.resolve(company.companies);
           } else {
             $timeout(function() {
-              return $state.go('dashboard', {}, {
+              return $state.go($stateProvider.root_state, {}, {
                 reload: true
               });
             });
@@ -197,7 +199,16 @@
     }).state('settings', {
       parent: "root",
       url: "/settings",
-      templateUrl: "admin_settings_page.html"
+      templateUrl: "admin_settings_page.html",
+      deepStateRedirect: {
+        "default": {
+          state: "settings.page",
+          params: {
+            path: "person"
+          }
+        },
+        params: true
+      }
     }).state('settings.page', {
       parent: "settings",
       url: "/page/:path",
@@ -231,6 +242,10 @@
           });
         });
       }
+    }).state('checkin', {
+      parent: 'root',
+      url: "/checkin",
+      templateUrl: "checkin_page.html"
     });
   });
 
@@ -355,7 +370,8 @@
 (function() {
   angular.module('BBAdminDashboard').controller('bbAdminRootPageController', function($scope, user, company) {
     $scope.company = company;
-    return $scope.bb.company = company;
+    $scope.bb.company = company;
+    return moment.tz.setDefault(company.timezone);
   });
 
 }).call(this);
@@ -539,11 +555,108 @@
           $bbug(element).height(($window.innerHeight - pos.top - padding) + "px");
           return angular.element($window).bind('resize', function() {
             pos = $bbug(element).position();
-            return $bbug(element).height(($window.innerHeight - pos.top(-padding)) + "px");
+            return $bbug(element).height(($window.innerHeight - pos.top - padding) + "px");
           });
         }
       }
     };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BBAdminDashboard').directive('bbCheckinTable', function() {
+    return {
+      restrict: 'AE',
+      replace: false,
+      scope: true,
+      templateUrl: 'checkin_table.html',
+      controller: 'CheckinsController',
+      link: function(scope, element, attrs) {}
+    };
+  });
+
+  angular.module('BBAdminDashboard').controller('CheckinsController', function($scope, $rootScope, BusyService, $q, $filter, AdminTimeService, AdminBookingService, AdminSlotService, $timeout, AlertService) {
+    $scope.sorter = "unixTime";
+    $scope.doSort = (function(_this) {
+      return function(sorter) {
+        if (sorter === $scope.sorter && ($scope.sortAscending != null)) {
+          $scope.sortAscending = !$scope.sortAscending;
+        } else {
+          $scope.sortAscending = true;
+        }
+        $scope.sorter = sorter;
+        $scope.bookings = $filter('orderBy')($scope.bookings, function(item) {
+          return $scope.bmap[item][sorter];
+        }, !$scope.sortAscending);
+        return false;
+      };
+    })(this);
+    $scope.loadAppointments = (function(_this) {
+      return function() {
+        var prms;
+        BusyService.notLoaded($scope);
+        prms = {
+          company_id: $scope.bb.company_id,
+          date: moment().format('YYYY-MM-DD')
+        };
+        prms.url = $scope.bb.api_url;
+        return AdminBookingService.query(prms).then(function(res) {
+          var i, item, len, ref;
+          $scope.booking_collection = res;
+          $scope.bookings = [];
+          $scope.bmap = {};
+          ref = res.items;
+          for (i = 0, len = ref.length; i < len; i++) {
+            item = ref[i];
+            item.unixTime = item.datetime.unix();
+            if (item.status !== 3) {
+              $scope.bookings.push(item.id);
+              $scope.bmap[item.id] = item;
+            }
+          }
+          $scope.doSort($scope.sorter);
+          BusyService.setLoaded($scope);
+          BusyService.setPageLoaded($scope);
+          return $scope.booking_collection.addCallback($scope, function(booking, status) {
+            var j, len1, ref1;
+            $scope.bookings = [];
+            $scope.bmap = {};
+            ref1 = $scope.booking_collection.items;
+            for (j = 0, len1 = ref1.length; j < len1; j++) {
+              item = ref1[j];
+              item.unixTime = item.datetime.unix();
+              if (item.status !== 3) {
+                $scope.bookings.push(item.id);
+                $scope.bmap[item.id] = item;
+              }
+            }
+            return $scope.doSort($scope.sorter);
+          });
+        });
+      };
+    })(this);
+    $scope.setStatus = (function(_this) {
+      return function(booking, status) {
+        booking.current_multi_status = status;
+        return booking.$update(booking).then(function(res) {
+          return $scope.booking_collection.checkItem(res);
+        }, function(err) {
+          return AlertService.danger({
+            msg: 'Something went wrong'
+          });
+        });
+      };
+    })(this);
+    this.checker = (function(_this) {
+      return function() {
+        return $timeout(function() {
+          return _this.checker();
+        }, 1000);
+      };
+    })(this);
+    this.checker();
+    return $scope.loadAppointments();
   });
 
 }).call(this);
@@ -622,6 +735,7 @@
                 for (i = 0, len = ref.length; i < len; i++) {
                   b = ref[i];
                   b.resourceId = b.person_id;
+                  b.useFullTime();
                 }
                 $scope.bookings = bookings.items;
                 return callback($scope.bookings);
@@ -635,8 +749,11 @@
       height = $scope.options.header_height ? $bbug($window).height() - $scope.options.header_height : 800;
       $scope.uiCalOptions = {
         calendar: {
+          schedulerLicenseKey: '0598149132-fcs-1443104297',
           eventStartEditable: true,
           eventDurationEditable: false,
+          minTime: $scope.options.minTime || "09:00",
+          maxTime: $scope.options.maxTime || "18:00",
           height: height,
           header: {
             left: 'today,prev,next',
@@ -721,12 +838,15 @@
             if (resource) {
               rid = resource.id;
             }
-            return AdminBookingPopup.open({
-              item_defaults: {
-                date: start.format('YYYY-MM-DD'),
-                time: start.hour() * 60 + start.minute(),
-                person: rid
-              }
+            return $scope.getCompanyPromise().then(function(company) {
+              return AdminBookingPopup.open({
+                item_defaults: {
+                  date: start.format('YYYY-MM-DD'),
+                  time: start.hour() * 60 + start.minute(),
+                  person: rid
+                },
+                company_id: company.id
+              });
             });
           },
           viewRender: function(view, element) {
@@ -878,6 +998,72 @@
       controller: controller,
       link: link,
       templateUrl: 'resource_calendar_main.html'
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BB').factory("BusyService", function($q, $log, $rootScope, BBModel, AlertService, ErrorService) {
+    return {
+      notLoaded: function(cscope) {
+        cscope.$emit('show:loader', cscope);
+        cscope.isLoaded = false;
+        while (cscope) {
+          if (cscope.hasOwnProperty('scopeLoaded')) {
+            cscope.scopeLoaded = false;
+          }
+          cscope = cscope.$parent;
+        }
+      },
+      setLoaded: function(cscope) {
+        var loadingFinished;
+        cscope.$emit('hide:loader', cscope);
+        cscope.isLoaded = true;
+        loadingFinished = true;
+        while (cscope) {
+          if (cscope.hasOwnProperty('scopeLoaded')) {
+            if ($scope.areScopesLoaded(cscope)) {
+              cscope.scopeLoaded = true;
+            } else {
+              loadingFinished = false;
+            }
+          }
+          cscope = cscope.$parent;
+        }
+        if (loadingFinished) {
+          return $rootScope.$broadcast('loading:finished');
+        }
+      },
+      setPageLoaded: function(scope) {
+        return null;
+      },
+      setLoadedAndShowError: function(scope, err, error_string) {
+        $log.warn(err, error_string);
+        this.setLoaded(scope);
+        if (err.status === 409) {
+          return AlertService.danger(ErrorService.getError('ITEM_NO_LONGER_AVAILABLE'));
+        } else if (err.data && err.data.error === "Number of Bookings exceeds the maximum") {
+          return AlertService.danger(ErrorService.getError('MAXIMUM_TICKETS'));
+        } else {
+          return AlertService.danger(ErrorService.getError('GENERIC'));
+        }
+      },
+      areScopesLoaded: function(cscope) {
+        var child;
+        if (cscope.hasOwnProperty('isLoaded') && !cscope.isLoaded) {
+          return false;
+        } else {
+          child = cscope.$$childHead;
+          while (child) {
+            if (!$scope.areScopesLoaded(child)) {
+              return false;
+            }
+            child = child.$$nextSibling;
+          }
+          return true;
+        }
+      }
     };
   });
 
