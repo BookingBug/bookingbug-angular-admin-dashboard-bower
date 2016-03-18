@@ -812,7 +812,7 @@
           },
           eventRender: function(event, element) {
             var service;
-            service = _.find($scope.services, {
+            service = _.findWhere($scope.services, {
               id: event.service_id
             });
             if (service) {
