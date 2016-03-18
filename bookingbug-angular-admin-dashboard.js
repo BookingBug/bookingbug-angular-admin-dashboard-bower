@@ -29,7 +29,8 @@
   });
 
   angular.module('BBAdminDashboard').config(function($stateProvider, $urlRouterProvider) {
-    $urlRouterProvider.otherwise("/dashboard");
+    $stateProvider.root_state = "dashboard";
+    $urlRouterProvider.otherwise("/" + $stateProvider.root_state);
     return $stateProvider.state('root', {
       template: "<div ui-view></div>",
       resolve: {
@@ -88,7 +89,7 @@
         return $scope.selectDepartment = function(department) {
           return AdminLoginService.setCompany(department.id).then(function(user) {
             return $timeout(function() {
-              return $state.go('dashboard', {}, {
+              return $state.go($stateProvider.root_state, {}, {
                 reload: true
               });
             });
@@ -129,7 +130,7 @@
             defer.resolve(company.companies);
           } else {
             $timeout(function() {
-              return $state.go('dashboard', {}, {
+              return $state.go($stateProvider.root_state, {}, {
                 reload: true
               });
             });
@@ -734,6 +735,7 @@
                 for (i = 0, len = ref.length; i < len; i++) {
                   b = ref[i];
                   b.resourceId = b.person_id;
+                  b.useFullTime();
                 }
                 $scope.bookings = bookings.items;
                 return callback($scope.bookings);
@@ -747,7 +749,7 @@
       height = $scope.options.header_height ? $bbug($window).height() - $scope.options.header_height : 800;
       $scope.uiCalOptions = {
         calendar: {
-          schedulerLicenseKey: 'GPL-My-Project-Is-Open-Source',
+          schedulerLicenseKey: '0598149132-fcs-1443104297',
           eventStartEditable: true,
           eventDurationEditable: false,
           minTime: $scope.options.minTime || "09:00",
