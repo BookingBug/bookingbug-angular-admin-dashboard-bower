@@ -2,7 +2,7 @@
   'use strict';
   var adminbookingapp;
 
-  adminbookingapp = angular.module('BBAdminDashboard', ['trNgGrid', 'BBAdmin', 'BBAdminServices', 'ui.calendar', 'ngStorage', 'BBAdminBooking', 'BBAdminDashboard', 'BBAdmin.Directives', 'ui.calendar', 'ngResource', 'ui.bootstrap', 'ui.router', 'ct.ui.router.extras', 'ngTouch', 'ngInputDate', 'ngSanitize', 'xeditable', 'ngIdle', 'ngLocalData']);
+  adminbookingapp = angular.module('BBAdminDashboard', ['trNgGrid', 'BBAdmin', 'BBAdminServices', 'ui.calendar', 'ngStorage', 'BBAdminBooking', 'BBAdmin.Directives', 'ui.calendar', 'ngResource', 'ui.bootstrap', 'ui.router', 'ct.ui.router.extras', 'ngTouch', 'ngInputDate', 'ngSanitize', 'xeditable', 'ngIdle', 'ngLocalData']);
 
   angular.module('BBAdminDashboard').config(function($logProvider, $httpProvider) {
     $logProvider.debugEnabled(true);
@@ -758,20 +758,32 @@
           header: {
             left: 'today,prev,next',
             center: 'title',
-            right: 'timelineDay,agendaWeek,month'
+            right: 'timelineDay,timelineDayThirty,agendaWeek,month'
           },
           defaultView: 'timelineDay',
           views: {
             agendaWeek: {
-              slotDuration: $scope.options.slotDuration || "00:05"
+              slotDuration: $scope.options.slotDuration || "00:05",
+              buttonText: 'Week'
             },
             month: {
-              eventLimit: 5
+              eventLimit: 5,
+              buttonText: 'Month'
             },
             timelineDay: {
               slotDuration: $scope.options.slotDuration || "00:05",
               eventOverlap: false,
-              slotWidth: 44
+              slotWidth: 25,
+              buttonText: 'Day (5m)',
+              resourceAreaWidth: '18%'
+            },
+            timelineDayThirty: {
+              type: 'timeline',
+              slotDuration: "00:30",
+              eventOverlap: false,
+              slotWidth: 25,
+              buttonText: 'Day (30m)',
+              resourceAreaWidth: '18%'
             }
           },
           resourceLabelText: 'Staff',
@@ -796,20 +808,7 @@
           eventClick: function(event, jsEvent, view) {
             return $scope.editBooking(event);
           },
-          resourceRender: function(resource, resourceTDs, dataTDs) {
-            var dataTD, i, j, len, len1, resourceTD, results;
-            for (i = 0, len = resourceTDs.length; i < len; i++) {
-              resourceTD = resourceTDs[i];
-              resourceTD.style.height = "44px";
-              resourceTD.style.verticalAlign = "middle";
-            }
-            results = [];
-            for (j = 0, len1 = dataTDs.length; j < len1; j++) {
-              dataTD = dataTDs[j];
-              results.push(dataTD.style.height = "44px");
-            }
-            return results;
-          },
+          resourceRender: function(resource, resourceTDs, dataTDs) {},
           eventRender: function(event, element) {
             var service;
             service = _.findWhere($scope.services, {
@@ -822,13 +821,6 @@
             }
           },
           eventAfterRender: function(event, elements, view) {
-            var element, i, len;
-            if (view.type === "timelineDay") {
-              for (i = 0, len = elements.length; i < len; i++) {
-                element = elements[i];
-                element.style.height = "27px";
-              }
-            }
             return elements.draggable();
           },
           select: function(start, end, jsEvent, view, resource) {
@@ -845,6 +837,7 @@
                   time: start.hour() * 60 + start.minute(),
                   person: rid
                 },
+                first_page: "quick_pick",
                 company_id: company.id
               });
             });
