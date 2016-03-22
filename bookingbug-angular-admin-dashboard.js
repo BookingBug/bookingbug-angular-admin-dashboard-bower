@@ -713,7 +713,7 @@
 }).call(this);
 
 (function() {
-  angular.module('BBAdminDashboard').directive('bbResourceCalendar', function(uiCalendarConfig, AdminCompanyService, AdminBookingService, AdminPersonService, $q, $sessionStorage, ModalForm, BBModel, AdminBookingPopup, $window, $bbug, ColorPalette, AppConfig, Dialog, $interval, $http, $timeout, $compile, $templateCache, BookingCollections) {
+  angular.module('BBAdminDashboard').directive('bbResourceCalendar', function(uiCalendarConfig, AdminCompanyService, AdminBookingService, AdminPersonService, $q, $sessionStorage, ModalForm, BBModel, AdminBookingPopup, $window, $bbug, ColorPalette, AppConfig, Dialog, $interval, $http, $timeout, $compile, $templateCache, BookingCollections, PrePostTime) {
     var controller, link;
     controller = function($scope, $attrs) {
       var height;
@@ -821,6 +821,7 @@
             }
           },
           eventAfterRender: function(event, elements, view) {
+            PrePostTime.apply(event, elements, view);
             return elements.draggable();
           },
           select: function(start, end, jsEvent, view, resource) {
@@ -1056,6 +1057,59 @@
           }
           return true;
         }
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BBAdminDashboard').factory("PrePostTime", function($compile) {
+    return {
+      apply: function(event, elements, view) {
+        var contentDiv, e, element, i, len, post, postHeight, postWidth, pre, preHeight, preWidth, results, totalDuration;
+        results = [];
+        for (i = 0, len = elements.length; i < len; i++) {
+          e = elements[i];
+          element = angular.element(e);
+          totalDuration = event.duration + event.pre_time + event.post_time;
+          if (event.pre_time) {
+            switch (view.name) {
+              case "agendaWeek":
+              case "agendaDay":
+                preHeight = event.pre_time * (element.height() + 2) / totalDuration;
+                pre = $compile("<div class='pre' style='height:" + preHeight + "px'></div>")($scope);
+                element.prepend(pre);
+                break;
+              case "timelineDay":
+                contentDiv = element.children()[0];
+                preWidth = event.pre_time * (element.width() + 2) / totalDuration;
+                pre = $compile("<div class='pre' style='width:" + preWidth + "px'></div>")($scope);
+                element.prepend(pre);
+                angular.element(contentDiv).css("padding-left", preWidth + "px");
+            }
+          }
+          if (event.post_time) {
+            switch (view.name) {
+              case "agendaWeek":
+              case "agendaDay":
+                postHeight = event.post_time * (element.height() + 2) / totalDuration;
+                post = $compile("<div class='post' style='height:" + postHeight + "px'></div>")($scope);
+                results.push(element.append(post));
+                break;
+              case "timelineDay":
+                postWidth = event.post_time * (element.width() + 2) / totalDuration;
+                post = $compile("<div class='post' style='width:" + postWidth + "px'></div>")($scope);
+                results.push(element.append(post));
+                break;
+              default:
+                results.push(void 0);
+            }
+          } else {
+            results.push(void 0);
+          }
+        }
+        return results;
       }
     };
   });

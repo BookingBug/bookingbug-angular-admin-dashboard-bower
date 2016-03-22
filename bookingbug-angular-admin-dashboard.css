@@ -224,3 +224,23 @@
     border-right: 1px solid #ddd;
     border-bottom-left-radius: 4px;
     border-bottom-right-radius: 4px; }
+
+.resource-calendar .fc-time-grid-event .pre, .resource-calendar .fc-time-grid-event .post,
+.resource-calendar .fc-timeline-event .pre,
+.resource-calendar .fc-timeline-event .post {
+  background-color: #808080; }
+
+.resource-calendar .fc-time-grid-event .post {
+  width: 100%;
+  bottom: 0px;
+  position: absolute; }
+
+.resource-calendar .fc-timeline-event .post {
+  right: 0px;
+  z-index: 10; }
+
+.resource-calendar .fc-timeline-event .pre,
+.resource-calendar .fc-timeline-event .post {
+  height: 100%;
+  bottom: 0px;
+  position: absolute; }
