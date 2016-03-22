@@ -821,7 +821,7 @@
             }
           },
           eventAfterRender: function(event, elements, view) {
-            PrePostTime.apply(event, elements, view);
+            PrePostTime.apply(event, elements, view, $scope);
             return elements.draggable();
           },
           select: function(start, end, jsEvent, view, resource) {
@@ -1066,7 +1066,7 @@
 (function() {
   angular.module('BBAdminDashboard').factory("PrePostTime", function($compile) {
     return {
-      apply: function(event, elements, view) {
+      apply: function(event, elements, view, scope) {
         var contentDiv, e, element, i, len, post, postHeight, postWidth, pre, preHeight, preWidth, results, totalDuration;
         results = [];
         for (i = 0, len = elements.length; i < len; i++) {
@@ -1078,13 +1078,13 @@
               case "agendaWeek":
               case "agendaDay":
                 preHeight = event.pre_time * (element.height() + 2) / totalDuration;
-                pre = $compile("<div class='pre' style='height:" + preHeight + "px'></div>")($scope);
+                pre = $compile("<div class='pre' style='height:" + preHeight + "px'></div>")(scope);
                 element.prepend(pre);
                 break;
               case "timelineDay":
                 contentDiv = element.children()[0];
                 preWidth = event.pre_time * (element.width() + 2) / totalDuration;
-                pre = $compile("<div class='pre' style='width:" + preWidth + "px'></div>")($scope);
+                pre = $compile("<div class='pre' style='width:" + preWidth + "px'></div>")(scope);
                 element.prepend(pre);
                 angular.element(contentDiv).css("padding-left", preWidth + "px");
             }
@@ -1094,12 +1094,12 @@
               case "agendaWeek":
               case "agendaDay":
                 postHeight = event.post_time * (element.height() + 2) / totalDuration;
-                post = $compile("<div class='post' style='height:" + postHeight + "px'></div>")($scope);
+                post = $compile("<div class='post' style='height:" + postHeight + "px'></div>")(scope);
                 results.push(element.append(post));
                 break;
               case "timelineDay":
                 postWidth = event.post_time * (element.width() + 2) / totalDuration;
-                post = $compile("<div class='post' style='width:" + postWidth + "px'></div>")($scope);
+                post = $compile("<div class='post' style='width:" + postWidth + "px'></div>")(scope);
                 results.push(element.append(post));
                 break;
               default:
