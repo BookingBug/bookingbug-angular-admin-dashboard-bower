@@ -713,7 +713,7 @@
 }).call(this);
 
 (function() {
-  angular.module('BBAdminDashboard').directive('bbResourceCalendar', function(uiCalendarConfig, AdminCompanyService, AdminBookingService, AdminPersonService, $q, $sessionStorage, ModalForm, BBModel, AdminBookingPopup, $window, $bbug, ColorPalette, AppConfig, Dialog, $interval, $http, $timeout, $compile, $templateCache, BookingCollections, PrePostTime) {
+  angular.module('BBAdminDashboard').directive('bbResourceCalendar', function(uiCalendarConfig, AdminCompanyService, AdminBookingService, AdminPersonService, $q, $sessionStorage, ModalForm, BBModel, AdminBookingPopup, $window, $bbug, ColorPalette, AppConfig, Dialog, $timeout, $compile, $templateCache, BookingCollections, PrePostTime, AdminScheduleService) {
     var controller, link;
     controller = function($scope, $attrs) {
       var height;
@@ -742,6 +742,14 @@
               });
             });
           }
+        }, {
+          events: function(start, end, timezone, callback) {
+            return $scope.getCompanyPromise().then(function(company) {
+              return AdminScheduleService.getPeopleScheduleEvents(company, start, end).then(function(events) {
+                return callback(events);
+              });
+            });
+          }
         }
       ];
       $scope.options = $scope.$eval($attrs.bbResourceCalendar);
@@ -764,7 +772,8 @@
           views: {
             agendaWeek: {
               slotDuration: $scope.options.slotDuration || "00:05",
-              buttonText: 'Week'
+              buttonText: 'Week',
+              groupByDateAndResource: true
             },
             month: {
               eventLimit: 5,
@@ -808,9 +817,13 @@
           eventClick: function(event, jsEvent, view) {
             return $scope.editBooking(event);
           },
-          resourceRender: function(resource, resourceTDs, dataTDs) {},
           eventRender: function(event, element) {
             var service;
+            if (event.status === 3) {
+              element.find('.fc-bg').css({
+                'background-color': '#000'
+              });
+            }
             service = _.findWhere($scope.services, {
               id: event.service_id
             });
@@ -833,6 +846,8 @@
             }
             return $scope.getCompanyPromise().then(function(company) {
               return AdminBookingPopup.open({
+                from_datetime: start,
+                to_datetime: end,
                 item_defaults: {
                   date: start.format('YYYY-MM-DD'),
                   time: start.hour() * 60 + start.minute(),
