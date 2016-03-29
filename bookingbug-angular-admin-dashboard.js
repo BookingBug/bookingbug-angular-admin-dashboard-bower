@@ -577,31 +577,37 @@
   });
 
   angular.module('BBAdminDashboard').controller('CheckinsController', function($scope, $rootScope, BusyService, $q, $filter, AdminTimeService, AdminBookingService, AdminSlotService, $timeout, AlertService) {
-    $scope.sorter = "unixTime";
-    $scope.doSort = (function(_this) {
-      return function(sorter) {
-        if (sorter === $scope.sorter && ($scope.sortAscending != null)) {
-          $scope.sortAscending = !$scope.sortAscending;
-        } else {
-          $scope.sortAscending = true;
+    $scope.getAppointments = function(currentPage, filterBy, filterByFields, orderBy, orderByReverse) {
+      var defer, mobile, params;
+      if (filterByFields && (filterByFields.name != null)) {
+        filterByFields.name = filterByFields.name.replace(/\s/g, '');
+      }
+      if (filterByFields && (filterByFields.mobile != null)) {
+        mobile = filterByFields.mobile;
+        if (mobile.indexOf('0') === 0) {
+          filterByFields.mobile = mobile.substring(1);
         }
-        $scope.sorter = sorter;
-        $scope.bookings = $filter('orderBy')($scope.bookings, function(item) {
-          return $scope.bmap[item][sorter];
-        }, !$scope.sortAscending);
-        return false;
+      }
+      defer = $q.defer();
+      params = {
+        company: $scope.company,
+        date: moment().format('YYYY-MM-DD'),
+        url: $scope.bb.api_url
       };
-    })(this);
-    $scope.loadAppointments = (function(_this) {
-      return function() {
-        var prms;
-        BusyService.notLoaded($scope);
-        prms = {
-          company_id: $scope.bb.company_id,
-          date: moment().format('YYYY-MM-DD')
-        };
-        prms.url = $scope.bb.api_url;
-        return AdminBookingService.query(prms).then(function(res) {
+      if (filterBy) {
+        params.filter_by = filterBy;
+      }
+      if (filterByFields) {
+        params.filter_by_fields = filterByFields;
+      }
+      if (orderBy) {
+        params.order_by = orderBy;
+      }
+      if (orderByReverse) {
+        params.order_by_reverse = orderByReverse;
+      }
+      AdminBookingService.query(params).then((function(_this) {
+        return function(res) {
           var i, item, len, ref;
           $scope.booking_collection = res;
           $scope.bookings = [];
@@ -609,33 +615,35 @@
           ref = res.items;
           for (i = 0, len = ref.length; i < len; i++) {
             item = ref[i];
-            item.unixTime = item.datetime.unix();
             if (item.status !== 3) {
               $scope.bookings.push(item.id);
               $scope.bmap[item.id] = item;
             }
           }
-          $scope.doSort($scope.sorter);
-          BusyService.setLoaded($scope);
-          BusyService.setPageLoaded($scope);
-          return $scope.booking_collection.addCallback($scope, function(booking, status) {
-            var j, len1, ref1;
+          $scope.booking_collection.addCallback($scope, function(booking, status) {
+            var j, len1, ref1, results;
             $scope.bookings = [];
             $scope.bmap = {};
             ref1 = $scope.booking_collection.items;
+            results = [];
             for (j = 0, len1 = ref1.length; j < len1; j++) {
               item = ref1[j];
-              item.unixTime = item.datetime.unix();
               if (item.status !== 3) {
                 $scope.bookings.push(item.id);
-                $scope.bmap[item.id] = item;
+                results.push($scope.bmap[item.id] = item);
+              } else {
+                results.push(void 0);
               }
             }
-            return $scope.doSort($scope.sorter);
+            return results;
           });
-        });
-      };
-    })(this);
+          return defer.resolve($scope.bookings);
+        };
+      })(this), function(err) {
+        return defer.reject(err);
+      });
+      return defer.promise;
+    };
     $scope.setStatus = (function(_this) {
       return function(booking, status) {
         booking.current_multi_status = status;
@@ -655,8 +663,8 @@
         }, 1000);
       };
     })(this);
-    this.checker();
-    return $scope.loadAppointments();
+    $scope.getAppointments();
+    return this.checker();
   });
 
 }).call(this);
@@ -835,7 +843,9 @@
           },
           eventAfterRender: function(event, elements, view) {
             PrePostTime.apply(event, elements, view, $scope);
-            return elements.draggable();
+            if ((event.rendering == null) || event.rendering !== 'background') {
+              return elements.draggable();
+            }
           },
           select: function(start, end, jsEvent, view, resource) {
             var rid;
