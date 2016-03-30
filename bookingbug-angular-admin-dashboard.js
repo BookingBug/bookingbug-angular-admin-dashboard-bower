@@ -721,10 +721,10 @@
 }).call(this);
 
 (function() {
-  angular.module('BBAdminDashboard').directive('bbResourceCalendar', function(uiCalendarConfig, AdminCompanyService, AdminBookingService, AdminPersonService, $q, $sessionStorage, ModalForm, BBModel, AdminBookingPopup, $window, $bbug, ColorPalette, AppConfig, Dialog, $timeout, $compile, $templateCache, BookingCollections, PrePostTime, AdminScheduleService) {
+  angular.module('BBAdminDashboard').directive('bbResourceCalendar', function(uiCalendarConfig, AdminCompanyService, AdminBookingService, AdminPersonService, $q, $sessionStorage, ModalForm, BBModel, AdminBookingPopup, $window, $bbug, ColorPalette, AppConfig, Dialog, $timeout, $compile, $templateCache, BookingCollections, PrePostTime, AdminScheduleService, $filter) {
     var controller, link;
     controller = function($scope, $attrs) {
-      var height;
+      var height, labelAssembly;
       $scope.eventSources = [
         {
           events: function(start, end, timezone, callback) {
@@ -744,6 +744,7 @@
                   b = ref[i];
                   b.resourceId = b.person_id;
                   b.useFullTime();
+                  b.title = labelAssembly(b);
                 }
                 $scope.bookings = bookings.items;
                 return callback($scope.bookings);
@@ -760,6 +761,35 @@
           }
         }
       ];
+      labelAssembly = function(event) {
+        var i, index, label, len, match, myRe, parts, ref, replaceWith;
+        if (($scope.labelAssembler == null) || event.status === 3) {
+          return event.title;
+        }
+        myRe = new RegExp("\\{([a-zA-z_-]+)\\|?([a-zA-z_-]+)?:?([a-zA-z0-9{}_-]+)?\\}", "g");
+        label = $scope.labelAssembler;
+        ref = $scope.labelAssembler.match(myRe);
+        for (index = i = 0, len = ref.length; i < len; index = ++i) {
+          match = ref[index];
+          parts = match.split(myRe);
+          parts.splice(0, 1);
+          parts.pop();
+          if (event.hasOwnProperty(parts[0])) {
+            replaceWith = event[parts[0]];
+            if ((parts[1] != null) && ($filter(parts[1]) != null)) {
+              if (parts[2] != null) {
+                replaceWith = $filter(parts[1])(replaceWith, $scope.$eval(parts[2]));
+              } else {
+                replaceWith = $filter(parts[1])(replaceWith);
+              }
+            }
+            label = label.replace(match, replaceWith);
+          } else {
+            label = label.replace(match, '');
+          }
+        }
+        return label;
+      };
       $scope.options = $scope.$eval($attrs.bbResourceCalendar);
       $scope.options || ($scope.options = {});
       height = $scope.options.header_height ? $bbug($window).height() - $scope.options.header_height : 800;
@@ -1016,7 +1046,10 @@
     return {
       controller: controller,
       link: link,
-      templateUrl: 'resource_calendar_main.html'
+      templateUrl: 'resource_calendar_main.html',
+      scope: {
+        labelAssembler: '@'
+      }
     };
   });
 
