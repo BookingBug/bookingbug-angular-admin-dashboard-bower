@@ -721,7 +721,7 @@
 }).call(this);
 
 (function() {
-  angular.module('BBAdminDashboard').directive('bbResourceCalendar', function(uiCalendarConfig, AdminCompanyService, AdminBookingService, AdminPersonService, $q, $sessionStorage, ModalForm, BBModel, AdminBookingPopup, $window, $bbug, ColorPalette, AppConfig, Dialog, $timeout, $compile, $templateCache, BookingCollections, PrePostTime, AdminScheduleService, $filter, $state) {
+  angular.module('BBAdminDashboard').directive('bbResourceCalendar', function(uiCalendarConfig, AdminCompanyService, AdminBookingService, AdminPersonService, $q, $sessionStorage, ModalForm, BBModel, AdminBookingPopup, $window, $bbug, ColorPalette, AppConfig, Dialog, $timeout, $compile, $templateCache, BookingCollections, PrePostTime, AdminScheduleService, $filter) {
     var controller, link;
     controller = function($scope, $attrs) {
       var height, labelAssembly;
@@ -917,16 +917,9 @@
             company: company
           };
           return AdminPersonService.query(params).then(function(people) {
-            var i, len, p, person, ref;
-            $scope.people = [];
+            var i, len, p, ref;
             $scope.loading = false;
-            if (($state.params.resourceId != null) && $state.params.resourceId !== '' && ((person = _.findWhere(people, {
-              id: parseInt($state.params.resourceId)
-            })) != null)) {
-              $scope.people.push(person);
-            } else {
-              $scope.people = _.sortBy(people, 'name');
-            }
+            $scope.people = _.sortBy(people, 'name');
             ref = $scope.people;
             for (i = 0, len = ref.length; i < len; i++) {
               p = ref[i];
