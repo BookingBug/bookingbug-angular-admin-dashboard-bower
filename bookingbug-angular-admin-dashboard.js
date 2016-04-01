@@ -28,13 +28,32 @@
     return $idleProvider.warningDuration(idleTimeout);
   });
 
+  angular.module('BBAdminDashboard').value('company_id', null);
+
+  angular.module('BBAdminDashboard').value('sso_token', false);
+
   angular.module('BBAdminDashboard').config(function($stateProvider, $urlRouterProvider) {
     $stateProvider.root_state = "dashboard";
     $urlRouterProvider.otherwise("/" + $stateProvider.root_state);
     return $stateProvider.state('root', {
       template: "<div ui-view></div>",
       resolve: {
-        user: function($q, AdminLoginService, $timeout, $state) {
+        sso: function($q, sso_token, AdminLoginService, AdminSsoLogin) {
+          var defer;
+          defer = $q.defer();
+          AdminLoginService.isLoggedIn().then(function(loggedIn) {
+            if (!loggedIn && sso_token !== false) {
+              return AdminSsoLogin(sso_token, function(admin) {
+                AdminLoginService.setLogin(admin);
+                return defer.resolve();
+              });
+            } else {
+              return defer.resolve();
+            }
+          });
+          return defer.promise;
+        },
+        user: function($q, AdminLoginService, $timeout, $state, sso) {
           var defer;
           defer = $q.defer();
           AdminLoginService.user().then(function(user) {
@@ -1178,5 +1197,63 @@
       }
     };
   });
+
+}).call(this);
+
+
+/***
+* @ngdoc service
+* @name BB:AdminSsoLoginUrl
+*
+* @description
+* Returns the complete url for admin sso login
+ */
+
+(function() {
+  angular.module('BB').factory('AdminSsoLoginUrl', [
+    '$rootScope', 'company_id', '$exceptionHandler', function($rootScope, company_id, $exceptionHandler) {
+      if ($rootScope.bb.companyId == null) {
+        $rootScope.bb.companyId |= company_id;
+      }
+      if (!$rootScope.bb.companyId) {
+        $exceptionHandler(new Error('Angular value "company_id" is undefined! '));
+      }
+      return $rootScope.bb.api_url + "/api/v1/login/admin_sso/" + $rootScope.bb.companyId;
+    }
+  ]);
+
+
+  /***
+  * @ngdoc service
+  * @name BB:AdminSsoLogin
+  *
+  * @description
+  * Responsible for loging in the admin user via the sso token
+  *
+  * @property {string} sso_token The sso_token to be used
+  * @property {function} callback (optional) funtion to be called after the successfull login, receives UserAdmin (BaseResource) obj as input
+   */
+
+  angular.module('BB').factory('AdminSsoLogin', [
+    'halClient', 'AdminSsoLoginUrl', function(halClient, AdminSsoLoginUrl) {
+      return function(sso_token, callback) {
+        var data;
+        data = {
+          token: sso_token
+        };
+        return halClient.$post(AdminSsoLoginUrl, {}, data).then(function(login) {
+          var params;
+          params = {
+            auth_token: login.auth_token
+          };
+          return login.$get('administrator', params).then(function(admin) {
+            if (typeof callback === 'function') {
+              return callback(admin);
+            }
+          });
+        });
+      };
+    }
+  ]);
 
 }).call(this);
