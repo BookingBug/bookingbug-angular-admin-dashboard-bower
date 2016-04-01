@@ -252,145 +252,6 @@
 }).call(this);
 
 (function() {
-  angular.module('BBAdminDashboard').controller('bbAdminConfigPageController', function($scope, $sce, $state, $rootScope, $window) {
-    $scope.parent_state = $state.is("config");
-    $scope.path = "edit";
-    return $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
-      $scope.parent_state = false;
-      if (toState.name === "config") {
-        return $scope.parent_state = true;
-      }
-    });
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BBAdminDashboard').controller('bbAdminDashboardPageController', function($scope, $sce, $state, $rootScope, $window, AdminBookingPopup) {
-    $scope.parent_state = $state.is("view");
-    $scope.bb.side_menu = "dashboard_menu";
-    $scope.path = "view/dashboard/index";
-    return $window.addEventListener('message', (function(_this) {
-      return function(event) {
-        if (event && event.data) {
-          if (event.data.type && event.data.type === "booking") {
-            return AdminBookingPopup.open({
-              size: 'lg',
-              company_id: $scope.bb.company.id,
-              item_defaults: {
-                date: event.data.date,
-                time: event.data.iarray * 5,
-                person: event.data.person,
-                resource: event.data.resource
-              }
-            });
-          }
-        }
-      };
-    })(this));
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BBAdminDashboard').controller('bbAdminLoginPageController', function($scope, AdminLoginService, $state, $timeout) {
-    if (AdminLoginService.isLoggedIn()) {
-      AdminLoginService.logout();
-    }
-    return $scope.loginSuccess = function(company) {
-      $scope.company = company;
-      $scope.bb.company = company;
-      return $state.go('dashboard');
-    };
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BBAdminDashboard').controller('bbAdminMembersPageController', function($scope, $sce, $state, $rootScope, $window) {
-    $scope.parent_state = $state.is("members");
-    $scope.bb.side_menu = "member_menu";
-    $scope.path = "client";
-    $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
-      $scope.adminlte.fixed_page = toParams.fixed;
-      $scope.parent_state = false;
-      if (toState.name === "members") {
-        $scope.parent_state = true;
-        return $scope.clearCurrentClient();
-      }
-    });
-    $scope.setCurrentClient = function(client) {
-      console.log("set current", client);
-      if (client) {
-        $rootScope.client_id = client;
-        return $scope.extra_params = "id=" + client;
-      } else {
-        return $scope.clearCurrentClient();
-      }
-    };
-    $scope.clearCurrentClient = function() {
-      $rootScope.client_id = null;
-      return $scope.extra_params = "";
-    };
-    return $window.addEventListener('message', (function(_this) {
-      return function(event) {
-        if (event && event.data) {
-          if (event.data.controller === "client") {
-            if (event.data.id) {
-              $scope.setCurrentClient(event.data.id);
-            }
-            if (event.data.action === "single") {
-              return $state.go("members.page", {
-                path: 'client/single',
-                id: event.data.id
-              });
-            }
-          }
-        }
-      };
-    })(this));
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BBAdminDashboard').controller('bbAdminPublishPageController', function($scope, $sce, $state, $rootScope, $window) {
-    $scope.parent_state = $state.is("publish");
-    $scope.path = "conf";
-    return $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
-      $scope.parent_state = false;
-      if (toState.name === "setting") {
-        return $scope.parent_state = true;
-      }
-    });
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BBAdminDashboard').controller('bbAdminRootPageController', function($scope, user, company) {
-    $scope.company = company;
-    $scope.bb.company = company;
-    return moment.tz.setDefault(company.timezone);
-  });
-
-}).call(this);
-
-(function() {
-  angular.module('BBAdminDashboard').controller('bbAdminSettingsPageController', function($scope, $sce, $state, $rootScope, $window) {
-    $scope.parent_state = $state.is("setting");
-    $scope.path = "conf";
-    return $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
-      $scope.parent_state = false;
-      if (toState.name === "setting") {
-        return $scope.parent_state = true;
-      }
-    });
-  });
-
-}).call(this);
-
-(function() {
   angular.module('BBAdminDashboard').directive('bbAdminDashboard', function() {
     var controller;
     controller = function($scope, $rootScope, $element, $window, $compile, $localStorage, AdminLoginService, $state, AlertService) {
@@ -1177,6 +1038,145 @@
         return results;
       }
     };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BBAdminDashboard').controller('bbAdminConfigPageController', function($scope, $sce, $state, $rootScope, $window) {
+    $scope.parent_state = $state.is("config");
+    $scope.path = "edit";
+    return $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
+      $scope.parent_state = false;
+      if (toState.name === "config") {
+        return $scope.parent_state = true;
+      }
+    });
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BBAdminDashboard').controller('bbAdminDashboardPageController', function($scope, $sce, $state, $rootScope, $window, AdminBookingPopup) {
+    $scope.parent_state = $state.is("view");
+    $scope.bb.side_menu = "dashboard_menu";
+    $scope.path = "view/dashboard/index";
+    return $window.addEventListener('message', (function(_this) {
+      return function(event) {
+        if (event && event.data) {
+          if (event.data.type && event.data.type === "booking") {
+            return AdminBookingPopup.open({
+              size: 'lg',
+              company_id: $scope.bb.company.id,
+              item_defaults: {
+                date: event.data.date,
+                time: event.data.iarray * 5,
+                person: event.data.person,
+                resource: event.data.resource
+              }
+            });
+          }
+        }
+      };
+    })(this));
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BBAdminDashboard').controller('bbAdminLoginPageController', function($scope, AdminLoginService, $state, $timeout) {
+    if (AdminLoginService.isLoggedIn()) {
+      AdminLoginService.logout();
+    }
+    return $scope.loginSuccess = function(company) {
+      $scope.company = company;
+      $scope.bb.company = company;
+      return $state.go('dashboard');
+    };
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BBAdminDashboard').controller('bbAdminMembersPageController', function($scope, $sce, $state, $rootScope, $window) {
+    $scope.parent_state = $state.is("members");
+    $scope.bb.side_menu = "member_menu";
+    $scope.path = "client";
+    $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
+      $scope.adminlte.fixed_page = toParams.fixed;
+      $scope.parent_state = false;
+      if (toState.name === "members") {
+        $scope.parent_state = true;
+        return $scope.clearCurrentClient();
+      }
+    });
+    $scope.setCurrentClient = function(client) {
+      console.log("set current", client);
+      if (client) {
+        $rootScope.client_id = client;
+        return $scope.extra_params = "id=" + client;
+      } else {
+        return $scope.clearCurrentClient();
+      }
+    };
+    $scope.clearCurrentClient = function() {
+      $rootScope.client_id = null;
+      return $scope.extra_params = "";
+    };
+    return $window.addEventListener('message', (function(_this) {
+      return function(event) {
+        if (event && event.data) {
+          if (event.data.controller === "client") {
+            if (event.data.id) {
+              $scope.setCurrentClient(event.data.id);
+            }
+            if (event.data.action === "single") {
+              return $state.go("members.page", {
+                path: 'client/single',
+                id: event.data.id
+              });
+            }
+          }
+        }
+      };
+    })(this));
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BBAdminDashboard').controller('bbAdminPublishPageController', function($scope, $sce, $state, $rootScope, $window) {
+    $scope.parent_state = $state.is("publish");
+    $scope.path = "conf";
+    return $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
+      $scope.parent_state = false;
+      if (toState.name === "setting") {
+        return $scope.parent_state = true;
+      }
+    });
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BBAdminDashboard').controller('bbAdminRootPageController', function($scope, user, company) {
+    $scope.company = company;
+    $scope.bb.company = company;
+    return moment.tz.setDefault(company.timezone);
+  });
+
+}).call(this);
+
+(function() {
+  angular.module('BBAdminDashboard').controller('bbAdminSettingsPageController', function($scope, $sce, $state, $rootScope, $window) {
+    $scope.parent_state = $state.is("setting");
+    $scope.path = "conf";
+    return $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
+      $scope.parent_state = false;
+      if (toState.name === "setting") {
+        return $scope.parent_state = true;
+      }
+    });
   });
 
 }).call(this);
