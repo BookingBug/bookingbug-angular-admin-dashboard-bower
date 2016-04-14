@@ -966,10 +966,18 @@
         });
       };
       $scope.editBooking = function(booking) {
+        var templateUrl, title;
+        if (booking.status === 3) {
+          templateUrl = 'edit_block_modal_form.html';
+          title = 'Edit Block';
+        } else {
+          templateUrl = 'edit_block_modal_form.html';
+          title = 'Edit Booking';
+        }
         return ModalForm.edit({
-          templateUrl: 'edit_booking_modal_form.html',
+          templateUrl: templateUrl,
           model: booking,
-          title: 'Edit Booking',
+          title: title,
           success: (function(_this) {
             return function(response) {
               if (response.is_cancelled) {
