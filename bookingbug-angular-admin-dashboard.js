@@ -832,7 +832,7 @@
             agendaWeek: {
               slotDuration: $scope.options.slotDuration || "00:05",
               buttonText: 'Week',
-              groupByDateAndResource: true
+              groupByDateAndResource: false
             },
             month: {
               eventLimit: 5,
