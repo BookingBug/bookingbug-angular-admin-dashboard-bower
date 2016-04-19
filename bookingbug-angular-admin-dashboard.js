@@ -1031,8 +1031,11 @@
       $scope.datePickerOptions = {
         showButtonBar: false
       };
-      return $scope.$watch('currentDate', function(newDate, oldDate) {
+      $scope.$watch('currentDate', function(newDate, oldDate) {
         return $scope.lazyUpdateDate(newDate);
+      });
+      return $scope.$on('refetchBookings', function() {
+        return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('refetchEvents');
       });
     };
     link = function(scope, element, attrs) {
