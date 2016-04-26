@@ -921,7 +921,8 @@
           },
           viewRender: function(view, element) {
             var date;
-            return date = uiCalendarConfig.calendars.resourceCalendar.fullCalendar('getDate');
+            date = uiCalendarConfig.calendars.resourceCalendar.fullCalendar('getDate');
+            return $scope.currentDate = moment(date).format('YYYY-MM-DD');
           },
           eventResize: function(event, delta, revertFunc, jsEvent, ui, view) {
             event.duration = event.end.diff(event.start, 'minutes');
