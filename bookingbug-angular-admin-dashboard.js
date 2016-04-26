@@ -814,13 +814,19 @@
       $scope.options = $scope.$eval($attrs.bbResourceCalendar);
       $scope.options || ($scope.options = {});
       height = $scope.options.header_height ? $bbug($window).height() - $scope.options.header_height : 800;
+      if ($scope.options.minTime == null) {
+        $scope.options.minTime = "09:00";
+      }
+      if ($scope.options.maxTime == null) {
+        $scope.options.maxTime = "18:00";
+      }
       $scope.uiCalOptions = {
         calendar: {
           schedulerLicenseKey: '0598149132-fcs-1443104297',
           eventStartEditable: true,
           eventDurationEditable: false,
-          minTime: $scope.options.minTime || "09:00",
-          maxTime: $scope.options.maxTime || "18:00",
+          minTime: $scope.options.minTime,
+          maxTime: $scope.options.maxTime,
           height: height,
           header: {
             left: 'today,prev,next',
@@ -906,7 +912,21 @@
               rid = resource.id;
             }
             return $scope.getCompanyPromise().then(function(company) {
+              var setTimeToMoment;
+              setTimeToMoment = function(date, time) {
+                var newDate;
+                newDate = moment(time, 'HH:mm');
+                newDate.set({
+                  'year': parseInt(date.get('year')),
+                  'month': parseInt(date.get('month')),
+                  'date': parseInt(date.get('date')),
+                  'second': 0
+                });
+                return newDate;
+              };
               return AdminBookingPopup.open({
+                min_date: setTimeToMoment(start, $scope.options.minTime),
+                max_date: setTimeToMoment(end, $scope.options.maxTime),
                 from_datetime: start,
                 to_datetime: end,
                 item_defaults: {
@@ -921,8 +941,7 @@
           },
           viewRender: function(view, element) {
             var date;
-            date = uiCalendarConfig.calendars.resourceCalendar.fullCalendar('getDate');
-            return $scope.currentDate = moment(date).format('YYYY-MM-DD');
+            return date = uiCalendarConfig.calendars.resourceCalendar.fullCalendar('getDate');
           },
           eventResize: function(event, delta, revertFunc, jsEvent, ui, view) {
             event.duration = event.end.diff(event.start, 'minutes');
