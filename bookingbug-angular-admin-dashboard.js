@@ -832,7 +832,7 @@
             agendaWeek: {
               slotDuration: $scope.options.slotDuration || "00:05",
               buttonText: 'Week',
-              groupByDateAndResource: true
+              groupByDateAndResource: false
             },
             month: {
               eventLimit: 5,
@@ -966,10 +966,18 @@
         });
       };
       $scope.editBooking = function(booking) {
+        var templateUrl, title;
+        if (booking.status === 3) {
+          templateUrl = 'edit_block_modal_form.html';
+          title = 'Edit Block';
+        } else {
+          templateUrl = 'edit_block_modal_form.html';
+          title = 'Edit Booking';
+        }
         return ModalForm.edit({
-          templateUrl: 'edit_booking_modal_form.html',
+          templateUrl: templateUrl,
           model: booking,
-          title: 'Edit Booking',
+          title: title,
           success: (function(_this) {
             return function(response) {
               if (response.is_cancelled) {
@@ -1023,8 +1031,11 @@
       $scope.datePickerOptions = {
         showButtonBar: false
       };
-      return $scope.$watch('currentDate', function(newDate, oldDate) {
+      $scope.$watch('currentDate', function(newDate, oldDate) {
         return $scope.lazyUpdateDate(newDate);
+      });
+      return $scope.$on('refetchBookings', function() {
+        return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('refetchEvents');
       });
     };
     link = function(scope, element, attrs) {
