@@ -2,7 +2,7 @@
   'use strict';
   var adminbookingapp;
 
-  adminbookingapp = angular.module('BBAdminDashboard', ['trNgGrid', 'BBAdmin', 'BBAdminServices', 'ui.calendar', 'ngStorage', 'BBAdminBooking', 'BBAdmin.Directives', 'ui.calendar', 'ngResource', 'ui.bootstrap', 'ui.router', 'ct.ui.router.extras', 'ngTouch', 'ngInputDate', 'ngSanitize', 'toggle-switch', 'xeditable', 'ngIdle', 'ngLocalData']);
+  adminbookingapp = angular.module('BBAdminDashboard', ['trNgGrid', 'BBAdmin', 'BBAdminServices', 'ui.calendar', 'ngStorage', 'BBAdminBooking', 'BBAdmin.Directives', 'ui.calendar', 'ngResource', 'ui.bootstrap', 'ui.router', 'ct.ui.router.extras', 'ngTouch', 'ngInputDate', 'ngSanitize', 'xeditable', 'ngIdle', 'ngLocalData', 'toggle-switch', 'ui.select']);
 
   angular.module('BBAdminDashboard').config(function($logProvider, $httpProvider) {
     $logProvider.debugEnabled(true);
@@ -742,10 +742,13 @@
 }).call(this);
 
 (function() {
-  angular.module('BBAdminDashboard').directive('bbResourceCalendar', function(uiCalendarConfig, AdminCompanyService, AdminBookingService, AdminPersonService, $q, $sessionStorage, ModalForm, BBModel, AdminBookingPopup, $window, $bbug, ColorPalette, AppConfig, Dialog, $timeout, $compile, $templateCache, BookingCollections, PrePostTime, AdminScheduleService, $filter, $state) {
+  angular.module('BBAdminDashboard').directive('bbResourceCalendar', function(uiCalendarConfig, AdminCompanyService, AdminBookingService, AdminPersonService, $q, $sessionStorage, ModalForm, BBModel, AdminBookingPopup, $window, $bbug, ColorPalette, AppConfig, Dialog, $timeout, $compile, $templateCache, BookingCollections, PrePostTime, AdminScheduleService, $filter) {
     var controller, link;
-    controller = function($scope, $attrs) {
-      var height, labelAssembly;
+    controller = function($scope, $attrs, BBAssets, ProcessAssetsFilter, $state) {
+      var bookingBelongsToSelectedResource, filters, height, labelAssembly;
+      filters = {
+        requestedAssets: ProcessAssetsFilter($state.params.assets)
+      };
       $scope.eventSources = [
         {
           events: function(start, end, timezone, callback) {
@@ -758,30 +761,48 @@
                 end_date: end.format('YYYY-MM-DD')
               };
               return AdminBookingService.query(params).then(function(bookings) {
-                var b, i, len, ref;
+                var b, filteredBookings, i, len, ref;
                 $scope.loading = false;
+                filteredBookings = [];
                 ref = bookings.items;
                 for (i = 0, len = ref.length; i < len; i++) {
                   b = ref[i];
                   b.resourceId = b.person_id;
                   b.useFullTime();
                   b.title = labelAssembly(b);
+                  if ($scope.showAll) {
+                    filteredBookings.push(b);
+                  } else if (!$scope.showAll && bookingBelongsToSelectedResource(b)) {
+                    filteredBookings.push(b);
+                  }
                 }
-                $scope.bookings = bookings.items;
+                $scope.bookings = filteredBookings;
                 return callback($scope.bookings);
               });
             });
           }
         }, {
           events: function(start, end, timezone, callback) {
+            $scope.loading = true;
             return $scope.getCompanyPromise().then(function(company) {
-              return AdminScheduleService.getPeopleScheduleEvents(company, start, end).then(function(events) {
-                return callback(events);
+              return AdminScheduleService.getAssetsScheduleEvents(company, start, end, !$scope.showAll, $scope.selectedResources.selected).then(function(availabilities) {
+                $scope.loading = false;
+                return callback(availabilities);
               });
             });
           }
         }
       ];
+      bookingBelongsToSelectedResource = function(booking) {
+        var belongs;
+        belongs = false;
+        _.each($scope.selectedResources.selected, function(asset) {
+          if (parseInt(asset.id) === parseInt(booking.person_id) || parseInt(asset.id) === parseInt(booking.resourceId)) {
+            return belongs = true;
+          }
+        });
+        return belongs;
+      };
       labelAssembly = function(event) {
         var i, index, label, len, match, myRe, parts, ref, replaceWith;
         if (($scope.labelAssembler == null) || event.status === 3) {
@@ -863,7 +884,7 @@
           resourceLabelText: 'Staff',
           selectable: true,
           resources: function(callback) {
-            return $scope.getPeople(callback);
+            return $scope.getCalendarAssets(callback);
           },
           eventDrop: function(event, delta, revertFunc) {
             return Dialog.confirm({
@@ -946,35 +967,84 @@
           eventResize: function(event, delta, revertFunc, jsEvent, ui, view) {
             event.duration = event.end.diff(event.start, 'minutes');
             return $scope.updateBooking(event);
+          },
+          loading: function(isLoading, view) {
+            return $scope.calendarLoading = isLoading;
           }
         }
       };
-      $scope.getPeople = function(callback) {
+      $scope.getCompanyPromise = function() {
+        var defer;
+        defer = $q.defer();
+        if ($scope.company) {
+          defer.resolve($scope.company);
+        } else {
+          AdminCompanyService.query($attrs).then(function(company) {
+            $scope.company = company;
+            return defer.resolve($scope.company);
+          });
+        }
+        return defer.promise;
+      };
+      $scope.assets = [];
+      $scope.showAll = true;
+      $scope.selectedResources = {
+        selected: []
+      };
+      $scope.changeSelectedResources = function() {
+        if ($scope.showAll) {
+          $scope.selectedResources.selected = [];
+        }
+        uiCalendarConfig.calendars.resourceCalendar.fullCalendar('refetchResources');
+        return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('refetchEvents');
+      };
+      $scope.getCompanyPromise().then(function(company) {
+        $scope.loading = true;
+        return BBAssets(company).then(function(assets) {
+          $scope.loading = false;
+          $scope.assets = assets;
+          if (filters.requestedAssets.length > 0) {
+            $scope.showAll = false;
+            angular.forEach($scope.assets, function(asset) {
+              var isInArray;
+              isInArray = _.find(filters.requestedAssets, function(id) {
+                return parseInt(id) === asset.id;
+              });
+              if (typeof isInArray !== 'undefined') {
+                return $scope.selectedResources.selected.push(asset);
+              }
+            });
+            return $scope.changeSelectedResources();
+          }
+        });
+      });
+      $scope.$watch('selectedResources.selected', function(newValue, oldValue) {
+        var assets, params;
+        if (newValue !== oldValue) {
+          assets = [];
+          angular.forEach(newValue, function(asset) {
+            return assets.push(asset.id);
+          });
+          params = $state.params;
+          params.assets = assets.join();
+          return $state.go($state.current.name, params, {
+            notify: false,
+            reload: false
+          });
+        }
+      });
+      $scope.getCalendarAssets = function(callback) {
         $scope.loading = true;
         return $scope.getCompanyPromise().then(function(company) {
-          var params;
-          params = {
-            company: company
-          };
-          return AdminPersonService.query(params).then(function(people) {
-            var i, len, p, person, ref;
-            $scope.people = [];
+          if ($scope.showAll) {
+            return BBAssets(company).then(function(assets) {
+              $scope.loading = false;
+              return callback($scope.assets);
+            });
+          } else {
             $scope.loading = false;
-            if (($state.params.resourceId != null) && $state.params.resourceId !== '' && ((person = _.findWhere(people, {
-              id: parseInt($state.params.resourceId)
-            })) != null)) {
-              $scope.people.push(person);
-            } else {
-              $scope.people = _.sortBy(people, 'name');
-            }
-            ref = $scope.people;
-            for (i = 0, len = ref.length; i < len; i++) {
-              p = ref[i];
-              p.title = p.name;
-            }
-            uiCalendarConfig.calendars.resourceCalendar.fullCalendar('refetchEvents');
-            return callback($scope.people);
-          });
+            return callback($scope.selectedResources.selected);
+          }
         });
       };
       $scope.updateBooking = function(booking) {
@@ -1053,24 +1123,14 @@
       $scope.$watch('currentDate', function(newDate, oldDate) {
         return $scope.lazyUpdateDate(newDate);
       });
-      return $scope.$on('refetchBookings', function() {
+      $scope.$on('refetchBookings', function() {
+        return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('refetchEvents');
+      });
+      return $scope.$on('newCheckout', function() {
         return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('refetchEvents');
       });
     };
     link = function(scope, element, attrs) {
-      scope.getCompanyPromise = function() {
-        var defer;
-        defer = $q.defer();
-        if (scope.company) {
-          defer.resolve(scope.company);
-        } else {
-          AdminCompanyService.query(attrs).then(function(company) {
-            scope.company = company;
-            return defer.resolve(scope.company);
-          });
-        }
-        return defer.promise;
-      };
       scope.getCompanyPromise().then(function(company) {
         return company.$get('services').then(function(collection) {
           return collection.$get('services').then(function(services) {
@@ -1093,7 +1153,7 @@
       });
       return $timeout(function() {
         var datePickerElement, toolbarElement, toolbarLeftElement, uiCalElement;
-        uiCalElement = angular.element(element.children()[1]);
+        uiCalElement = angular.element(element.children()[2]);
         toolbarElement = angular.element(uiCalElement.children()[0]);
         toolbarLeftElement = angular.element(toolbarElement.children()[0]);
         scope.currentDate = moment().format();
@@ -1108,6 +1168,47 @@
       scope: {
         labelAssembler: '@'
       }
+    };
+  });
+
+}).call(this);
+
+
+/*
+* @ngdoc filter
+* @name BB.Filters.filter:propsFilter
+* @description
+* Does an OR operation
+ */
+
+(function() {
+  angular.module('BB.Filters').filter('propsFilter', function() {
+    return function(items, props) {
+      var keys, out;
+      out = [];
+      if (angular.isArray(items)) {
+        keys = Object.keys(props);
+        items.forEach(function(item) {
+          var i, itemMatches, prop, text;
+          itemMatches = false;
+          i = 0;
+          while (i < keys.length) {
+            prop = keys[i];
+            text = props[prop].toLowerCase();
+            if (item[prop].toString().toLowerCase().indexOf(text) !== -1) {
+              itemMatches = true;
+              break;
+            }
+            i++;
+          }
+          if (itemMatches) {
+            out.push(item);
+          }
+        });
+      } else {
+        out = items;
+      }
+      return out;
     };
   });
 

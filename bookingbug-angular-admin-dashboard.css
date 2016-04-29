@@ -198,6 +198,12 @@
   position: relative;
   top: 5px; }
 
+.calendar-filters .form-group {
+  margin-bottom: 5px; }
+
+.calendar-filters .ui-select-multiple.ui-select-bootstrap {
+  padding: 2px 3px 0 3px; }
+
 .resource-calendar .fc-toolbar p.datepicker {
   padding-top: 0; }
   .resource-calendar .fc-toolbar p.datepicker input.form-control {
