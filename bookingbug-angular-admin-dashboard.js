@@ -926,25 +926,28 @@
             }
           },
           select: function(start, end, jsEvent, view, resource) {
-            var rid;
+            var rid, setTimeToMoment;
+            setTimeToMoment = function(date, time) {
+              var newDate;
+              newDate = moment(time, 'HH:mm');
+              newDate.set({
+                'year': parseInt(date.get('year')),
+                'month': parseInt(date.get('month')),
+                'date': parseInt(date.get('date')),
+                'second': 0
+              });
+              return newDate;
+            };
+            if (Math.abs(start.diff(end, 'days')) > 0) {
+              end.subtract(1, 'days');
+              end = setTimeToMoment(end, $scope.options.maxTime);
+            }
             view.calendar.unselect();
             rid = null;
             if (resource) {
               rid = resource.id;
             }
             return $scope.getCompanyPromise().then(function(company) {
-              var setTimeToMoment;
-              setTimeToMoment = function(date, time) {
-                var newDate;
-                newDate = moment(time, 'HH:mm');
-                newDate.set({
-                  'year': parseInt(date.get('year')),
-                  'month': parseInt(date.get('month')),
-                  'date': parseInt(date.get('date')),
-                  'second': 0
-                });
-                return newDate;
-              };
               return AdminBookingPopup.open({
                 min_date: setTimeToMoment(start, $scope.options.minTime),
                 max_date: setTimeToMoment(end, $scope.options.maxTime),
