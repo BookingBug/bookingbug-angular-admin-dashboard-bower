@@ -805,15 +805,11 @@
       };
       labelAssembly = function(event) {
         var i, index, label, len, match, myRe, parts, ref, replaceWith;
-        if ((($scope.labelAssembler == null) && event.status !== 3) || (($scope.blockLabelAssembler == null) && event.status === 3)) {
+        if (($scope.labelAssembler == null) || event.status === 3) {
           return event.title;
         }
         myRe = new RegExp("\\{([a-zA-z_-]+)\\|?([a-zA-z_-]+)?:?([a-zA-z0-9{}_-]+)?\\}", "g");
-        if (event.status === 3) {
-          label = $scope.blockLabelAssembler;
-        } else {
-          label = $scope.labelAssembler;
-        }
+        label = $scope.labelAssembler;
         ref = $scope.labelAssembler.match(myRe);
         for (index = i = 0, len = ref.length; i < len; index = ++i) {
           match = ref[index];
@@ -1173,8 +1169,7 @@
       link: link,
       templateUrl: 'resource_calendar_main.html',
       scope: {
-        labelAssembler: '@',
-        blockLabelAssembler: '@'
+        labelAssembler: '@'
       }
     };
   });
