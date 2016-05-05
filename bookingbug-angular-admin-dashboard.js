@@ -744,7 +744,7 @@
 (function() {
   angular.module('BBAdminDashboard').directive('bbResourceCalendar', function(uiCalendarConfig, AdminCompanyService, AdminBookingService, AdminPersonService, $q, $sessionStorage, ModalForm, BBModel, AdminBookingPopup, $window, $bbug, ColorPalette, AppConfig, Dialog, $timeout, $compile, $templateCache, BookingCollections, PrePostTime, AdminScheduleService, $filter) {
     var controller, link;
-    controller = function($scope, $attrs, BBAssets, ProcessAssetsFilter, $state) {
+    controller = function($scope, $attrs, BBAssets, ProcessAssetsFilter, $state, GeneralOptions) {
       var bookingBelongsToSelectedResource, filters, height, labelAssembly;
       filters = {
         requestedAssets: ProcessAssetsFilter($state.params.assets)
@@ -805,11 +805,15 @@
       };
       labelAssembly = function(event) {
         var i, index, label, len, match, myRe, parts, ref, replaceWith;
-        if (($scope.labelAssembler == null) || event.status === 3) {
+        if ((($scope.labelAssembler == null) && event.status !== 3) || (($scope.blockLabelAssembler == null) && event.status === 3)) {
           return event.title;
         }
         myRe = new RegExp("\\{([a-zA-z_-]+)\\|?([a-zA-z_-]+)?:?([a-zA-z0-9{}_-]+)?\\}", "g");
-        label = $scope.labelAssembler;
+        if (event.status === 3) {
+          label = $scope.blockLabelAssembler;
+        } else {
+          label = $scope.labelAssembler;
+        }
         ref = $scope.labelAssembler.match(myRe);
         for (index = i = 0, len = ref.length; i < len; index = ++i) {
           match = ref[index];
@@ -835,19 +839,22 @@
       $scope.options = $scope.$eval($attrs.bbResourceCalendar);
       $scope.options || ($scope.options = {});
       height = $scope.options.header_height ? $bbug($window).height() - $scope.options.header_height : 800;
-      if ($scope.options.minTime == null) {
-        $scope.options.minTime = "09:00";
+      if ($scope.options.min_time == null) {
+        $scope.options.min_time = GeneralOptions.calendar_min_time;
       }
-      if ($scope.options.maxTime == null) {
-        $scope.options.maxTime = "18:00";
+      if ($scope.options.max_time == null) {
+        $scope.options.max_time = GeneralOptions.calendar_max_time;
+      }
+      if ($scope.options.cal_slot_duration == null) {
+        $scope.options.cal_slot_duration = GeneralOptions.calendar_slot_duration;
       }
       $scope.uiCalOptions = {
         calendar: {
           schedulerLicenseKey: '0598149132-fcs-1443104297',
           eventStartEditable: true,
           eventDurationEditable: false,
-          minTime: $scope.options.minTime,
-          maxTime: $scope.options.maxTime,
+          minTime: $scope.options.min_time,
+          maxTime: $scope.options.max_time,
           height: height,
           header: {
             left: 'today,prev,next',
@@ -857,7 +864,7 @@
           defaultView: 'timelineDay',
           views: {
             agendaWeek: {
-              slotDuration: $scope.options.slotDuration || "00:05",
+              slotDuration: $filter('minutesToString')($scope.options.cal_slot_duration),
               buttonText: 'Week',
               groupByDateAndResource: false
             },
@@ -866,18 +873,10 @@
               buttonText: 'Month'
             },
             timelineDay: {
-              slotDuration: $scope.options.slotDuration || "00:05",
+              slotDuration: $filter('minutesToString')($scope.options.cal_slot_duration),
               eventOverlap: false,
               slotWidth: 25,
-              buttonText: 'Day (5m)',
-              resourceAreaWidth: '18%'
-            },
-            timelineDayThirty: {
-              type: 'timeline',
-              slotDuration: "00:30",
-              eventOverlap: false,
-              slotWidth: 25,
-              buttonText: 'Day (30m)',
+              buttonText: 'Day (' + $scope.options.cal_slot_duration + 'm)',
               resourceAreaWidth: '18%'
             }
           },
@@ -940,7 +939,7 @@
             };
             if (Math.abs(start.diff(end, 'days')) > 0) {
               end.subtract(1, 'days');
-              end = setTimeToMoment(end, $scope.options.maxTime);
+              end = setTimeToMoment(end, $scope.options.max_time);
             }
             view.calendar.unselect();
             rid = null;
@@ -949,8 +948,8 @@
             }
             return $scope.getCompanyPromise().then(function(company) {
               return AdminBookingPopup.open({
-                min_date: setTimeToMoment(start, $scope.options.minTime),
-                max_date: setTimeToMoment(end, $scope.options.maxTime),
+                min_date: setTimeToMoment(start, $scope.options.min_time),
+                max_date: setTimeToMoment(end, $scope.options.max_time),
                 from_datetime: start,
                 to_datetime: end,
                 item_defaults: {
@@ -1169,8 +1168,29 @@
       link: link,
       templateUrl: 'resource_calendar_main.html',
       scope: {
-        labelAssembler: '@'
+        labelAssembler: '@',
+        blockLabelAssembler: '@'
       }
+    };
+  });
+
+}).call(this);
+
+
+/*
+* @ngdoc filter
+* @name BB.Filters.filter:minutesToString
+* @description
+* Converts a number to the desired format (default is hour minute(HH:mm))
+ */
+
+(function() {
+  angular.module('BB.Filters').filter('minutesToString', function() {
+    return function(minutes, format) {
+      if (format == null) {
+        format = 'HH:mm';
+      }
+      return moment(moment.duration(minutes, 'minutes')._data).format(format);
     };
   });
 
