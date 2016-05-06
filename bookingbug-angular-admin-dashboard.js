@@ -1063,7 +1063,7 @@
           templateUrl = 'edit_block_modal_form.html';
           title = 'Edit Block';
         } else {
-          templateUrl = 'edit_block_modal_form.html';
+          templateUrl = 'edit_booking_modal_form.html';
           title = 'Edit Booking';
         }
         return ModalForm.edit({
