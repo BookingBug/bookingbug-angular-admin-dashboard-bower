@@ -266,7 +266,10 @@
     }).state('checkin', {
       parent: 'root',
       url: "/checkin",
-      templateUrl: "checkin_page.html"
+      templateUrl: "checkin_page.html",
+      controller: function($scope, $stateParams) {
+        return $scope.adminlte.heading = 'Check-in';
+      }
     });
   });
 
