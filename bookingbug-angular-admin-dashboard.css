@@ -52,6 +52,10 @@
   color: #0cc0e1;
   background-color: white; }
 
+.skin-bb.sidebar-mini.sidebar-collapse .sidebar-menu > li:hover > a > span:not(.pull-right),
+.skin-bb.sidebar-mini.sidebar-collapse .sidebar-menu > li:hover > .treeview-menu {
+  z-index: 100; }
+
 .skin-bb .sidebar a.sidebar-toggle {
   font-size: 2em;
   padding: 10px;
@@ -63,10 +67,10 @@
 .skin-bb .sidebar a.sidebar-toggle #close {
   display: block; }
 
-.skin-bb .sidebar-collapse .sidebar a.sidebar-toggle #close {
+.skin-bb.sidebar-collapse .sidebar a.sidebar-toggle #close {
   display: none; }
 
-.skin-bb .sidebar-collapse .sidebar a.sidebar-toggle #open {
+.skin-bb.sidebar-collapse .sidebar a.sidebar-toggle #open {
   display: block; }
 
 .skin-bb .sidebar a.sidebar-toggle {
