@@ -418,61 +418,6 @@
 }).call(this);
 
 (function() {
-  angular.module('BBAdminDashboard.calendar.services').factory("PrePostTime", [
-    '$compile', function($compile) {
-      return {
-        apply: function(event, elements, view, scope) {
-          var contentDiv, e, element, i, len, post, postHeight, postWidth, pre, preHeight, preWidth, results, totalDuration;
-          results = [];
-          for (i = 0, len = elements.length; i < len; i++) {
-            e = elements[i];
-            element = angular.element(e);
-            totalDuration = event.duration + event.pre_time + event.post_time;
-            if (event.pre_time) {
-              switch (view.name) {
-                case "agendaWeek":
-                case "agendaDay":
-                  preHeight = event.pre_time * (element.height() + 2) / totalDuration;
-                  pre = $compile("<div class='pre' style='height:" + preHeight + "px'></div>")(scope);
-                  element.prepend(pre);
-                  break;
-                case "timelineDay":
-                  contentDiv = element.children()[0];
-                  preWidth = event.pre_time * (element.width() + 2) / totalDuration;
-                  pre = $compile("<div class='pre' style='width:" + preWidth + "px'></div>")(scope);
-                  element.prepend(pre);
-                  angular.element(contentDiv).css("padding-left", preWidth + "px");
-              }
-            }
-            if (event.post_time) {
-              switch (view.name) {
-                case "agendaWeek":
-                case "agendaDay":
-                  postHeight = event.post_time * (element.height() + 2) / totalDuration;
-                  post = $compile("<div class='post' style='height:" + postHeight + "px'></div>")(scope);
-                  results.push(element.append(post));
-                  break;
-                case "timelineDay":
-                  postWidth = event.post_time * (element.width() + 2) / totalDuration;
-                  post = $compile("<div class='post' style='width:" + postWidth + "px'></div>")(scope);
-                  results.push(element.append(post));
-                  break;
-                default:
-                  results.push(void 0);
-              }
-            } else {
-              results.push(void 0);
-            }
-          }
-          return results;
-        }
-      };
-    }
-  ]);
-
-}).call(this);
-
-(function() {
   'use strict';
 
   /*
@@ -927,107 +872,57 @@
 }).call(this);
 
 (function() {
-  angular.module('BBAdminDashboard.check-in.directives').directive('bbCheckinTable', function() {
-    return {
-      restrict: 'AE',
-      replace: false,
-      scope: true,
-      templateUrl: 'checkin_table.html',
-      controller: 'CheckinsController',
-      link: function(scope, element, attrs) {}
-    };
-  });
-
-  angular.module('BBAdminDashboard.check-in.directives').controller('CheckinsController', function($scope, $rootScope, BusyService, $q, $filter, AdminTimeService, AdminBookingService, AdminSlotService, $timeout, AlertService) {
-    $scope.getAppointments = function(currentPage, filterBy, filterByFields, orderBy, orderByReverse) {
-      var defer, mobile, params;
-      if (filterByFields && (filterByFields.name != null)) {
-        filterByFields.name = filterByFields.name.replace(/\s/g, '');
-      }
-      if (filterByFields && (filterByFields.mobile != null)) {
-        mobile = filterByFields.mobile;
-        if (mobile.indexOf('0') === 0) {
-          filterByFields.mobile = mobile.substring(1);
-        }
-      }
-      defer = $q.defer();
-      params = {
-        company: $scope.company,
-        date: moment().format('YYYY-MM-DD'),
-        url: $scope.bb.api_url
-      };
-      if (filterBy) {
-        params.filter_by = filterBy;
-      }
-      if (filterByFields) {
-        params.filter_by_fields = filterByFields;
-      }
-      if (orderBy) {
-        params.order_by = orderBy;
-      }
-      if (orderByReverse) {
-        params.order_by_reverse = orderByReverse;
-      }
-      AdminBookingService.query(params).then((function(_this) {
-        return function(res) {
-          var i, item, len, ref;
-          $scope.booking_collection = res;
-          $scope.bookings = [];
-          $scope.bmap = {};
-          ref = res.items;
-          for (i = 0, len = ref.length; i < len; i++) {
-            item = ref[i];
-            if (item.status !== 3) {
-              $scope.bookings.push(item.id);
-              $scope.bmap[item.id] = item;
-            }
-          }
-          $scope.booking_collection.addCallback($scope, function(booking, status) {
-            var j, len1, ref1, results;
-            $scope.bookings = [];
-            $scope.bmap = {};
-            ref1 = $scope.booking_collection.items;
-            results = [];
-            for (j = 0, len1 = ref1.length; j < len1; j++) {
-              item = ref1[j];
-              if (item.status !== 3) {
-                $scope.bookings.push(item.id);
-                results.push($scope.bmap[item.id] = item);
-              } else {
-                results.push(void 0);
+  angular.module('BBAdminDashboard.calendar.services').factory("PrePostTime", [
+    '$compile', function($compile) {
+      return {
+        apply: function(event, elements, view, scope) {
+          var contentDiv, e, element, i, len, post, postHeight, postWidth, pre, preHeight, preWidth, results, totalDuration;
+          results = [];
+          for (i = 0, len = elements.length; i < len; i++) {
+            e = elements[i];
+            element = angular.element(e);
+            totalDuration = event.duration + event.pre_time + event.post_time;
+            if (event.pre_time) {
+              switch (view.name) {
+                case "agendaWeek":
+                case "agendaDay":
+                  preHeight = event.pre_time * (element.height() + 2) / totalDuration;
+                  pre = $compile("<div class='pre' style='height:" + preHeight + "px'></div>")(scope);
+                  element.prepend(pre);
+                  break;
+                case "timelineDay":
+                  contentDiv = element.children()[0];
+                  preWidth = event.pre_time * (element.width() + 2) / totalDuration;
+                  pre = $compile("<div class='pre' style='width:" + preWidth + "px'></div>")(scope);
+                  element.prepend(pre);
+                  angular.element(contentDiv).css("padding-left", preWidth + "px");
               }
             }
-            return results;
-          });
-          return defer.resolve($scope.bookings);
-        };
-      })(this), function(err) {
-        return defer.reject(err);
-      });
-      return defer.promise;
-    };
-    $scope.setStatus = (function(_this) {
-      return function(booking, status) {
-        booking.current_multi_status = status;
-        return booking.$update(booking).then(function(res) {
-          return $scope.booking_collection.checkItem(res);
-        }, function(err) {
-          return AlertService.danger({
-            msg: 'Something went wrong'
-          });
-        });
+            if (event.post_time) {
+              switch (view.name) {
+                case "agendaWeek":
+                case "agendaDay":
+                  postHeight = event.post_time * (element.height() + 2) / totalDuration;
+                  post = $compile("<div class='post' style='height:" + postHeight + "px'></div>")(scope);
+                  results.push(element.append(post));
+                  break;
+                case "timelineDay":
+                  postWidth = event.post_time * (element.width() + 2) / totalDuration;
+                  post = $compile("<div class='post' style='width:" + postWidth + "px'></div>")(scope);
+                  results.push(element.append(post));
+                  break;
+                default:
+                  results.push(void 0);
+              }
+            } else {
+              results.push(void 0);
+            }
+          }
+          return results;
+        }
       };
-    })(this);
-    this.checker = (function(_this) {
-      return function() {
-        return $timeout(function() {
-          return _this.checker();
-        }, 1000);
-      };
-    })(this);
-    $scope.getAppointments();
-    return this.checker();
-  });
+    }
+  ]);
 
 }).call(this);
 
@@ -1134,6 +1029,111 @@
       };
     }
   ]);
+
+}).call(this);
+
+(function() {
+  angular.module('BBAdminDashboard.check-in.directives').directive('bbCheckinTable', function() {
+    return {
+      restrict: 'AE',
+      replace: false,
+      scope: true,
+      templateUrl: 'checkin_table.html',
+      controller: 'CheckinsController',
+      link: function(scope, element, attrs) {}
+    };
+  });
+
+  angular.module('BBAdminDashboard.check-in.directives').controller('CheckinsController', function($scope, $rootScope, BusyService, $q, $filter, AdminTimeService, AdminBookingService, AdminSlotService, $timeout, AlertService) {
+    $scope.getAppointments = function(currentPage, filterBy, filterByFields, orderBy, orderByReverse) {
+      var defer, mobile, params;
+      if (filterByFields && (filterByFields.name != null)) {
+        filterByFields.name = filterByFields.name.replace(/\s/g, '');
+      }
+      if (filterByFields && (filterByFields.mobile != null)) {
+        mobile = filterByFields.mobile;
+        if (mobile.indexOf('0') === 0) {
+          filterByFields.mobile = mobile.substring(1);
+        }
+      }
+      defer = $q.defer();
+      params = {
+        company: $scope.company,
+        date: moment().format('YYYY-MM-DD'),
+        url: $scope.bb.api_url
+      };
+      if (filterBy) {
+        params.filter_by = filterBy;
+      }
+      if (filterByFields) {
+        params.filter_by_fields = filterByFields;
+      }
+      if (orderBy) {
+        params.order_by = orderBy;
+      }
+      if (orderByReverse) {
+        params.order_by_reverse = orderByReverse;
+      }
+      AdminBookingService.query(params).then((function(_this) {
+        return function(res) {
+          var i, item, len, ref;
+          $scope.booking_collection = res;
+          $scope.bookings = [];
+          $scope.bmap = {};
+          ref = res.items;
+          for (i = 0, len = ref.length; i < len; i++) {
+            item = ref[i];
+            if (item.status !== 3) {
+              $scope.bookings.push(item.id);
+              $scope.bmap[item.id] = item;
+            }
+          }
+          $scope.booking_collection.addCallback($scope, function(booking, status) {
+            var j, len1, ref1, results;
+            $scope.bookings = [];
+            $scope.bmap = {};
+            ref1 = $scope.booking_collection.items;
+            results = [];
+            for (j = 0, len1 = ref1.length; j < len1; j++) {
+              item = ref1[j];
+              if (item.status !== 3) {
+                $scope.bookings.push(item.id);
+                results.push($scope.bmap[item.id] = item);
+              } else {
+                results.push(void 0);
+              }
+            }
+            return results;
+          });
+          return defer.resolve($scope.bookings);
+        };
+      })(this), function(err) {
+        return defer.reject(err);
+      });
+      return defer.promise;
+    };
+    $scope.setStatus = (function(_this) {
+      return function(booking, status) {
+        booking.current_multi_status = status;
+        return booking.$update(booking).then(function(res) {
+          return $scope.booking_collection.checkItem(res);
+        }, function(err) {
+          return AlertService.danger({
+            msg: 'Something went wrong'
+          });
+        });
+      };
+    })(this);
+    this.checker = (function(_this) {
+      return function() {
+        return $timeout(function() {
+          return _this.checker();
+        }, 1000);
+      };
+    })(this);
+    $scope.getAppointments();
+    return this.checker();
+  });
 
 }).call(this);
 
@@ -1714,29 +1714,6 @@
 
   /*
   * @ngdoc controller
-  * @name BBAdminDashboard.logout.controllers.controller:LogoutPageCtrl
-   *
-  * @description
-  * Controller for the logout page
-   */
-  angular.module('BBAdminDashboard.logout.controllers').controller('LogoutPageCtrl', [
-    '$scope', '$state', 'AdminLoginService', '$timeout', function($scope, $state, AdminLoginService, $timeout) {
-      AdminLoginService.logout();
-      return $timeout(function() {
-        return $state.go('login', {}, {
-          reload: true
-        });
-      });
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
   * @name BBAdminDashboard.login.controllers.controller:LoginPageCtrl
    *
   * @description
@@ -1752,6 +1729,29 @@
         $scope.bb.company = company;
         return $state.go('calendar');
       };
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.logout.controllers.controller:LogoutPageCtrl
+   *
+  * @description
+  * Controller for the logout page
+   */
+  angular.module('BBAdminDashboard.logout.controllers').controller('LogoutPageCtrl', [
+    '$scope', '$state', 'AdminLoginService', '$timeout', function($scope, $state, AdminLoginService, $timeout) {
+      AdminLoginService.logout();
+      return $timeout(function() {
+        return $state.go('login', {}, {
+          reload: true
+        });
+      });
     }
   ]);
 
