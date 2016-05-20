@@ -1,5 +1,30 @@
 (function() {
   'use strict';
+  angular.module('BBAdminDashboard.config-iframe.controllers', []);
+
+  angular.module('BBAdminDashboard.config-iframe.services', []);
+
+  angular.module('BBAdminDashboard.config-iframe.directives', []);
+
+  angular.module('BBAdminDashboard.config-iframe', ['BBAdminDashboard.config-iframe.controllers', 'BBAdminDashboard.config-iframe.services', 'BBAdminDashboard.config-iframe.directives']).config([
+    '$stateProvider', '$urlRouterProvider', function($stateProvider, $urlRouterProvider) {
+      return $stateProvider.state('config', {
+        parent: "root",
+        url: "/config",
+        templateUrl: "admin_config_page.html",
+        controller: "ConfigIframePageCtrl"
+      }).state('config.page', {
+        url: "/page/:path",
+        templateUrl: "iframe_page.html",
+        controller: 'ConfigSubIframePageCtrl'
+      });
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
   angular.module('BBAdminDashboard.clients.controllers', []);
 
   angular.module('BBAdminDashboard.clients.services', []);
@@ -56,31 +81,6 @@
         url: "/calendar/:assets",
         templateUrl: "calendar_page.html",
         controller: 'CalendarPageCtrl'
-      });
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BBAdminDashboard.config-iframe.controllers', []);
-
-  angular.module('BBAdminDashboard.config-iframe.services', []);
-
-  angular.module('BBAdminDashboard.config-iframe.directives', []);
-
-  angular.module('BBAdminDashboard.config-iframe', ['BBAdminDashboard.config-iframe.controllers', 'BBAdminDashboard.config-iframe.services', 'BBAdminDashboard.config-iframe.directives']).config([
-    '$stateProvider', '$urlRouterProvider', function($stateProvider, $urlRouterProvider) {
-      return $stateProvider.state('config', {
-        parent: "root",
-        url: "/config",
-        templateUrl: "admin_config_page.html",
-        controller: "ConfigIframePageCtrl"
-      }).state('config.page', {
-        url: "/page/:path",
-        templateUrl: "iframe_page.html",
-        controller: 'ConfigSubIframePageCtrl'
       });
     }
   ]);
@@ -186,53 +186,6 @@
 
 (function() {
   'use strict';
-  angular.module('BBAdminDashboard.dashboard-iframe.controllers', []);
-
-  angular.module('BBAdminDashboard.dashboard-iframe.services', []);
-
-  angular.module('BBAdminDashboard.dashboard-iframe.directives', []);
-
-  angular.module('BBAdminDashboard.dashboard-iframe', ['BBAdminDashboard.dashboard-iframe.controllers', 'BBAdminDashboard.dashboard-iframe.services', 'BBAdminDashboard.dashboard-iframe.directives']).config([
-    '$stateProvider', '$urlRouterProvider', function($stateProvider, $urlRouterProvider) {
-      return $stateProvider.state('dashboard', {
-        parent: "root",
-        url: "/dashboard",
-        controller: "DashboardIframePageCtrl",
-        templateUrl: "admin_dashboard_page.html"
-      }).state('dashboard.page', {
-        parent: "dashboard",
-        url: "/page/:path",
-        controller: 'DashboardSubIframePageCtrl',
-        templateUrl: "iframe_page.html"
-      });
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BBAdminDashboard.check-in.controllers', []);
-
-  angular.module('BBAdminDashboard.check-in.services', []);
-
-  angular.module('BBAdminDashboard.check-in.directives', []);
-
-  angular.module('BBAdminDashboard.check-in', ['BBAdminDashboard.check-in.controllers', 'BBAdminDashboard.check-in.services', 'BBAdminDashboard.check-in.directives']).config([
-    '$stateProvider', '$urlRouterProvider', function($stateProvider, $urlRouterProvider) {
-      return $stateProvider.state('checkin', {
-        parent: 'root',
-        url: "/check-in",
-        templateUrl: "checkin_page.html",
-        controller: 'CheckInPageCtrl'
-      });
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
   angular.module('BBAdminDashboard.departments.controllers', []);
 
   angular.module('BBAdminDashboard.departments.services', []);
@@ -294,6 +247,52 @@
 
 (function() {
   'use strict';
+  angular.module('BBAdminDashboard.dashboard-iframe.controllers', []);
+
+  angular.module('BBAdminDashboard.dashboard-iframe.services', []);
+
+  angular.module('BBAdminDashboard.dashboard-iframe.directives', []);
+
+  angular.module('BBAdminDashboard.dashboard-iframe', ['BBAdminDashboard.dashboard-iframe.controllers', 'BBAdminDashboard.dashboard-iframe.services', 'BBAdminDashboard.dashboard-iframe.directives']).config([
+    '$stateProvider', '$urlRouterProvider', function($stateProvider, $urlRouterProvider) {
+      return $stateProvider.state('dashboard', {
+        parent: "root",
+        url: "/dashboard",
+        controller: "DashboardIframePageCtrl",
+        templateUrl: "admin_dashboard_page.html"
+      }).state('dashboard.page', {
+        parent: "dashboard",
+        url: "/page/:path",
+        controller: 'DashboardSubIframePageCtrl',
+        templateUrl: "iframe_page.html"
+      });
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BBAdminDashboard.login.controllers', []);
+
+  angular.module('BBAdminDashboard.login.services', []);
+
+  angular.module('BBAdminDashboard.login.directives', []);
+
+  angular.module('BBAdminDashboard.login', ['BBAdminDashboard.login.controllers', 'BBAdminDashboard.login.services', 'BBAdminDashboard.login.directives']).config([
+    '$stateProvider', '$urlRouterProvider', function($stateProvider, $urlRouterProvider) {
+      return $stateProvider.state('login', {
+        url: "/login",
+        controller: "LoginPageCtrl",
+        templateUrl: "admin_login_page.html"
+      });
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
   angular.module('BBAdminDashboard.logout.controllers', []);
 
   angular.module('BBAdminDashboard.logout.services', []);
@@ -305,6 +304,32 @@
       return $stateProvider.state('logout', {
         url: '/logout',
         controller: 'LogoutPageCtrl'
+      });
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BBAdminDashboard.publish-iframe.controllers', []);
+
+  angular.module('BBAdminDashboard.publish-iframe.services', []);
+
+  angular.module('BBAdminDashboard.publish-iframe.directives', []);
+
+  angular.module('BBAdminDashboard.publish-iframe', ['BBAdminDashboard.publish-iframe.controllers', 'BBAdminDashboard.publish-iframe.services', 'BBAdminDashboard.publish-iframe.directives']).config([
+    '$stateProvider', '$urlRouterProvider', function($stateProvider, $urlRouterProvider) {
+      return $stateProvider.state('publish', {
+        parent: 'root',
+        url: '/publish',
+        templateUrl: 'admin_publish_page.html',
+        controller: 'PublishIframePageCtrl'
+      }).state('publish.page', {
+        parent: 'publish',
+        url: '/page/:path',
+        templateUrl: 'iframe_page.html',
+        controller: 'PublishSubIframePageCtrl'
       });
     }
   ]);
@@ -331,26 +356,6 @@
         url: '/page/:path/:id',
         templateUrl: 'iframe_page.html',
         controller: 'MembersSubIframePageCtrl'
-      });
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BBAdminDashboard.login.controllers', []);
-
-  angular.module('BBAdminDashboard.login.services', []);
-
-  angular.module('BBAdminDashboard.login.directives', []);
-
-  angular.module('BBAdminDashboard.login', ['BBAdminDashboard.login.controllers', 'BBAdminDashboard.login.services', 'BBAdminDashboard.login.directives']).config([
-    '$stateProvider', '$urlRouterProvider', function($stateProvider, $urlRouterProvider) {
-      return $stateProvider.state('login', {
-        url: "/login",
-        controller: "LoginPageCtrl",
-        templateUrl: "admin_login_page.html"
       });
     }
   ]);
@@ -393,25 +398,63 @@
 
 (function() {
   'use strict';
-  angular.module('BBAdminDashboard.publish-iframe.controllers', []);
+  angular.module('BBAdminDashboard.check-in.controllers', []);
 
-  angular.module('BBAdminDashboard.publish-iframe.services', []);
+  angular.module('BBAdminDashboard.check-in.services', []);
 
-  angular.module('BBAdminDashboard.publish-iframe.directives', []);
+  angular.module('BBAdminDashboard.check-in.directives', []);
 
-  angular.module('BBAdminDashboard.publish-iframe', ['BBAdminDashboard.publish-iframe.controllers', 'BBAdminDashboard.publish-iframe.services', 'BBAdminDashboard.publish-iframe.directives']).config([
+  angular.module('BBAdminDashboard.check-in', ['BBAdminDashboard.check-in.controllers', 'BBAdminDashboard.check-in.services', 'BBAdminDashboard.check-in.directives']).config([
     '$stateProvider', '$urlRouterProvider', function($stateProvider, $urlRouterProvider) {
-      return $stateProvider.state('publish', {
+      return $stateProvider.state('checkin', {
         parent: 'root',
-        url: '/publish',
-        templateUrl: 'admin_publish_page.html',
-        controller: 'PublishIframePageCtrl'
-      }).state('publish.page', {
-        parent: 'publish',
-        url: '/page/:path',
-        templateUrl: 'iframe_page.html',
-        controller: 'PublishSubIframePageCtrl'
+        url: "/check-in",
+        templateUrl: "checkin_page.html",
+        controller: 'CheckInPageCtrl'
       });
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.config-iframe.controllers.controller:ConfigIframePageCtrl
+   *
+  * @description
+  * Controller for the config page
+   */
+  angular.module('BBAdminDashboard.config-iframe.controllers').controller('ConfigIframePageCtrl', [
+    '$scope', '$state', '$rootScope', function($scope, $state, $rootScope) {
+      $scope.parent_state = $state.is("config");
+      $scope.path = "edit";
+      return $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
+        $scope.parent_state = false;
+        if (toState.name === "config") {
+          return $scope.parent_state = true;
+        }
+      });
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.config-iframe.controllers.controller:ConfigSubIframePageCtrl
+   *
+  * @description
+  * Controller for the config sub page
+   */
+  angular.module('BBAdminDashboard.config-iframe.controllers').controller('ConfigSubIframePageCtrl', [
+    '$scope', '$state', '$stateParams', function($scope, $state, $stateParams) {
+      return $scope.path = $stateParams.path;
     }
   ]);
 
@@ -569,36 +612,38 @@
             $scope.loading = true;
             return $scope.getCompanyPromise().then(function(company) {
               return AdminScheduleService.getAssetsScheduleEvents(company, start, end, !$scope.showAll, $scope.selectedResources.selected).then(function(availabilities) {
-                var overAllAvailability;
+                var overAllAvailabilities;
                 if (uiCalendarConfig.calendars.resourceCalendar.fullCalendar('getView').type === 'timelineDay') {
                   $scope.loading = false;
                   return callback(availabilities);
                 } else {
-                  overAllAvailability = {
-                    end: null,
-                    start: null,
-                    rendering: "background",
-                    title: "Joined availability"
-                  };
+                  overAllAvailabilities = [];
                   angular.forEach(availabilities, function(availability, index) {
-                    if (overAllAvailability.start === null && overAllAvailability.end === null) {
-                      overAllAvailability.start = moment(availability.start);
-                      overAllAvailability.end = moment(availability.end);
-                      return;
-                    }
-                    if (moment(availability.start).unix() < overAllAvailability.start.unix()) {
-                      overAllAvailability.start = moment(availability.start);
-                    }
-                    if (moment(availability.end).unix() > overAllAvailability.end.unix()) {
-                      return overAllAvailability.end = moment(availability.end);
+                    var dayAvailability;
+                    dayAvailability = _.filter(overAllAvailabilities, function(overAllAvailability) {
+                      if (overAllAvailability.start.dayOfYear() === moment(availability.start).dayOfYear()) {
+                        return true;
+                      }
+                      return false;
+                    });
+                    if (dayAvailability.length > 0) {
+                      if (moment(availability.start).unix() < dayAvailability[0].start.unix()) {
+                        dayAvailability[0].start = moment(availability.start);
+                      }
+                      if (moment(availability.end).unix() > dayAvailability[0].end.unix()) {
+                        return dayAvailability[0].end = moment(availability.end);
+                      }
+                    } else {
+                      return overAllAvailabilities.push({
+                        start: moment(availability.start),
+                        end: moment(availability.end),
+                        rendering: "background",
+                        title: "Joined availability " + moment(availability.start).format('YYYY-MM-DD')
+                      });
                     }
                   });
                   $scope.loading = false;
-                  if (availabilities.length > 0) {
-                    return callback([overAllAvailability]);
-                  } else {
-                    return callback([]);
-                  }
+                  return callback(overAllAvailabilities);
                 }
               });
             });
@@ -1038,49 +1083,6 @@
           return results;
         }
       };
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.config-iframe.controllers.controller:ConfigIframePageCtrl
-   *
-  * @description
-  * Controller for the config page
-   */
-  angular.module('BBAdminDashboard.config-iframe.controllers').controller('ConfigIframePageCtrl', [
-    '$scope', '$state', '$rootScope', function($scope, $state, $rootScope) {
-      $scope.parent_state = $state.is("config");
-      $scope.path = "edit";
-      return $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
-        $scope.parent_state = false;
-        if (toState.name === "config") {
-          return $scope.parent_state = true;
-        }
-      });
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.config-iframe.controllers.controller:ConfigSubIframePageCtrl
-   *
-  * @description
-  * Controller for the config sub page
-   */
-  angular.module('BBAdminDashboard.config-iframe.controllers').controller('ConfigSubIframePageCtrl', [
-    '$scope', '$state', '$stateParams', function($scope, $state, $stateParams) {
-      return $scope.path = $stateParams.path;
     }
   ]);
 
@@ -1536,6 +1538,34 @@
 
   /*
   * @ngdoc controller
+  * @name BBAdminDashboard.departments.controllers.controller:DepartmentsPageCtrl
+   *
+  * @description
+  * Controller for the departments page
+   */
+  angular.module('BBAdminDashboard.departments.controllers').controller('DepartmentsPageCtrl', [
+    '$scope', 'company', 'departments', 'AdminLoginService', '$state', '$timeout', function($scope, company, departments, AdminLoginService, $state, $timeout) {
+      $scope.company = company;
+      $scope.departments = departments;
+      return $scope.selectDepartment = function(department) {
+        return AdminLoginService.setCompany(department.id).then(function(user) {
+          return $timeout(function() {
+            return $state.go('calendar', {}, {
+              reload: true
+            });
+          });
+        });
+      };
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
   * @name BBAdminDashboard.dashboard-iframe.controllers.controller:DashboardIframePageCtrl
    *
   * @description
@@ -1582,6 +1612,226 @@
   angular.module('BBAdminDashboard.dashboard-iframe.controllers').controller('DashboardSubIframePageCtrl', [
     '$scope', '$state', '$stateParams', function($scope, $state, $stateParams) {
       return $scope.path = $stateParams.path;
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.login.controllers.controller:LoginPageCtrl
+   *
+  * @description
+  * Controller for the login page
+   */
+  angular.module('BBAdminDashboard.login.controllers').controller('LoginPageCtrl', [
+    '$scope', '$state', 'AdminLoginService', function($scope, $state, AdminLoginService) {
+      if (AdminLoginService.isLoggedIn()) {
+        AdminLoginService.logout();
+      }
+      return $scope.loginSuccess = function(company) {
+        $scope.company = company;
+        $scope.bb.company = company;
+        return $state.go('calendar');
+      };
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.logout.controllers.controller:LogoutPageCtrl
+   *
+  * @description
+  * Controller for the logout page
+   */
+  angular.module('BBAdminDashboard.logout.controllers').controller('LogoutPageCtrl', [
+    '$scope', '$state', 'AdminLoginService', '$timeout', function($scope, $state, AdminLoginService, $timeout) {
+      AdminLoginService.logout();
+      return $timeout(function() {
+        return $state.go('login', {}, {
+          reload: true
+        });
+      });
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.publish-iframe.controllers.controller:PublishIframePageCtrl
+   *
+  * @description
+  * Controller for the publish page
+   */
+  angular.module('BBAdminDashboard.publish-iframe.controllers').controller('PublishIframePageCtrl', [
+    '$scope', '$state', '$rootScope', function($scope, $state, $rootScope) {
+      $scope.parent_state = $state.is("publish");
+      $scope.path = "conf";
+      return $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
+        $scope.parent_state = false;
+        if (toState.name === "setting") {
+          return $scope.parent_state = true;
+        }
+      });
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.publish-iframe.controllers.controller:PublishSubIframePageCtrl
+   *
+  * @description
+  * Controller for the publish sub page
+   */
+  angular.module('BBAdminDashboard.publish-iframe.controllers').controller('PublishSubIframePageCtrl', [
+    '$scope', '$state', '$stateParams', function($scope, $state, $stateParams) {
+      return $scope.path = $stateParams.path;
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.members-iframe.controllers.controller:MembersIframePageCtrl
+   *
+  * @description
+  * Controller for the members page
+   */
+  angular.module('BBAdminDashboard.members-iframe.controllers').controller('MembersIframePageCtrl', [
+    '$scope', '$state', '$rootScope', '$window', function($scope, $state, $rootScope, $window) {
+      $scope.parent_state = $state.is("members");
+      $scope.bb.side_menu = "member_menu";
+      $scope.path = "client";
+      $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
+        $scope.adminlte.fixed_page = toParams.fixed;
+        $scope.parent_state = false;
+        if (toState.name === "members") {
+          $scope.parent_state = true;
+          return $scope.clearCurrentClient();
+        }
+      });
+      $scope.setCurrentClient = function(client) {
+        console.log("set current", client);
+        if (client) {
+          $rootScope.client_id = client;
+          return $scope.extra_params = "id=" + client;
+        } else {
+          return $scope.clearCurrentClient();
+        }
+      };
+      $scope.clearCurrentClient = function() {
+        $rootScope.client_id = null;
+        return $scope.extra_params = "";
+      };
+      return $window.addEventListener('message', (function(_this) {
+        return function(event) {
+          if (event && event.data) {
+            if (event.data.controller === "client") {
+              if (event.data.id) {
+                $scope.setCurrentClient(event.data.id);
+              }
+              if (event.data.action === "single") {
+                return $state.go("members.page", {
+                  path: 'client/single',
+                  id: event.data.id
+                });
+              }
+            }
+          }
+        };
+      })(this));
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.members-iframe.controllers.controller:MembersSubIframePageCtrl
+   *
+  * @description
+  * Controller for the members sub page
+   */
+  angular.module('BBAdminDashboard.members-iframe.controllers').controller('MembersSubIframePageCtrl', [
+    '$scope', '$state', '$stateParams', function($scope, $state, $stateParams) {
+      $scope.path = $stateParams.path;
+      if ($stateParams.id) {
+        return $scope.extra_params = "id=" + $stateParams.id;
+      } else {
+        return $scope.extra_params = "";
+      }
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.settings-iframe.controllers.controller:SettingsIframePageCtrl
+   *
+  * @description
+  * Controller for the settings page
+   */
+  angular.module('BBAdminDashboard.settings-iframe.controllers').controller('SettingsIframePageCtrl', [
+    '$scope', '$state', '$rootScope', function($scope, $state, $rootScope) {
+      $scope.parent_state = $state.is("setting");
+      $scope.path = "conf";
+      return $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
+        $scope.parent_state = false;
+        if (toState.name === "setting") {
+          return $scope.parent_state = true;
+        }
+      });
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.settings-iframe.controllers.controller:SettingsSubIframePageCtrl
+   *
+  * @description
+  * Controller for the settings sub page
+   */
+  angular.module('BBAdminDashboard.settings-iframe.controllers').controller('SettingsSubIframePageCtrl', [
+    '$scope', '$state', '$stateParams', function($scope, $state, $stateParams) {
+      $scope.path = $stateParams.path;
+      if ($stateParams.id) {
+        return $scope.extra_params = "id=" + $stateParams.id;
+      } else {
+        return $scope.extra_params = "";
+      }
     }
   ]);
 
@@ -1707,253 +1957,5 @@
     $scope.getAppointments();
     return this.checker();
   });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.departments.controllers.controller:DepartmentsPageCtrl
-   *
-  * @description
-  * Controller for the departments page
-   */
-  angular.module('BBAdminDashboard.departments.controllers').controller('DepartmentsPageCtrl', [
-    '$scope', 'company', 'departments', 'AdminLoginService', '$state', '$timeout', function($scope, company, departments, AdminLoginService, $state, $timeout) {
-      $scope.company = company;
-      $scope.departments = departments;
-      return $scope.selectDepartment = function(department) {
-        return AdminLoginService.setCompany(department.id).then(function(user) {
-          return $timeout(function() {
-            return $state.go('calendar', {}, {
-              reload: true
-            });
-          });
-        });
-      };
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.logout.controllers.controller:LogoutPageCtrl
-   *
-  * @description
-  * Controller for the logout page
-   */
-  angular.module('BBAdminDashboard.logout.controllers').controller('LogoutPageCtrl', [
-    '$scope', '$state', 'AdminLoginService', '$timeout', function($scope, $state, AdminLoginService, $timeout) {
-      AdminLoginService.logout();
-      return $timeout(function() {
-        return $state.go('login', {}, {
-          reload: true
-        });
-      });
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.members-iframe.controllers.controller:MembersIframePageCtrl
-   *
-  * @description
-  * Controller for the members page
-   */
-  angular.module('BBAdminDashboard.members-iframe.controllers').controller('MembersIframePageCtrl', [
-    '$scope', '$state', '$rootScope', '$window', function($scope, $state, $rootScope, $window) {
-      $scope.parent_state = $state.is("members");
-      $scope.bb.side_menu = "member_menu";
-      $scope.path = "client";
-      $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
-        $scope.adminlte.fixed_page = toParams.fixed;
-        $scope.parent_state = false;
-        if (toState.name === "members") {
-          $scope.parent_state = true;
-          return $scope.clearCurrentClient();
-        }
-      });
-      $scope.setCurrentClient = function(client) {
-        console.log("set current", client);
-        if (client) {
-          $rootScope.client_id = client;
-          return $scope.extra_params = "id=" + client;
-        } else {
-          return $scope.clearCurrentClient();
-        }
-      };
-      $scope.clearCurrentClient = function() {
-        $rootScope.client_id = null;
-        return $scope.extra_params = "";
-      };
-      return $window.addEventListener('message', (function(_this) {
-        return function(event) {
-          if (event && event.data) {
-            if (event.data.controller === "client") {
-              if (event.data.id) {
-                $scope.setCurrentClient(event.data.id);
-              }
-              if (event.data.action === "single") {
-                return $state.go("members.page", {
-                  path: 'client/single',
-                  id: event.data.id
-                });
-              }
-            }
-          }
-        };
-      })(this));
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.members-iframe.controllers.controller:MembersSubIframePageCtrl
-   *
-  * @description
-  * Controller for the members sub page
-   */
-  angular.module('BBAdminDashboard.members-iframe.controllers').controller('MembersSubIframePageCtrl', [
-    '$scope', '$state', '$stateParams', function($scope, $state, $stateParams) {
-      $scope.path = $stateParams.path;
-      if ($stateParams.id) {
-        return $scope.extra_params = "id=" + $stateParams.id;
-      } else {
-        return $scope.extra_params = "";
-      }
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.login.controllers.controller:LoginPageCtrl
-   *
-  * @description
-  * Controller for the login page
-   */
-  angular.module('BBAdminDashboard.login.controllers').controller('LoginPageCtrl', [
-    '$scope', '$state', 'AdminLoginService', function($scope, $state, AdminLoginService) {
-      if (AdminLoginService.isLoggedIn()) {
-        AdminLoginService.logout();
-      }
-      return $scope.loginSuccess = function(company) {
-        $scope.company = company;
-        $scope.bb.company = company;
-        return $state.go('calendar');
-      };
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.settings-iframe.controllers.controller:SettingsIframePageCtrl
-   *
-  * @description
-  * Controller for the settings page
-   */
-  angular.module('BBAdminDashboard.settings-iframe.controllers').controller('SettingsIframePageCtrl', [
-    '$scope', '$state', '$rootScope', function($scope, $state, $rootScope) {
-      $scope.parent_state = $state.is("setting");
-      $scope.path = "conf";
-      return $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
-        $scope.parent_state = false;
-        if (toState.name === "setting") {
-          return $scope.parent_state = true;
-        }
-      });
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.settings-iframe.controllers.controller:SettingsSubIframePageCtrl
-   *
-  * @description
-  * Controller for the settings sub page
-   */
-  angular.module('BBAdminDashboard.settings-iframe.controllers').controller('SettingsSubIframePageCtrl', [
-    '$scope', '$state', '$stateParams', function($scope, $state, $stateParams) {
-      $scope.path = $stateParams.path;
-      if ($stateParams.id) {
-        return $scope.extra_params = "id=" + $stateParams.id;
-      } else {
-        return $scope.extra_params = "";
-      }
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.publish-iframe.controllers.controller:PublishIframePageCtrl
-   *
-  * @description
-  * Controller for the publish page
-   */
-  angular.module('BBAdminDashboard.publish-iframe.controllers').controller('PublishIframePageCtrl', [
-    '$scope', '$state', '$rootScope', function($scope, $state, $rootScope) {
-      $scope.parent_state = $state.is("publish");
-      $scope.path = "conf";
-      return $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
-        $scope.parent_state = false;
-        if (toState.name === "setting") {
-          return $scope.parent_state = true;
-        }
-      });
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.publish-iframe.controllers.controller:PublishSubIframePageCtrl
-   *
-  * @description
-  * Controller for the publish sub page
-   */
-  angular.module('BBAdminDashboard.publish-iframe.controllers').controller('PublishSubIframePageCtrl', [
-    '$scope', '$state', '$stateParams', function($scope, $state, $stateParams) {
-      return $scope.path = $stateParams.path;
-    }
-  ]);
 
 }).call(this);
