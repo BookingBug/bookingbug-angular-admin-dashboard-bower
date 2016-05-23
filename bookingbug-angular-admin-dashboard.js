@@ -314,6 +314,25 @@
 
 (function() {
   'use strict';
+  angular.module('BBAdminDashboard.logout.controllers', []);
+
+  angular.module('BBAdminDashboard.logout.services', []);
+
+  angular.module('BBAdminDashboard.logout.directives', []);
+
+  angular.module('BBAdminDashboard.logout', ['BBAdminDashboard.logout.controllers', 'BBAdminDashboard.logout.services', 'BBAdminDashboard.logout.directives']).config([
+    '$stateProvider', '$urlRouterProvider', function($stateProvider, $urlRouterProvider) {
+      return $stateProvider.state('logout', {
+        url: '/logout',
+        controller: 'LogoutPageCtrl'
+      });
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
   angular.module('BBAdminDashboard.members-iframe.controllers', []);
 
   angular.module('BBAdminDashboard.members-iframe.services', []);
@@ -332,25 +351,6 @@
         url: '/page/:path/:id',
         templateUrl: 'iframe_page.html',
         controller: 'MembersSubIframePageCtrl'
-      });
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BBAdminDashboard.logout.controllers', []);
-
-  angular.module('BBAdminDashboard.logout.services', []);
-
-  angular.module('BBAdminDashboard.logout.directives', []);
-
-  angular.module('BBAdminDashboard.logout', ['BBAdminDashboard.logout.controllers', 'BBAdminDashboard.logout.services', 'BBAdminDashboard.logout.directives']).config([
-    '$stateProvider', '$urlRouterProvider', function($stateProvider, $urlRouterProvider) {
-      return $stateProvider.state('logout', {
-        url: '/logout',
-        controller: 'LogoutPageCtrl'
       });
     }
   ]);
@@ -808,30 +808,34 @@
           })(this)
         });
       };
+      $scope.pusherBooking = function(res) {
+        var booking;
+        if (res.id != null) {
+          booking = _.first(uiCalendarConfig.calendars.resourceCalendar.fullCalendar('clientEvents', res.id));
+          console.log(booking);
+          if (booking && booking.$refetch) {
+            return booking.$refetch().then(function() {
+              return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('updateEvent', booking);
+            });
+          } else {
+            return $scope.company.$get('bookings', {
+              id: res.id
+            }).then(function(response) {
+              booking = new BBModel.Admin.Booking(response);
+              BookingCollections.checkItems(booking);
+              return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('refetchEvents');
+            });
+          }
+        }
+      };
       $scope.pusherSubscribe = (function(_this) {
         return function() {
+          var pusher_channel;
           if ($scope.company) {
-            return $scope.company.pusherSubscribe(function(res) {
-              var booking;
-              if (res.id != null) {
-                booking = _.first(uiCalendarConfig.calendars.resourceCalendar.fullCalendar('clientEvents', res.id));
-                if (booking) {
-                  return booking.$refetch().then(function() {
-                    return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('updateEvent', booking);
-                  });
-                } else {
-                  return $scope.company.$get('bookings', {
-                    id: res.id
-                  }).then(function(response) {
-                    booking = new BBModel.Admin.Booking(response);
-                    BookingCollections.checkItems(booking);
-                    return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('refetchEvents');
-                  });
-                }
-              }
-            }, {
-              encrypted: false
-            });
+            pusher_channel = $scope.company.getPusherChannel('bookings');
+            pusher_channel.bind('create', $scope.pusherBooking);
+            pusher_channel.bind('update', $scope.pusherBooking);
+            return pusher_channel.bind('destroy', $scope.pusherBooking);
           }
         };
       })(this);
@@ -1770,6 +1774,29 @@
 
   /*
   * @ngdoc controller
+  * @name BBAdminDashboard.logout.controllers.controller:LogoutPageCtrl
+   *
+  * @description
+  * Controller for the logout page
+   */
+  angular.module('BBAdminDashboard.logout.controllers').controller('LogoutPageCtrl', [
+    '$scope', '$state', 'AdminLoginService', '$timeout', function($scope, $state, AdminLoginService, $timeout) {
+      AdminLoginService.logout();
+      return $timeout(function() {
+        return $state.go('login', {}, {
+          reload: true
+        });
+      });
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
   * @name BBAdminDashboard.members-iframe.controllers.controller:MembersIframePageCtrl
    *
   * @description
@@ -1841,29 +1868,6 @@
       } else {
         return $scope.extra_params = "";
       }
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.logout.controllers.controller:LogoutPageCtrl
-   *
-  * @description
-  * Controller for the logout page
-   */
-  angular.module('BBAdminDashboard.logout.controllers').controller('LogoutPageCtrl', [
-    '$scope', '$state', 'AdminLoginService', '$timeout', function($scope, $state, AdminLoginService, $timeout) {
-      AdminLoginService.logout();
-      return $timeout(function() {
-        return $state.go('login', {}, {
-          reload: true
-        });
-      });
     }
   ]);
 
