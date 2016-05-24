@@ -207,6 +207,32 @@
 
 (function() {
   'use strict';
+  angular.module('BBAdminDashboard.dashboard-iframe.controllers', []);
+
+  angular.module('BBAdminDashboard.dashboard-iframe.services', []);
+
+  angular.module('BBAdminDashboard.dashboard-iframe.directives', []);
+
+  angular.module('BBAdminDashboard.dashboard-iframe', ['BBAdminDashboard.dashboard-iframe.controllers', 'BBAdminDashboard.dashboard-iframe.services', 'BBAdminDashboard.dashboard-iframe.directives']).config([
+    '$stateProvider', '$urlRouterProvider', function($stateProvider, $urlRouterProvider) {
+      return $stateProvider.state('dashboard', {
+        parent: "root",
+        url: "/dashboard",
+        controller: "DashboardIframePageCtrl",
+        templateUrl: "admin_dashboard_page.html"
+      }).state('dashboard.page', {
+        parent: "dashboard",
+        url: "/page/:path",
+        controller: 'DashboardSubIframePageCtrl',
+        templateUrl: "iframe_page.html"
+      });
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
   angular.module('BBAdminDashboard.departments.controllers', []);
 
   angular.module('BBAdminDashboard.departments.services', []);
@@ -268,24 +294,18 @@
 
 (function() {
   'use strict';
-  angular.module('BBAdminDashboard.dashboard-iframe.controllers', []);
+  angular.module('BBAdminDashboard.login.controllers', []);
 
-  angular.module('BBAdminDashboard.dashboard-iframe.services', []);
+  angular.module('BBAdminDashboard.login.services', []);
 
-  angular.module('BBAdminDashboard.dashboard-iframe.directives', []);
+  angular.module('BBAdminDashboard.login.directives', []);
 
-  angular.module('BBAdminDashboard.dashboard-iframe', ['BBAdminDashboard.dashboard-iframe.controllers', 'BBAdminDashboard.dashboard-iframe.services', 'BBAdminDashboard.dashboard-iframe.directives']).config([
+  angular.module('BBAdminDashboard.login', ['BBAdminDashboard.login.controllers', 'BBAdminDashboard.login.services', 'BBAdminDashboard.login.directives']).config([
     '$stateProvider', '$urlRouterProvider', function($stateProvider, $urlRouterProvider) {
-      return $stateProvider.state('dashboard', {
-        parent: "root",
-        url: "/dashboard",
-        controller: "DashboardIframePageCtrl",
-        templateUrl: "admin_dashboard_page.html"
-      }).state('dashboard.page', {
-        parent: "dashboard",
-        url: "/page/:path",
-        controller: 'DashboardSubIframePageCtrl',
-        templateUrl: "iframe_page.html"
+      return $stateProvider.state('login', {
+        url: "/login",
+        controller: "LoginPageCtrl",
+        templateUrl: "admin_login_page.html"
       });
     }
   ]);
@@ -305,26 +325,6 @@
       return $stateProvider.state('logout', {
         url: '/logout',
         controller: 'LogoutPageCtrl'
-      });
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BBAdminDashboard.login.controllers', []);
-
-  angular.module('BBAdminDashboard.login.services', []);
-
-  angular.module('BBAdminDashboard.login.directives', []);
-
-  angular.module('BBAdminDashboard.login', ['BBAdminDashboard.login.controllers', 'BBAdminDashboard.login.services', 'BBAdminDashboard.login.directives']).config([
-    '$stateProvider', '$urlRouterProvider', function($stateProvider, $urlRouterProvider) {
-      return $stateProvider.state('login', {
-        url: "/login",
-        controller: "LoginPageCtrl",
-        templateUrl: "admin_login_page.html"
       });
     }
   ]);
@@ -1661,34 +1661,6 @@
 
   /*
   * @ngdoc controller
-  * @name BBAdminDashboard.departments.controllers.controller:DepartmentsPageCtrl
-   *
-  * @description
-  * Controller for the departments page
-   */
-  angular.module('BBAdminDashboard.departments.controllers').controller('DepartmentsPageCtrl', [
-    '$scope', 'company', 'departments', 'AdminLoginService', '$state', '$timeout', function($scope, company, departments, AdminLoginService, $state, $timeout) {
-      $scope.company = company;
-      $scope.departments = departments;
-      return $scope.selectDepartment = function(department) {
-        return AdminLoginService.setCompany(department.id).then(function(user) {
-          return $timeout(function() {
-            return $state.go('calendar', {}, {
-              reload: true
-            });
-          });
-        });
-      };
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
   * @name BBAdminDashboard.dashboard-iframe.controllers.controller:DashboardIframePageCtrl
    *
   * @description
@@ -1745,19 +1717,24 @@
 
   /*
   * @ngdoc controller
-  * @name BBAdminDashboard.logout.controllers.controller:LogoutPageCtrl
+  * @name BBAdminDashboard.departments.controllers.controller:DepartmentsPageCtrl
    *
   * @description
-  * Controller for the logout page
+  * Controller for the departments page
    */
-  angular.module('BBAdminDashboard.logout.controllers').controller('LogoutPageCtrl', [
-    '$scope', '$state', 'AdminLoginService', '$timeout', function($scope, $state, AdminLoginService, $timeout) {
-      AdminLoginService.logout();
-      return $timeout(function() {
-        return $state.go('login', {}, {
-          reload: true
+  angular.module('BBAdminDashboard.departments.controllers').controller('DepartmentsPageCtrl', [
+    '$scope', 'company', 'departments', 'AdminLoginService', '$state', '$timeout', function($scope, company, departments, AdminLoginService, $state, $timeout) {
+      $scope.company = company;
+      $scope.departments = departments;
+      return $scope.selectDepartment = function(department) {
+        return AdminLoginService.setCompany(department.id).then(function(user) {
+          return $timeout(function() {
+            return $state.go('calendar', {}, {
+              reload: true
+            });
+          });
         });
-      });
+      };
     }
   ]);
 
@@ -1783,6 +1760,29 @@
         $scope.bb.company = company;
         return $state.go('calendar');
       };
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.logout.controllers.controller:LogoutPageCtrl
+   *
+  * @description
+  * Controller for the logout page
+   */
+  angular.module('BBAdminDashboard.logout.controllers').controller('LogoutPageCtrl', [
+    '$scope', '$state', 'AdminLoginService', '$timeout', function($scope, $state, AdminLoginService, $timeout) {
+      AdminLoginService.logout();
+      return $timeout(function() {
+        return $state.go('login', {}, {
+          reload: true
+        });
+      });
     }
   ]);
 
