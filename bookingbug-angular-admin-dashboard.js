@@ -418,25 +418,6 @@
 }).call(this);
 
 (function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.calendar.controllers.controller:CalendarPageCtrl
-   *
-  * @description
-  * Controller for the calendar page
-   */
-  angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPageCtrl', [
-    '$scope', '$state', function($scope, $state) {
-      $scope.adminlte.side_menu = false;
-      return $scope.adminlte.heading = null;
-    }
-  ]);
-
-}).call(this);
-
-(function() {
   angular.module('BBAdminDashboard.calendar.directives').directive('bbResourceCalendar', function(uiCalendarConfig, AdminCompanyService, AdminBookingService, AdminPersonService, $q, $sessionStorage, ModalForm, BBModel, AdminBookingPopup, $window, $bbug, ColorPalette, AppConfig, Dialog, $timeout, $compile, $templateCache, BookingCollections, PrePostTime, AdminScheduleService, $filter) {
     var controller, link;
     controller = function($scope, $attrs, BBAssets, ProcessAssetsFilter, $state, GeneralOptions) {
@@ -897,6 +878,25 @@
       }
     };
   });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.calendar.controllers.controller:CalendarPageCtrl
+   *
+  * @description
+  * Controller for the calendar page
+   */
+  angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPageCtrl', [
+    '$scope', '$state', function($scope, $state) {
+      $scope.adminlte.side_menu = false;
+      return $scope.adminlte.heading = null;
+    }
+  ]);
 
 }).call(this);
 
@@ -1874,49 +1874,6 @@
 
   /*
   * @ngdoc controller
-  * @name BBAdminDashboard.publish-iframe.controllers.controller:PublishIframePageCtrl
-   *
-  * @description
-  * Controller for the publish page
-   */
-  angular.module('BBAdminDashboard.publish-iframe.controllers').controller('PublishIframePageCtrl', [
-    '$scope', '$state', '$rootScope', function($scope, $state, $rootScope) {
-      $scope.parent_state = $state.is("publish");
-      $scope.path = "conf";
-      return $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
-        $scope.parent_state = false;
-        if (toState.name === "setting") {
-          return $scope.parent_state = true;
-        }
-      });
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.publish-iframe.controllers.controller:PublishSubIframePageCtrl
-   *
-  * @description
-  * Controller for the publish sub page
-   */
-  angular.module('BBAdminDashboard.publish-iframe.controllers').controller('PublishSubIframePageCtrl', [
-    '$scope', '$state', '$stateParams', function($scope, $state, $stateParams) {
-      return $scope.path = $stateParams.path;
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
   * @name BBAdminDashboard.settings-iframe.controllers.controller:SettingsIframePageCtrl
    *
   * @description
@@ -1955,6 +1912,49 @@
       } else {
         return $scope.extra_params = "";
       }
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.publish-iframe.controllers.controller:PublishIframePageCtrl
+   *
+  * @description
+  * Controller for the publish page
+   */
+  angular.module('BBAdminDashboard.publish-iframe.controllers').controller('PublishIframePageCtrl', [
+    '$scope', '$state', '$rootScope', function($scope, $state, $rootScope) {
+      $scope.parent_state = $state.is("publish");
+      $scope.path = "conf";
+      return $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
+        $scope.parent_state = false;
+        if (toState.name === "setting") {
+          return $scope.parent_state = true;
+        }
+      });
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.publish-iframe.controllers.controller:PublishSubIframePageCtrl
+   *
+  * @description
+  * Controller for the publish sub page
+   */
+  angular.module('BBAdminDashboard.publish-iframe.controllers').controller('PublishSubIframePageCtrl', [
+    '$scope', '$state', '$stateParams', function($scope, $state, $stateParams) {
+      return $scope.path = $stateParams.path;
     }
   ]);
 
