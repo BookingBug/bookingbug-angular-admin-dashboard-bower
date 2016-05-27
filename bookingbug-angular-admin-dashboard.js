@@ -418,6 +418,25 @@
 }).call(this);
 
 (function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.calendar.controllers.controller:CalendarPageCtrl
+   *
+  * @description
+  * Controller for the calendar page
+   */
+  angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPageCtrl', [
+    '$scope', '$state', function($scope, $state) {
+      $scope.adminlte.side_menu = false;
+      return $scope.adminlte.heading = null;
+    }
+  ]);
+
+}).call(this);
+
+(function() {
   angular.module('BBAdminDashboard.calendar.directives').directive('bbResourceCalendar', function(uiCalendarConfig, AdminCompanyService, AdminBookingService, AdminPersonService, $q, $sessionStorage, ModalForm, BBModel, AdminBookingPopup, $window, $bbug, ColorPalette, AppConfig, Dialog, $timeout, $compile, $templateCache, BookingCollections, PrePostTime, AdminScheduleService, $filter) {
     var controller, link;
     controller = function($scope, $attrs, BBAssets, ProcessAssetsFilter, $state, GeneralOptions) {
@@ -456,6 +475,23 @@
                 $scope.bookings = filteredBookings;
                 return callback($scope.bookings);
               });
+            });
+          }
+        }, {
+          events: function(start, end, timezone, callback) {
+            return $scope.getCompanyPromise().then(function(company) {
+              if (company.$has('external_bookings')) {
+                return company.$get('external_bookings').then(function(collection) {
+                  return collection.$get('external_bookings').then(function(bookings) {
+                    var b, i, len;
+                    for (i = 0, len = bookings.length; i < len; i++) {
+                      b = bookings[i];
+                      b.resourceId = b.person_id;
+                    }
+                    return callback(bookings);
+                  });
+                });
+              }
             });
           }
         }, {
@@ -610,7 +646,9 @@
             });
           },
           eventClick: function(event, jsEvent, view) {
-            return $scope.editBooking(event);
+            if (event.$has('edit')) {
+              return $scope.editBooking(event);
+            }
           },
           eventRender: function(event, element) {
             var service;
@@ -629,9 +667,14 @@
             }
           },
           eventAfterRender: function(event, elements, view) {
-            PrePostTime.apply(event, elements, view, $scope);
             if ((event.rendering == null) || event.rendering !== 'background') {
-              return elements.draggable();
+              PrePostTime.apply(event, elements, view, $scope);
+              if (event.$has('edit')) {
+                return elements.draggable();
+              } else {
+                elements.editable = false;
+                return elements.removeClass('fc-draggable');
+              }
             }
           },
           select: function(start, end, jsEvent, view, resource) {
@@ -889,25 +932,6 @@
       }
     };
   });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.calendar.controllers.controller:CalendarPageCtrl
-   *
-  * @description
-  * Controller for the calendar page
-   */
-  angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPageCtrl', [
-    '$scope', '$state', function($scope, $state) {
-      $scope.adminlte.side_menu = false;
-      return $scope.adminlte.heading = null;
-    }
-  ]);
 
 }).call(this);
 
