@@ -418,29 +418,10 @@
 }).call(this);
 
 (function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.calendar.controllers.controller:CalendarPageCtrl
-   *
-  * @description
-  * Controller for the calendar page
-   */
-  angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPageCtrl', [
-    '$scope', '$state', function($scope, $state) {
-      $scope.adminlte.side_menu = false;
-      return $scope.adminlte.heading = null;
-    }
-  ]);
-
-}).call(this);
-
-(function() {
   angular.module('BBAdminDashboard.calendar.directives').directive('bbResourceCalendar', function(uiCalendarConfig, AdminCompanyService, AdminBookingService, AdminPersonService, $q, $sessionStorage, ModalForm, BBModel, AdminBookingPopup, $window, $bbug, ColorPalette, AppConfig, Dialog, $timeout, $compile, $templateCache, BookingCollections, PrePostTime, AdminScheduleService, $filter) {
     var controller, link;
     controller = function($scope, $attrs, BBAssets, ProcessAssetsFilter, $state, GeneralOptions) {
-      var bookingBelongsToSelectedResource, filters, height, labelAssembly, pusherBooking;
+      var bookingBelongsToSelectedResource, filters, getCalendarAssets, height, isTimeRangeAvailable, labelAssembly, pusherBooking;
       filters = {
         requestedAssets: ProcessAssetsFilter($state.params.assets)
       };
@@ -607,10 +588,12 @@
               resourceAreaWidth: '18%'
             }
           },
-          resourceLabelText: 'Staff',
+          resourceGroupField: 'group',
+          resourceLabelText: ' ',
           selectable: true,
+          lazyFetching: false,
           resources: function(callback) {
-            return $scope.getCalendarAssets(callback);
+            return getCalendarAssets(callback);
           },
           eventDrop: function(event, delta, revertFunc) {
             return Dialog.confirm({
@@ -653,41 +636,43 @@
           },
           select: function(start, end, jsEvent, view, resource) {
             var rid, setTimeToMoment;
-            setTimeToMoment = function(date, time) {
-              var newDate;
-              newDate = moment(time, 'HH:mm');
-              newDate.set({
-                'year': parseInt(date.get('year')),
-                'month': parseInt(date.get('month')),
-                'date': parseInt(date.get('date')),
-                'second': 0
-              });
-              return newDate;
-            };
-            if (Math.abs(start.diff(end, 'days')) > 0) {
-              end.subtract(1, 'days');
-              end = setTimeToMoment(end, $scope.options.max_time);
-            }
             view.calendar.unselect();
-            rid = null;
-            if (resource) {
-              rid = resource.id;
-            }
-            return $scope.getCompanyPromise().then(function(company) {
-              return AdminBookingPopup.open({
-                min_date: setTimeToMoment(start, $scope.options.min_time),
-                max_date: setTimeToMoment(end, $scope.options.max_time),
-                from_datetime: start,
-                to_datetime: end,
-                item_defaults: {
-                  date: start.format('YYYY-MM-DD'),
-                  time: start.hour() * 60 + start.minute(),
-                  person: rid
-                },
-                first_page: "quick_pick",
-                company_id: company.id
+            if (isTimeRangeAvailable(start, end, resource) || Math.abs(start.diff(end, 'days'))) {
+              setTimeToMoment = function(date, time) {
+                var newDate;
+                newDate = moment(time, 'HH:mm');
+                newDate.set({
+                  'year': parseInt(date.get('year')),
+                  'month': parseInt(date.get('month')),
+                  'date': parseInt(date.get('date')),
+                  'second': 0
+                });
+                return newDate;
+              };
+              if (Math.abs(start.diff(end, 'days')) > 0) {
+                end.subtract(1, 'days');
+                end = setTimeToMoment(end, $scope.options.max_time);
+              }
+              rid = null;
+              if (resource) {
+                rid = resource.id;
+              }
+              return $scope.getCompanyPromise().then(function(company) {
+                return AdminBookingPopup.open({
+                  min_date: setTimeToMoment(start, $scope.options.min_time),
+                  max_date: setTimeToMoment(end, $scope.options.max_time),
+                  from_datetime: start,
+                  to_datetime: end,
+                  item_defaults: {
+                    date: start.format('YYYY-MM-DD'),
+                    time: start.hour() * 60 + start.minute(),
+                    person: rid
+                  },
+                  first_page: "quick_pick",
+                  company_id: company.id
+                });
               });
-            });
+            }
           },
           viewRender: function(view, element) {
             var date;
@@ -702,6 +687,13 @@
             return $scope.calendarLoading = isLoading;
           }
         }
+      };
+      isTimeRangeAvailable = function(start, end, resource) {
+        var events;
+        events = uiCalendarConfig.calendars.resourceCalendar.fullCalendar('clientEvents', function(event) {
+          return event.rendering === 'background' && start >= event.start && end <= event.end && ((resource && parseInt(event.resourceId) === parseInt(resource.id)) || !resource);
+        });
+        return events.length > 0;
       };
       $scope.getCompanyPromise = function() {
         var defer;
@@ -763,7 +755,7 @@
           });
         }
       });
-      $scope.getCalendarAssets = function(callback) {
+      getCalendarAssets = function(callback) {
         $scope.loading = true;
         return $scope.getCompanyPromise().then(function(company) {
           if ($scope.showAll) {
@@ -897,6 +889,25 @@
       }
     };
   });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.calendar.controllers.controller:CalendarPageCtrl
+   *
+  * @description
+  * Controller for the calendar page
+   */
+  angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPageCtrl', [
+    '$scope', '$state', function($scope, $state) {
+      $scope.adminlte.side_menu = false;
+      return $scope.adminlte.heading = null;
+    }
+  ]);
 
 }).call(this);
 
