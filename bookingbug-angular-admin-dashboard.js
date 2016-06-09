@@ -1000,6 +1000,26 @@
   'use strict';
 
   /*
+  * @ngdoc overview
+  * @name BBAdminDashboard.calendar.translations
+   *
+  * @description
+  * Translations for the admin calendar module
+   */
+  angular.module('BBAdminDashboard.calendar.translations').config([
+    '$translateProvider', function($translateProvider) {
+      return $translateProvider.translations('en', {
+        'TEXT_2': 'Hello there!'
+      });
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
   * @ngdoc service
   * @name BBAdminDashboard.calendar.services.service:AdminCalendarOptions
   *
@@ -1097,44 +1117,6 @@
           return results;
         }
       };
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc overview
-  * @name BBAdminDashboard.calendar.translations
-   *
-  * @description
-  * Translations for the admin calendar module
-   */
-  angular.module('BBAdminDashboard.calendar.translations').config([
-    '$translateProvider', function($translateProvider) {
-      return $translateProvider.translations('en', {
-        'TEXT_2': 'Hello there!'
-      });
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.check-in.controllers.controller:CheckInPageCtrl
-   *
-  * @description
-  * Controller for the check-in page
-   */
-  angular.module('BBAdminDashboard.check-in.controllers').controller('CheckInPageCtrl', [
-    '$scope', '$state', function($scope, $state) {
-      return $scope.adminlte.heading = '';
     }
   ]);
 
@@ -1244,6 +1226,24 @@
     $scope.getAppointments();
     return this.checker();
   });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.check-in.controllers.controller:CheckInPageCtrl
+   *
+  * @description
+  * Controller for the check-in page
+   */
+  angular.module('BBAdminDashboard.check-in.controllers').controller('CheckInPageCtrl', [
+    '$scope', '$state', function($scope, $state) {
+      return $scope.adminlte.heading = '';
+    }
+  ]);
 
 }).call(this);
 
@@ -1611,6 +1611,67 @@
 
 }).call(this);
 
+
+/*
+* @ngdoc filter
+* @name BBAdminDashboard.filters.filter:minutesToString
+* @description
+* Converts a number to the desired format (default is hour minute(HH:mm))
+ */
+
+(function() {
+  angular.module('BBAdminDashboard.filters').filter('minutesToString', function() {
+    return function(minutes, format) {
+      if (format == null) {
+        format = 'HH:mm';
+      }
+      return moment(moment.duration(minutes, 'minutes')._data).format(format);
+    };
+  });
+
+}).call(this);
+
+
+/*
+* @ngdoc filter
+* @name BBAdminDashboard.filters.filter:propsFilter
+* @description
+* Does an OR operation
+ */
+
+(function() {
+  angular.module('BBAdminDashboard.filters').filter('propsFilter', function() {
+    return function(items, props) {
+      var keys, out;
+      out = [];
+      if (angular.isArray(items)) {
+        keys = Object.keys(props);
+        items.forEach(function(item) {
+          var i, itemMatches, prop, text;
+          itemMatches = false;
+          i = 0;
+          while (i < keys.length) {
+            prop = keys[i];
+            text = props[prop].toLowerCase();
+            if (item[prop].toString().toLowerCase().indexOf(text) !== -1) {
+              itemMatches = true;
+              break;
+            }
+            i++;
+          }
+          if (itemMatches) {
+            out.push(item);
+          }
+        });
+      } else {
+        out = items;
+      }
+      return out;
+    };
+  });
+
+}).call(this);
+
 (function() {
   'use strict';
   angular.module('BBAdminDashboard.directives').directive('lteBody', function() {
@@ -1831,67 +1892,6 @@
     link = function(scope, element, attrs) {};
     return {
       compile: compile
-    };
-  });
-
-}).call(this);
-
-
-/*
-* @ngdoc filter
-* @name BBAdminDashboard.filters.filter:minutesToString
-* @description
-* Converts a number to the desired format (default is hour minute(HH:mm))
- */
-
-(function() {
-  angular.module('BBAdminDashboard.filters').filter('minutesToString', function() {
-    return function(minutes, format) {
-      if (format == null) {
-        format = 'HH:mm';
-      }
-      return moment(moment.duration(minutes, 'minutes')._data).format(format);
-    };
-  });
-
-}).call(this);
-
-
-/*
-* @ngdoc filter
-* @name BBAdminDashboard.filters.filter:propsFilter
-* @description
-* Does an OR operation
- */
-
-(function() {
-  angular.module('BBAdminDashboard.filters').filter('propsFilter', function() {
-    return function(items, props) {
-      var keys, out;
-      out = [];
-      if (angular.isArray(items)) {
-        keys = Object.keys(props);
-        items.forEach(function(item) {
-          var i, itemMatches, prop, text;
-          itemMatches = false;
-          i = 0;
-          while (i < keys.length) {
-            prop = keys[i];
-            text = props[prop].toLowerCase();
-            if (item[prop].toString().toLowerCase().indexOf(text) !== -1) {
-              itemMatches = true;
-              break;
-            }
-            i++;
-          }
-          if (itemMatches) {
-            out.push(item);
-          }
-        });
-      } else {
-        out = items;
-      }
-      return out;
     };
   });
 
