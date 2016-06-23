@@ -1,0 +1,23 @@
+ 
+@import "skin_bb";
+
+.bb-page-frame {
+  width:100%;
+  height: auto;
+  border: none;
+  background: transparent;
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+//bootstrap overrides
+.panel-heading {
+  .btn-sm {
+    position: relative;
+    top:5px;
+  }
+}
+
+@import "resource_calendar";
