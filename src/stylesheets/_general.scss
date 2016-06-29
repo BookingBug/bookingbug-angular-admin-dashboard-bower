@@ -1,0 +1,162 @@
+&.layout-boxed {
+  background: url("images/bg-gray.png");
+}
+
+//Animation for the content
+.content-wrapper {
+  overflow-y: scroll;
+  position: relative;
+
+  [ui-view].animated {
+    &.ng-enter, &.ng-leave {
+      position: absolute;
+      left: 0;
+      right: 0;
+      -webkit-transition:all .3s ease-in-out;
+      -moz-transition:all .3s ease-in-out;
+      -o-transition:all .3s ease-in-out;
+      transition:all .3s ease-in-out;
+    }
+
+    &.ng-enter {
+      opacity: 0;
+      -webkit-transform:translate3d(0, 10%, 0);
+      -moz-transform:translate3d(0, 10%, 0);
+      transform:translate3d(0, 10%, 0);
+    }
+
+    &.ng-enter-active {
+      opacity: 1;
+      -webkit-transform:none;
+      -moz-transform:none;
+      transform: none;
+    }
+
+    &.ng-leave {
+      opacity: 1;
+    }
+
+    &.ng-leave-active {
+      opacity: 0;
+    }
+  }
+}
+
+.no-gutter {
+  padding-right:$grid-gutter-width/2;
+  padding-left: $grid-gutter-width/2;
+
+  &> [class*='col-'] {
+    padding-right:0;
+    padding-left:0;
+  }
+}
+
+.list-group {
+  &.list-group-root {
+    padding: 0;
+    overflow: hidden;
+
+    .list-group {
+      margin-bottom: 0;
+    }
+
+    .list-group-item {
+      border-radius: 0;
+      border-width: 1px 0 0 0;
+    }
+
+    &> .list-group-item:first-child {
+      border-top-width: 0;
+    }
+
+    &> .list-group > .list-group-item {
+      padding-left: 30px;
+    }
+
+    &> .list-group > .list-group > .list-group-item {
+      padding-left: 40px;
+    }
+  }
+}
+
+.sidebar-toggle.off {
+  &:before {
+    content: "\f00d" !important;
+  }
+}
+
+#loading-bar-spinner {
+    top: 15px !important;
+    left: 10px !important;
+
+    .spinner-icon {
+        height: 20px !important;
+        width: 20px !important;
+    }
+}
+
+.navbar-custom-menu {
+  .user-dropdown.dropdown-menu {
+    padding: 10px;
+    width: 180px;
+
+    li {
+      &:last-of-type {
+        margin-bottom: 0px !important;
+      }
+
+      margin-bottom: 10px;
+    }
+  }
+
+  .language-picker {
+    position:relative;
+    margin-right: 10px;
+    display: inline-block;
+
+    .ui-select-match {
+      display: inline-block;
+    }
+    .form-control {
+      border-radius: 3px !important;
+      height: auto !important;
+    }
+
+    .btn {
+      padding: 16px 20px 15px 6px;
+      border:none;
+
+      &:active {
+        box-shadow:none !important;
+      }
+    }
+
+    .ui-select-bootstrap .ui-select-toggle > .caret {
+      right: 5px;
+    }
+
+    .btn-default {
+      background:transparent !important;
+    }
+
+    .btn-default-focus {
+      background: transparent;
+      outline: none;
+      outline-offset: 0;
+      box-shadow: none;
+    }
+
+    .dropdown-menu {
+      right: 0;
+      left: auto;
+    }
+
+    input.form-control {
+      padding: 15px 6px 15px 6px;
+      border:none;
+      background: transparent;
+      width:80px;
+    }
+  }
+}
