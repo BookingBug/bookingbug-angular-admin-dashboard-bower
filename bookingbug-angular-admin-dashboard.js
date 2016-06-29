@@ -1179,6 +1179,35 @@
 }).call(this);
 
 (function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.check-in.controllers.controller:CheckInPageCtrl
+   *
+  * @description
+  * Controller for the check-in page
+   */
+  angular.module('BBAdminDashboard.check-in.controllers').controller('CheckInPageCtrl', [
+    '$scope', '$state', '$log', function($scope, $state, $log) {
+      var pusher_channel, refetch;
+      $scope.adminlte.heading = '';
+      pusher_channel = $scope.company.getPusherChannel('bookings');
+      refetch = _.throttle(function(data) {
+        $log.info('== booking push received in checkin  == ', data);
+        return $scope.$broadcast('refetchCheckin', data);
+      }, 1000, {
+        leading: false
+      });
+      pusher_channel.bind('create', refetch);
+      pusher_channel.bind('update', refetch);
+      return pusher_channel.bind('destroy', refetch);
+    }
+  ]);
+
+}).call(this);
+
+(function() {
   angular.module('BBAdminDashboard.check-in.directives').directive('bbCheckinTable', function() {
     return {
       restrict: 'AE',
@@ -1440,35 +1469,6 @@
       return $scope.set_current_client = function(client) {
         return $scope.current_client = client;
       };
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.check-in.controllers.controller:CheckInPageCtrl
-   *
-  * @description
-  * Controller for the check-in page
-   */
-  angular.module('BBAdminDashboard.check-in.controllers').controller('CheckInPageCtrl', [
-    '$scope', '$state', '$log', function($scope, $state, $log) {
-      var pusher_channel, refetch;
-      $scope.adminlte.heading = '';
-      pusher_channel = $scope.company.getPusherChannel('bookings');
-      refetch = _.throttle(function(data) {
-        $log.info('== booking push received in checkin  == ', data);
-        return $scope.$broadcast('refetchCheckin', data);
-      }, 1000, {
-        leading: false
-      });
-      pusher_channel.bind('create', refetch);
-      pusher_channel.bind('update', refetch);
-      return pusher_channel.bind('destroy', refetch);
     }
   ]);
 
