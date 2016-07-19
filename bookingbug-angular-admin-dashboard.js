@@ -471,40 +471,21 @@
 }).call(this);
 
 (function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.calendar.controllers.controller:CalendarPageCtrl
-   *
-  * @description
-  * Controller for the calendar page
-   */
-  angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPageCtrl', [
-    '$scope', '$state', '$log', function($scope, $state, $log) {
-      var pusher_channel, refetch;
-      $scope.adminlte.side_menu = false;
-      $scope.adminlte.heading = null;
-      pusher_channel = $scope.company.getPusherChannel('bookings');
-      refetch = _.throttle(function(data) {
-        $log.info('== booking push received in bookins == ', data);
-        return $scope.$broadcast('refetchBookings', data);
-      }, 1000, {
-        leading: false
-      });
-      pusher_channel.bind('create', refetch);
-      pusher_channel.bind('update', refetch);
-      return pusher_channel.bind('destroy', refetch);
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  angular.module('BBAdminDashboard.calendar.directives').directive('bbResourceCalendar', function(uiCalendarConfig, AdminCompanyService, $q, ModalForm, BBModel, AdminBookingPopup, $window, $bbug, ColorPalette, Dialog, $timeout, $compile, $templateCache, PrePostTime, $filter) {
+  angular.module('BBAdminDashboard.calendar.directives').directive('bbResourceCalendar', function(uiCalendarConfig, AdminCompanyService, $q, ModalForm, BBModel, AdminBookingPopup, AdminMoveBookingPopup, $window, $bbug, ColorPalette, Dialog, $timeout, $compile, $templateCache, PrePostTime, $filter) {
     var controller, link;
     controller = function($scope, $attrs, BBAssets, ProcessAssetsFilter, $state, GeneralOptions, AdminCalendarOptions, CalendarEventSources) {
-      var dayHasAvailability, filters, getCalendarAssets, height, isTimeRangeAvailable, pusherBooking;
+      var dayHasAvailability, filters, getCalendarAssets, height, isTimeRangeAvailable, pusherBooking, setTimeToMoment;
+      setTimeToMoment = function(date, time) {
+        var newDate;
+        newDate = moment(time, 'HH:mm');
+        newDate.set({
+          'year': parseInt(date.get('year')),
+          'month': parseInt(date.get('month')),
+          'date': parseInt(date.get('date')),
+          'second': 0
+        });
+        return newDate;
+      };
       filters = {
         requestedAssets: ProcessAssetsFilter($state.params.assets)
       };
@@ -591,6 +572,33 @@
             return event.oldResourceIds = event.resourceIds;
           },
           eventDrop: function(event, delta, revertFunc) {
+            var end, item_defaults, newAssetId, start;
+            if (event.person_id && event.resource_id) {
+              start = event.start;
+              end = event.end;
+              item_defaults = {
+                date: start.format('YYYY-MM-DD'),
+                time: start.hour() * 60 + start.minute()
+              };
+              newAssetId = event.resourceId.substring(0, event.resourceId.indexOf('_'));
+              if (event.resourceId.indexOf('_p') > -1) {
+                item_defaults.person = newAssetId;
+              } else if (event.resourceId.indexOf('_r') > -1) {
+                item_defaults.resource = newAssetId;
+              }
+              $scope.getCompanyPromise().then(function(company) {
+                return AdminMoveBookingPopup.open({
+                  min_date: setTimeToMoment(start, $scope.options.min_time),
+                  max_date: setTimeToMoment(end, $scope.options.max_time),
+                  from_datetime: start,
+                  to_datetime: end,
+                  item_defaults: item_defaults,
+                  company_id: company.id,
+                  booking_id: event.id
+                });
+              });
+              return;
+            }
             return Dialog.confirm({
               model: event,
               body: "Are you sure you want to move this booking?",
@@ -631,23 +639,12 @@
             }
           },
           select: function(start, end, jsEvent, view, resource) {
-            var item_defaults, setTimeToMoment;
+            var item_defaults;
             if (jsEvent.target.className === 'fc-scroller') {
               return;
             }
             view.calendar.unselect();
             if (isTimeRangeAvailable(start, end, resource) || (Math.abs(start.diff(end, 'days')) === 1 && dayHasAvailability(start))) {
-              setTimeToMoment = function(date, time) {
-                var newDate;
-                newDate = moment(time, 'HH:mm');
-                newDate.set({
-                  'year': parseInt(date.get('year')),
-                  'month': parseInt(date.get('month')),
-                  'date': parseInt(date.get('date')),
-                  'second': 0
-                });
-                return newDate;
-              };
               if (Math.abs(start.diff(end, 'days')) > 0) {
                 end.subtract(1, 'days');
                 end = setTimeToMoment(end, $scope.options.max_time);
@@ -920,6 +917,56 @@
       }
     };
   });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.calendar.controllers.controller:CalendarPageCtrl
+   *
+  * @description
+  * Controller for the calendar page
+   */
+  angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPageCtrl', [
+    '$scope', '$state', '$log', function($scope, $state, $log) {
+      var pusher_channel, refetch;
+      $scope.adminlte.side_menu = false;
+      $scope.adminlte.heading = null;
+      pusher_channel = $scope.company.getPusherChannel('bookings');
+      refetch = _.throttle(function(data) {
+        $log.info('== booking push received in bookins == ', data);
+        return $scope.$broadcast('refetchBookings', data);
+      }, 1000, {
+        leading: false
+      });
+      pusher_channel.bind('create', refetch);
+      pusher_channel.bind('update', refetch);
+      return pusher_channel.bind('destroy', refetch);
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc overview
+  * @name BBAdminDashboard.calendar.translations
+   *
+  * @description
+  * Translations for the admin calendar module
+   */
+  angular.module('BBAdminDashboard.calendar.translations').config([
+    '$translateProvider', function($translateProvider) {
+      return $translateProvider.translations('en', {
+        'TEXT_2': 'Hello there!'
+      });
+    }
+  ]);
 
 }).call(this);
 
@@ -1347,26 +1394,6 @@
   'use strict';
 
   /*
-  * @ngdoc overview
-  * @name BBAdminDashboard.calendar.translations
-   *
-  * @description
-  * Translations for the admin calendar module
-   */
-  angular.module('BBAdminDashboard.calendar.translations').config([
-    '$translateProvider', function($translateProvider) {
-      return $translateProvider.translations('en', {
-        'TEXT_2': 'Hello there!'
-      });
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
   * @ngdoc controller
   * @name BBAdminDashboard.check-in.controllers.controller:CheckInPageCtrl
    *
@@ -1504,6 +1531,26 @@
   'use strict';
 
   /*
+  * @ngdoc overview
+  * @name BBAdminDashboard.check-in.translations
+   *
+  * @description
+  * Translations for the admin check-in module
+   */
+  angular.module('BBAdminDashboard.check-in.translations').config([
+    '$translateProvider', function($translateProvider) {
+      return $translateProvider.translations('en', {
+        'TEXT_1': 'Hello here!'
+      });
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
   * @ngdoc service
   * @name BBAdminDashboard.check-in.services.service:AdminCheckInOptions
   *
@@ -1546,26 +1593,6 @@
       this.$get = function() {
         return options;
       };
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc overview
-  * @name BBAdminDashboard.check-in.translations
-   *
-  * @description
-  * Translations for the admin check-in module
-   */
-  angular.module('BBAdminDashboard.check-in.translations').config([
-    '$translateProvider', function($translateProvider) {
-      return $translateProvider.translations('en', {
-        'TEXT_1': 'Hello here!'
-      });
     }
   ]);
 
@@ -1734,49 +1761,6 @@
   'use strict';
 
   /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.config-iframe.controllers.controller:ConfigIframePageCtrl
-   *
-  * @description
-  * Controller for the config page
-   */
-  angular.module('BBAdminDashboard.config-iframe.controllers').controller('ConfigIframePageCtrl', [
-    '$scope', '$state', '$rootScope', function($scope, $state, $rootScope) {
-      $scope.parent_state = $state.is("config");
-      $scope.path = "edit";
-      return $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
-        $scope.parent_state = false;
-        if (toState.name === "config") {
-          return $scope.parent_state = true;
-        }
-      });
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.config-iframe.controllers.controller:ConfigSubIframePageCtrl
-   *
-  * @description
-  * Controller for the config sub page
-   */
-  angular.module('BBAdminDashboard.config-iframe.controllers').controller('ConfigSubIframePageCtrl', [
-    '$scope', '$state', '$stateParams', function($scope, $state, $stateParams) {
-      return $scope.path = $stateParams.path;
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
   * @ngdoc service
   * @name BBAdminDashboard.config-iframe.services.service:AdminConfigIframeOptions
   *
@@ -1828,6 +1812,49 @@
   'use strict';
 
   /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.config-iframe.controllers.controller:ConfigIframePageCtrl
+   *
+  * @description
+  * Controller for the config page
+   */
+  angular.module('BBAdminDashboard.config-iframe.controllers').controller('ConfigIframePageCtrl', [
+    '$scope', '$state', '$rootScope', function($scope, $state, $rootScope) {
+      $scope.parent_state = $state.is("config");
+      $scope.path = "edit";
+      return $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
+        $scope.parent_state = false;
+        if (toState.name === "config") {
+          return $scope.parent_state = true;
+        }
+      });
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.config-iframe.controllers.controller:ConfigSubIframePageCtrl
+   *
+  * @description
+  * Controller for the config sub page
+   */
+  angular.module('BBAdminDashboard.config-iframe.controllers').controller('ConfigSubIframePageCtrl', [
+    '$scope', '$state', '$stateParams', function($scope, $state, $stateParams) {
+      return $scope.path = $stateParams.path;
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
   * @ngdoc overview
   * @name BBAdminDashboard.config-iframe.translations
    *
@@ -1861,67 +1888,6 @@
       return moment.tz.setDefault(company.timezone);
     }
   ]);
-
-}).call(this);
-
-
-/*
-* @ngdoc filter
-* @name BBAdminDashboard.filters.filter:minutesToString
-* @description
-* Converts a number to the desired format (default is hour minute(HH:mm))
- */
-
-(function() {
-  angular.module('BBAdminDashboard.filters').filter('minutesToString', function() {
-    return function(minutes, format) {
-      if (format == null) {
-        format = 'HH:mm';
-      }
-      return moment(moment.duration(minutes, 'minutes')._data).format(format);
-    };
-  });
-
-}).call(this);
-
-
-/*
-* @ngdoc filter
-* @name BBAdminDashboard.filters.filter:propsFilter
-* @description
-* Does an OR operation
- */
-
-(function() {
-  angular.module('BBAdminDashboard.filters').filter('propsFilter', function() {
-    return function(items, props) {
-      var keys, out;
-      out = [];
-      if (angular.isArray(items)) {
-        keys = Object.keys(props);
-        items.forEach(function(item) {
-          var i, itemMatches, prop, text;
-          itemMatches = false;
-          i = 0;
-          while (i < keys.length) {
-            prop = keys[i];
-            text = props[prop].toLowerCase();
-            if ((item[prop] != null) && item[prop].toString().toLowerCase().indexOf(text) !== -1) {
-              itemMatches = true;
-              break;
-            }
-            i++;
-          }
-          if (itemMatches) {
-            out.push(item);
-          }
-        });
-      } else {
-        out = items;
-      }
-      return out;
-    };
-  });
 
 }).call(this);
 
@@ -2150,43 +2116,64 @@
 
 }).call(this);
 
-(function() {
-  'use strict';
 
-  /*
-  * @ngdoc overview
-  * @name BBAdminDashboard.translations
-   *
-  * @description
-  * Translations for the admin core module
-   */
-  angular.module('BBAdminDashboard.translations').config([
-    '$translateProvider', function($translateProvider) {
-      return $translateProvider.translations('en', {
-        'TEXT_1': 'Hello here!'
-      });
-    }
-  ]);
+/*
+* @ngdoc filter
+* @name BBAdminDashboard.filters.filter:minutesToString
+* @description
+* Converts a number to the desired format (default is hour minute(HH:mm))
+ */
+
+(function() {
+  angular.module('BBAdminDashboard.filters').filter('minutesToString', function() {
+    return function(minutes, format) {
+      if (format == null) {
+        format = 'HH:mm';
+      }
+      return moment(moment.duration(minutes, 'minutes')._data).format(format);
+    };
+  });
 
 }).call(this);
 
-(function() {
-  'use strict';
 
-  /*
-  * @ngdoc overview
-  * @name BBAdminDashboard.translations
-   *
-  * @description
-  * Translations for the admin core module
-   */
-  angular.module('BBAdminDashboard.translations').config([
-    '$translateProvider', function($translateProvider) {
-      return $translateProvider.translations('es', {
-        'TEXT_2': 'Hello ombre!'
-      });
-    }
-  ]);
+/*
+* @ngdoc filter
+* @name BBAdminDashboard.filters.filter:propsFilter
+* @description
+* Does an OR operation
+ */
+
+(function() {
+  angular.module('BBAdminDashboard.filters').filter('propsFilter', function() {
+    return function(items, props) {
+      var keys, out;
+      out = [];
+      if (angular.isArray(items)) {
+        keys = Object.keys(props);
+        items.forEach(function(item) {
+          var i, itemMatches, prop, text;
+          itemMatches = false;
+          i = 0;
+          while (i < keys.length) {
+            prop = keys[i];
+            text = props[prop].toLowerCase();
+            if ((item[prop] != null) && item[prop].toString().toLowerCase().indexOf(text) !== -1) {
+              itemMatches = true;
+              break;
+            }
+            i++;
+          }
+          if (itemMatches) {
+            out.push(item);
+          }
+        });
+      } else {
+        out = items;
+      }
+      return out;
+    };
+  });
 
 }).call(this);
 
@@ -2456,6 +2443,46 @@
   'use strict';
 
   /*
+  * @ngdoc overview
+  * @name BBAdminDashboard.translations
+   *
+  * @description
+  * Translations for the admin core module
+   */
+  angular.module('BBAdminDashboard.translations').config([
+    '$translateProvider', function($translateProvider) {
+      return $translateProvider.translations('en', {
+        'TEXT_1': 'Hello here!'
+      });
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc overview
+  * @name BBAdminDashboard.translations
+   *
+  * @description
+  * Translations for the admin core module
+   */
+  angular.module('BBAdminDashboard.translations').config([
+    '$translateProvider', function($translateProvider) {
+      return $translateProvider.translations('es', {
+        'TEXT_2': 'Hello ombre!'
+      });
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
   * @ngdoc controller
   * @name BBAdminDashboard.dashboard-iframe.controllers.controller:DashboardIframePageCtrl
    *
@@ -2512,26 +2539,6 @@
   'use strict';
 
   /*
-  * @ngdoc overview
-  * @name BBAdminDashboard.dashboard-iframe.translations
-   *
-  * @description
-  * Translations for the admin dashboard-iframe module
-   */
-  angular.module('BBAdminDashboard.dashboard-iframe.translations').config([
-    '$translateProvider', function($translateProvider) {
-      return $translateProvider.translations('en', {
-        'TEXT_1': 'Hello here!'
-      });
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
   * @ngdoc service
   * @name BBAdminDashboard.dashboard-iframe.services.service:AdminDashboardIframeOptions
   *
@@ -2574,6 +2581,26 @@
       this.$get = function() {
         return options;
       };
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc overview
+  * @name BBAdminDashboard.dashboard-iframe.translations
+   *
+  * @description
+  * Translations for the admin dashboard-iframe module
+   */
+  angular.module('BBAdminDashboard.dashboard-iframe.translations').config([
+    '$translateProvider', function($translateProvider) {
+      return $translateProvider.translations('en', {
+        'TEXT_1': 'Hello here!'
+      });
     }
   ]);
 
@@ -2682,6 +2709,31 @@
   'use strict';
 
   /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.login.controllers.controller:LoginPageCtrl
+   *
+  * @description
+  * Controller for the login page
+   */
+  angular.module('BBAdminDashboard.login.controllers').controller('LoginPageCtrl', [
+    '$scope', '$state', 'AdminLoginService', function($scope, $state, AdminLoginService) {
+      if (AdminLoginService.isLoggedIn()) {
+        AdminLoginService.logout();
+      }
+      return $scope.loginSuccess = function(company) {
+        $scope.company = company;
+        $scope.bb.company = company;
+        return $state.go('calendar');
+      };
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
   * @ngdoc service
   * @name BBAdminDashboard.login.services.service:AdminLoginOptions
   *
@@ -2723,31 +2775,6 @@
       };
       this.$get = function() {
         return options;
-      };
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.login.controllers.controller:LoginPageCtrl
-   *
-  * @description
-  * Controller for the login page
-   */
-  angular.module('BBAdminDashboard.login.controllers').controller('LoginPageCtrl', [
-    '$scope', '$state', 'AdminLoginService', function($scope, $state, AdminLoginService) {
-      if (AdminLoginService.isLoggedIn()) {
-        AdminLoginService.logout();
-      }
-      return $scope.loginSuccess = function(company) {
-        $scope.company = company;
-        $scope.bb.company = company;
-        return $state.go('calendar');
       };
     }
   ]);
@@ -2953,6 +2980,49 @@
   'use strict';
 
   /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.publish-iframe.controllers.controller:PublishIframePageCtrl
+   *
+  * @description
+  * Controller for the publish page
+   */
+  angular.module('BBAdminDashboard.publish-iframe.controllers').controller('PublishIframePageCtrl', [
+    '$scope', '$state', '$rootScope', function($scope, $state, $rootScope) {
+      $scope.parent_state = $state.is("publish");
+      $scope.path = "conf";
+      return $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
+        $scope.parent_state = false;
+        if (toState.name === "setting") {
+          return $scope.parent_state = true;
+        }
+      });
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.publish-iframe.controllers.controller:PublishSubIframePageCtrl
+   *
+  * @description
+  * Controller for the publish sub page
+   */
+  angular.module('BBAdminDashboard.publish-iframe.controllers').controller('PublishSubIframePageCtrl', [
+    '$scope', '$state', '$stateParams', function($scope, $state, $stateParams) {
+      return $scope.path = $stateParams.path;
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
   * @ngdoc service
   * @name BBAdminDashboard.publish-iframe.services.service:AdminPublishIframeOptions
   *
@@ -3004,40 +3074,17 @@
   'use strict';
 
   /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.publish-iframe.controllers.controller:PublishIframePageCtrl
+  * @ngdoc overview
+  * @name BBAdminDashboard.publish-iframe.translations
    *
   * @description
-  * Controller for the publish page
+  * Translations for the admin publish-iframe module
    */
-  angular.module('BBAdminDashboard.publish-iframe.controllers').controller('PublishIframePageCtrl', [
-    '$scope', '$state', '$rootScope', function($scope, $state, $rootScope) {
-      $scope.parent_state = $state.is("publish");
-      $scope.path = "conf";
-      return $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
-        $scope.parent_state = false;
-        if (toState.name === "setting") {
-          return $scope.parent_state = true;
-        }
+  angular.module('BBAdminDashboard.publish-iframe.translations').config([
+    '$translateProvider', function($translateProvider) {
+      return $translateProvider.translations('en', {
+        'TEXT_1': 'Hello here!'
       });
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.publish-iframe.controllers.controller:PublishSubIframePageCtrl
-   *
-  * @description
-  * Controller for the publish sub page
-   */
-  angular.module('BBAdminDashboard.publish-iframe.controllers').controller('PublishSubIframePageCtrl', [
-    '$scope', '$state', '$stateParams', function($scope, $state, $stateParams) {
-      return $scope.path = $stateParams.path;
     }
   ]);
 
@@ -3086,26 +3133,6 @@
       } else {
         return $scope.extra_params = "";
       }
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc overview
-  * @name BBAdminDashboard.publish-iframe.translations
-   *
-  * @description
-  * Translations for the admin publish-iframe module
-   */
-  angular.module('BBAdminDashboard.publish-iframe.translations').config([
-    '$translateProvider', function($translateProvider) {
-      return $translateProvider.translations('en', {
-        'TEXT_1': 'Hello here!'
-      });
     }
   ]);
 
