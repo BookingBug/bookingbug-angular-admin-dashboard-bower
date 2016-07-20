@@ -1,0 +1,31 @@
+@mixin switch-variant($background-left, $text-color-left, $background-right, $text-color-right) {
+	span.switch-left {
+		background: $background-left;
+		color: $text-color-left;
+	}
+
+	span.switch-right {
+		background: $background-right;
+		color: $text-color-right;
+	}
+}
+
+div.switch-primary.ats-switch {
+	@include switch-variant($brand-primary, #fff, $gray-lighter, $gray-base);
+}
+
+div.switch-success.ats-switch {
+	@include switch-variant($brand-success, #fff, $gray-lighter, $gray-base);
+}
+
+div.switch-info.ats-switch {
+	@include switch-variant($brand-info, #fff, $gray-lighter, $gray-base);
+}
+
+div.switch-warning.ats-switch {
+	@include switch-variant($brand-warning, #fff, $gray-lighter, $gray-base);
+}
+
+div.switch-danger.ats-switch {
+	@include switch-variant($brand-danger, #fff, $gray-lighter, $gray-base);
+}

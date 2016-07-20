@@ -602,19 +602,23 @@
             return event.oldResourceIds = event.resourceIds;
           },
           eventDrop: function(event, delta, revertFunc) {
-            var end, item_defaults, newAssetId, start;
-            if (event.person_id && event.resource_id) {
+            var end, item_defaults, newAssetId, orginal_resource, start;
+            if (event.person_id && event.resource_id || delta.days() > 0) {
               start = event.start;
               end = event.end;
               item_defaults = {
                 date: start.format('YYYY-MM-DD'),
                 time: start.hour() * 60 + start.minute()
               };
-              newAssetId = event.resourceId.substring(0, event.resourceId.indexOf('_'));
-              if (event.resourceId.indexOf('_p') > -1) {
-                item_defaults.person = newAssetId;
-              } else if (event.resourceId.indexOf('_r') > -1) {
-                item_defaults.resource = newAssetId;
+              if (event.resourceId) {
+                newAssetId = event.resourceId.substring(0, event.resourceId.indexOf('_'));
+                if (event.resourceId.indexOf('_p') > -1) {
+                  item_defaults.person = newAssetId;
+                  orginal_resource = "" + event.person_id + "_p";
+                } else if (event.resourceId.indexOf('_r') > -1) {
+                  item_defaults.resource = newAssetId;
+                  orginal_resource = "" + event.resource_id + "_r";
+                }
               }
               $scope.getCompanyPromise().then(function(company) {
                 return AdminMoveBookingPopup.open({
@@ -624,7 +628,15 @@
                   to_datetime: moment(end.toISOString()),
                   item_defaults: item_defaults,
                   company_id: company.id,
-                  booking_id: event.id
+                  booking_id: event.id,
+                  success: (function(_this) {
+                    return function(model) {
+                      return $scope.refreshBooking(event);
+                    };
+                  })(this),
+                  fail: function() {
+                    return $scope.refreshBooking(event);
+                  }
                 });
               });
               return;
@@ -809,6 +821,20 @@
             $scope.loading = false;
             return callback($scope.selectedResources.selected);
           }
+        });
+      };
+      $scope.refreshBooking = function(booking) {
+        return booking.$refetch().then(function(response) {
+          console.log("reloading");
+          booking.resourceIds = [];
+          booking.resourceId = null;
+          if (booking.person_id != null) {
+            booking.resourceIds.push(booking.person_id + '_p');
+          }
+          if (booking.resource_id != null) {
+            booking.resourceIds.push(booking.resource_id + '_r');
+          }
+          return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('updateEvent', booking);
         });
       };
       $scope.updateBooking = function(booking) {
