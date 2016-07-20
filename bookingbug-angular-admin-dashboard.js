@@ -25,6 +25,31 @@
 
 (function() {
   'use strict';
+  angular.module('BBAdminDashboard.check-in.controllers', []);
+
+  angular.module('BBAdminDashboard.check-in.services', []);
+
+  angular.module('BBAdminDashboard.check-in.directives', []);
+
+  angular.module('BBAdminDashboard.check-in.translations', []);
+
+  angular.module('BBAdminDashboard.check-in', ['BBAdminDashboard.check-in.controllers', 'BBAdminDashboard.check-in.services', 'BBAdminDashboard.check-in.directives', 'BBAdminDashboard.check-in.translations']).run([
+    'RuntimeStates', 'AdminCheckInOptions', function(RuntimeStates, AdminCheckInOptions) {
+      if (AdminCheckInOptions.use_default_states) {
+        return RuntimeStates.state('checkin', {
+          parent: AdminCheckInOptions.parent_state,
+          url: "/check-in",
+          templateUrl: "checkin_page.html",
+          controller: 'CheckInPageCtrl'
+        });
+      }
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
   angular.module('BBAdminDashboard.clients.controllers', []);
 
   angular.module('BBAdminDashboard.clients.services', []);
@@ -101,22 +126,142 @@
 
 (function() {
   'use strict';
-  angular.module('BBAdminDashboard.check-in.controllers', []);
+  var BBAdminDashboardDependencies, adminBookingApp;
 
-  angular.module('BBAdminDashboard.check-in.services', []);
+  angular.module('BBAdminDashboard.controllers', []);
 
-  angular.module('BBAdminDashboard.check-in.directives', []);
+  angular.module('BBAdminDashboard.filters', []);
 
-  angular.module('BBAdminDashboard.check-in.translations', []);
+  angular.module('BBAdminDashboard.services', []);
 
-  angular.module('BBAdminDashboard.check-in', ['BBAdminDashboard.check-in.controllers', 'BBAdminDashboard.check-in.services', 'BBAdminDashboard.check-in.directives', 'BBAdminDashboard.check-in.translations']).run([
-    'RuntimeStates', 'AdminCheckInOptions', function(RuntimeStates, AdminCheckInOptions) {
-      if (AdminCheckInOptions.use_default_states) {
-        return RuntimeStates.state('checkin', {
-          parent: AdminCheckInOptions.parent_state,
-          url: "/check-in",
-          templateUrl: "checkin_page.html",
-          controller: 'CheckInPageCtrl'
+  angular.module('BBAdminDashboard.directives', []);
+
+  angular.module('BBAdminDashboard.translations', []);
+
+  BBAdminDashboardDependencies = ['ngStorage', 'ngResource', 'ngTouch', 'ngSanitize', 'ngIdle', 'ngLocalData', 'ngInputDate', 'ngCookies', 'BBAdmin', 'BBAdminServices', 'BBAdminBooking', 'BBAdmin.Directives', 'ui.calendar', 'ui.bootstrap', 'ui.router', 'ui.select', 'ct.ui.router.extras', 'trNgGrid', 'xeditable', 'toggle-switch', 'pascalprecht.translate', 'BBAdminDashboard.controllers', 'BBAdminDashboard.filters', 'BBAdminDashboard.services', 'BBAdminDashboard.directives', 'BBAdminDashboard.translations', 'BBAdminDashboard.check-in', 'BBAdminDashboard.clients', 'BBAdminDashboard.departments', 'BBAdminDashboard.login', 'BBAdminDashboard.logout', 'BBAdminDashboard.calendar', 'BBAdminDashboard.dashboard-iframe', 'BBAdminDashboard.members-iframe', 'BBAdminDashboard.settings-iframe', 'BBAdminDashboard.config-iframe', 'BBAdminDashboard.publish-iframe'];
+
+  adminBookingApp = angular.module('BBAdminDashboard', BBAdminDashboardDependencies).config([
+    '$stateProvider', '$urlRouterProvider', function($stateProvider, $urlRouterProvider) {
+      $stateProvider.root_state = "dashboard";
+      $urlRouterProvider.otherwise("/" + $stateProvider.root_state);
+      return $stateProvider.state('root', {
+        template: "<div ui-view></div>",
+        resolve: {
+          sso: function($q, sso_token, AdminLoginService, $injector) {
+            var defer;
+            defer = $q.defer();
+            AdminLoginService.isLoggedIn().then(function(loggedIn) {
+              var AdminSsoLogin;
+              if (!loggedIn && sso_token !== false) {
+                AdminSsoLogin = $injector.get('AdminSsoLogin');
+                return AdminSsoLogin(sso_token, function(admin) {
+                  AdminLoginService.setLogin(admin);
+                  return defer.resolve();
+                });
+              } else {
+                return defer.resolve();
+              }
+            });
+            return defer.promise;
+          },
+          user: function($q, AdminLoginService, $timeout, $state, sso) {
+            var defer;
+            defer = $q.defer();
+            AdminLoginService.user().then(function(user) {
+              if (user) {
+                return defer.resolve(user);
+              } else {
+                return $timeout(function() {
+                  return $state.go('login', {}, {
+                    reload: true
+                  });
+                });
+              }
+            }, function(err) {
+              return $timeout(function() {
+                return $state.go('login', {}, {
+                  reload: true
+                });
+              });
+            });
+            return defer.promise;
+          },
+          company: function(user, $q, $timeout, $state) {
+            var defer;
+            defer = $q.defer();
+            user.getCompanyPromise().then(function(company) {
+              if (company.companies && company.companies.length > 0) {
+                return $timeout(function() {
+                  return $state.go('departments', {}, {
+                    reload: true
+                  });
+                });
+              } else {
+                return defer.resolve(company);
+              }
+            }, function(err) {
+              return $timeout(function() {
+                console.log('failed to get company');
+                return $state.go('login', {}, {
+                  reload: true
+                });
+              });
+            });
+            return defer.promise;
+          }
+        },
+        controller: 'CorePageController'
+      });
+    }
+  ]).config(function($logProvider, $httpProvider) {
+    $logProvider.debugEnabled(true);
+    return $httpProvider.defaults.withCredentials = true;
+  }).constant('idleTimeout', 600).constant('idleStart', 300).value('company_id', null).value('sso_token', false).config(function($idleProvider, idleStart, idleTimeout) {
+    $idleProvider.idleDuration(idleStart);
+    return $idleProvider.warningDuration(idleTimeout);
+  }).config([
+    '$translateProvider', 'AdminCoreOptionsProvider', function($translateProvider, AdminCoreOptionsProvider) {
+      $translateProvider.useSanitizeValueStrategy('sanitize');
+      $translateProvider.useLocalStorage();
+      return $translateProvider.registerAvailableLanguageKeys(AdminCoreOptionsProvider.getOption('available_languages'), AdminCoreOptionsProvider.getOption('available_language_associations')).fallbackLanguage(AdminCoreOptionsProvider.getOption('available_languages'));
+    }
+  ]).run([
+    '$translate', 'AdminCoreOptions', function($translate, AdminCoreOptions) {
+      var browserLocale;
+      $translate.preferredLanguage(AdminCoreOptions.default_language);
+      if (AdminCoreOptions.use_browser_language) {
+        browserLocale = $translate.negotiateLocale($translate.resolveClientLocale());
+        if (_.contains(AdminCoreOptions.available_languages, browserLocale)) {
+          return $translate.preferredLanguage(browserLocale);
+        }
+      }
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BBAdminDashboard.dashboard-iframe.controllers', []);
+
+  angular.module('BBAdminDashboard.dashboard-iframe.services', []);
+
+  angular.module('BBAdminDashboard.dashboard-iframe.directives', []);
+
+  angular.module('BBAdminDashboard.dashboard-iframe.translations', []);
+
+  angular.module('BBAdminDashboard.dashboard-iframe', ['BBAdminDashboard.dashboard-iframe.controllers', 'BBAdminDashboard.dashboard-iframe.services', 'BBAdminDashboard.dashboard-iframe.directives', 'BBAdminDashboard.dashboard-iframe.translations']).run([
+    'RuntimeStates', 'AdminDashboardIframeOptions', function(RuntimeStates, AdminDashboardIframeOptions) {
+      if (AdminDashboardIframeOptions.use_default_states) {
+        return RuntimeStates.state('dashboard', {
+          parent: AdminDashboardIframeOptions.parent_state,
+          url: "/dashboard",
+          controller: "DashboardIframePageCtrl",
+          templateUrl: "admin_dashboard_page.html"
+        }).state('dashboard.page', {
+          url: "/page/:path",
+          controller: 'DashboardSubIframePageCtrl',
+          templateUrl: "iframe_page.html"
         });
       }
     }
@@ -261,35 +406,6 @@
 
 (function() {
   'use strict';
-  angular.module('BBAdminDashboard.dashboard-iframe.controllers', []);
-
-  angular.module('BBAdminDashboard.dashboard-iframe.services', []);
-
-  angular.module('BBAdminDashboard.dashboard-iframe.directives', []);
-
-  angular.module('BBAdminDashboard.dashboard-iframe.translations', []);
-
-  angular.module('BBAdminDashboard.dashboard-iframe', ['BBAdminDashboard.dashboard-iframe.controllers', 'BBAdminDashboard.dashboard-iframe.services', 'BBAdminDashboard.dashboard-iframe.directives', 'BBAdminDashboard.dashboard-iframe.translations']).run([
-    'RuntimeStates', 'AdminDashboardIframeOptions', function(RuntimeStates, AdminDashboardIframeOptions) {
-      if (AdminDashboardIframeOptions.use_default_states) {
-        return RuntimeStates.state('dashboard', {
-          parent: AdminDashboardIframeOptions.parent_state,
-          url: "/dashboard",
-          controller: "DashboardIframePageCtrl",
-          templateUrl: "admin_dashboard_page.html"
-        }).state('dashboard.page', {
-          url: "/page/:path",
-          controller: 'DashboardSubIframePageCtrl',
-          templateUrl: "iframe_page.html"
-        });
-      }
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
   angular.module('BBAdminDashboard.publish-iframe.controllers', []);
 
   angular.module('BBAdminDashboard.publish-iframe.services', []);
@@ -311,122 +427,6 @@
           templateUrl: 'iframe_page.html',
           controller: 'PublishSubIframePageCtrl'
         });
-      }
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-  var BBAdminDashboardDependencies, adminBookingApp;
-
-  angular.module('BBAdminDashboard.controllers', []);
-
-  angular.module('BBAdminDashboard.filters', []);
-
-  angular.module('BBAdminDashboard.services', []);
-
-  angular.module('BBAdminDashboard.directives', []);
-
-  angular.module('BBAdminDashboard.translations', []);
-
-  BBAdminDashboardDependencies = ['ngStorage', 'ngResource', 'ngTouch', 'ngSanitize', 'ngIdle', 'ngLocalData', 'ngInputDate', 'ngCookies', 'BBAdmin', 'BBAdminServices', 'BBAdminBooking', 'BBAdmin.Directives', 'ui.calendar', 'ui.bootstrap', 'ui.router', 'ui.select', 'ct.ui.router.extras', 'trNgGrid', 'xeditable', 'toggle-switch', 'pascalprecht.translate', 'BBAdminDashboard.controllers', 'BBAdminDashboard.filters', 'BBAdminDashboard.services', 'BBAdminDashboard.directives', 'BBAdminDashboard.translations', 'BBAdminDashboard.check-in', 'BBAdminDashboard.clients', 'BBAdminDashboard.departments', 'BBAdminDashboard.login', 'BBAdminDashboard.logout', 'BBAdminDashboard.calendar', 'BBAdminDashboard.dashboard-iframe', 'BBAdminDashboard.members-iframe', 'BBAdminDashboard.settings-iframe', 'BBAdminDashboard.config-iframe', 'BBAdminDashboard.publish-iframe'];
-
-  adminBookingApp = angular.module('BBAdminDashboard', BBAdminDashboardDependencies).config([
-    '$stateProvider', '$urlRouterProvider', function($stateProvider, $urlRouterProvider) {
-      $stateProvider.root_state = "dashboard";
-      $urlRouterProvider.otherwise("/" + $stateProvider.root_state);
-      return $stateProvider.state('root', {
-        template: "<div ui-view></div>",
-        resolve: {
-          sso: function($q, sso_token, AdminLoginService, $injector) {
-            var defer;
-            defer = $q.defer();
-            AdminLoginService.isLoggedIn().then(function(loggedIn) {
-              var AdminSsoLogin;
-              if (!loggedIn && sso_token !== false) {
-                AdminSsoLogin = $injector.get('AdminSsoLogin');
-                return AdminSsoLogin(sso_token, function(admin) {
-                  AdminLoginService.setLogin(admin);
-                  return defer.resolve();
-                });
-              } else {
-                return defer.resolve();
-              }
-            });
-            return defer.promise;
-          },
-          user: function($q, AdminLoginService, $timeout, $state, sso) {
-            var defer;
-            defer = $q.defer();
-            AdminLoginService.user().then(function(user) {
-              if (user) {
-                return defer.resolve(user);
-              } else {
-                return $timeout(function() {
-                  return $state.go('login', {}, {
-                    reload: true
-                  });
-                });
-              }
-            }, function(err) {
-              return $timeout(function() {
-                return $state.go('login', {}, {
-                  reload: true
-                });
-              });
-            });
-            return defer.promise;
-          },
-          company: function(user, $q, $timeout, $state) {
-            var defer;
-            defer = $q.defer();
-            user.getCompanyPromise().then(function(company) {
-              if (company.companies && company.companies.length > 0) {
-                return $timeout(function() {
-                  return $state.go('departments', {}, {
-                    reload: true
-                  });
-                });
-              } else {
-                return defer.resolve(company);
-              }
-            }, function(err) {
-              return $timeout(function() {
-                console.log('failed to get company');
-                return $state.go('login', {}, {
-                  reload: true
-                });
-              });
-            });
-            return defer.promise;
-          }
-        },
-        controller: 'CorePageController'
-      });
-    }
-  ]).config(function($logProvider, $httpProvider) {
-    $logProvider.debugEnabled(true);
-    return $httpProvider.defaults.withCredentials = true;
-  }).constant('idleTimeout', 600).constant('idleStart', 300).value('company_id', null).value('sso_token', false).config(function($idleProvider, idleStart, idleTimeout) {
-    $idleProvider.idleDuration(idleStart);
-    return $idleProvider.warningDuration(idleTimeout);
-  }).config([
-    '$translateProvider', 'AdminCoreOptionsProvider', function($translateProvider, AdminCoreOptionsProvider) {
-      $translateProvider.useSanitizeValueStrategy('sanitize');
-      $translateProvider.useLocalStorage();
-      return $translateProvider.registerAvailableLanguageKeys(AdminCoreOptionsProvider.getOption('available_languages'), AdminCoreOptionsProvider.getOption('available_language_associations')).fallbackLanguage(AdminCoreOptionsProvider.getOption('available_languages'));
-    }
-  ]).run([
-    '$translate', 'AdminCoreOptions', function($translate, AdminCoreOptions) {
-      var browserLocale;
-      $translate.preferredLanguage(AdminCoreOptions.default_language);
-      if (AdminCoreOptions.use_browser_language) {
-        browserLocale = $translate.negotiateLocale($translate.resolveClientLocale());
-        if (_.contains(AdminCoreOptions.available_languages, browserLocale)) {
-          return $translate.preferredLanguage(browserLocale);
-        }
       }
     }
   ]);
@@ -495,426 +495,6 @@
       pusher_channel.bind('create', refetch);
       pusher_channel.bind('update', refetch);
       return pusher_channel.bind('destroy', refetch);
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc service
-  * @name BBAdminDashboard.calendar.services.service:AdminCalendarOptions
-  *
-  * @description
-  * Returns a set of admin calendar configuration options
-   */
-
-  /*
-  * @ngdoc service
-  * @name BBAdminDashboard.calendar.services.service:AdminCalendarOptionsProvider
-  *
-  * @description
-  * Provider
-  *
-  * @example
-    <example>
-    angular.module('ExampleModule').config ['AdminCalendarOptionsProvider', (AdminCalendarOptionsProvider) ->
-      AdminCalendarOptionsProvider.setOption('option', 'value')
-    ]
-    </example>
-   */
-  angular.module('BBAdminDashboard.calendar.services').provider('AdminCalendarOptions', [
-    function() {
-      var options;
-      options = {
-        use_default_states: true,
-        show_in_navigation: true,
-        parent_state: 'root',
-        column_format: null,
-        bookings_label_assembler: '{service_name} - {client_name}',
-        block_label_assembler: 'Blocked',
-        external_label_assembler: null
-      };
-      this.setOption = function(option, value) {
-        if (options.hasOwnProperty(option)) {
-          options[option] = value;
-        }
-      };
-      this.getOption = function(option) {
-        if (options.hasOwnProperty(option)) {
-          return options[option];
-        }
-      };
-      this.$get = function() {
-        return options;
-      };
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc service
-  * @name BBAdminDashboard.calendar.services.service:CalendarEventSources
-  *
-  * @description
-  * This services exposes methods to get all event-type information to be shown in the calendar
-   */
-  angular.module('BBAdminDashboard.calendar.services').factory('CalendarEventSources', [
-    '$exceptionHandler', '$q', 'TitleAssembler', 'AdminBookingService', 'AdminScheduleService', function($exceptionHandler, $q, TitleAssembler, AdminBookingService, AdminScheduleService) {
-      var bookingBelongsToSelectedResources;
-      bookingBelongsToSelectedResources = function(resources, booking) {
-        var belongs;
-        belongs = false;
-        _.each(resources, function(asset) {
-          if (_.contains(booking.resourceIds, asset.id)) {
-            return belongs = true;
-          }
-        });
-        return belongs;
-      };
-      return {
-
-        /*
-        * @ngdoc method
-        * @name getBookingsAndBlocks
-        * @methodOf BBAdminDashboard.calendar.services.service:CalendarEventSources
-        * @description
-        * Returns all bookings and blocks for a certain period of time,
-        * filtered by a list of resources if one is provided through the options
-        *
-        * @param {object} company  The company to be queried for bookings and blocks
-        * @param {Moment} start    Moment object containing the start of the requested period
-        * @param {Moment} end      Moment object containing the end of the requested period
-        * @param {object} options  Object which contains usefull flags and params
-                                   The relevant ones for this method are:
-                                   - {boolean} noCache              skips the cache
-                                   - {boolean} showAll              skip the filter by resource filter
-                                   - {array}   selectedResources    array of selected resource to filter against
-                                   - {string}  labelAssembler       the pattern to use for bookings (see TitleAssembler)
-                                   - {string}  blockLabelAssembler  the pattern to use for blocks (see TitleAssembler)
-        
-        * @returns {Promise} Promise which once resolved returns an array of bookings and blocks
-         */
-        getBookingsAndBlocks: function(company, start, end, options) {
-          var deferred, params;
-          if (options == null) {
-            options = {};
-          }
-          deferred = $q.defer();
-          params = {
-            company: company,
-            start_date: start.format('YYYY-MM-DD'),
-            end_date: end.format('YYYY-MM-DD'),
-            skip_cache: (options.noCache != null) && options.noCache ? true : false
-          };
-          AdminBookingService.query(params).then(function(bookings) {
-            var booking, filteredBookings, i, len, ref;
-            filteredBookings = [];
-            ref = bookings.items;
-            for (i = 0, len = ref.length; i < len; i++) {
-              booking = ref[i];
-              booking.resourceIds = [];
-              if (booking.person_id != null) {
-                booking.resourceIds.push(booking.person_id + '_p');
-              }
-              if (booking.resource_id != null) {
-                booking.resourceIds.push(booking.resource_id + '_r');
-              }
-              if ((options.showAll == null) || ((options.showAll != null) && options.showAll) || bookingBelongsToSelectedResources(options.selectedResources, booking)) {
-                booking.useFullTime();
-                if (booking.$has('edit')) {
-                  booking.startEditable = true;
-                }
-                if (booking.status !== 3 && (options.labelAssembler != null)) {
-                  booking.title = TitleAssembler.getTitle(booking, options.labelAssembler);
-                } else if (booking.status === 3 && (options.blockLabelAssembler != null)) {
-                  booking.title = TitleAssembler.getTitle(booking, options.blockLabelAssembler);
-                }
-                filteredBookings.push(booking);
-              }
-            }
-            return deferred.resolve(filteredBookings);
-          }, function(err) {
-            return deferred.reject(err);
-          });
-          return deferred.promise;
-        },
-
-        /*
-        * @ngdoc method
-        * @name getExternalBookings
-        * @methodOf BBAdminDashboard.calendar.services.service:CalendarEventSources
-        * @description
-        * Returns all external bookings for a certain period of time
-        *
-        * @param {object} company  The company to be queried for bookings and blocks
-        * @param {Moment} start    Moment object containing the start of the requested period
-        * @param {Moment} end      Moment object containing the end of the requested period
-        * @param {object} options  Object which contains usefull flags and params
-                                   The relevant ones for this method are:
-                                   - {string}  externalLabelAssembler  the pattern to use for the title (see TitleAssembler)
-        
-        * @returns {Promise} Promise which once resolved returns an array of bookings
-         */
-        getExternalBookings: function(company, start, end, options) {
-          var deferred, params;
-          if (options == null) {
-            options = {};
-          }
-          deferred = $q.defer();
-          if (company.$has('external_bookings')) {
-            params = {
-              start: start.format(),
-              end: end.format(),
-              no_cache: (options.noCache != null) && options.noCache ? true : false
-            };
-            company.$get('external_bookings', params).then(function(collection) {
-              return collection.$get('external_bookings').then(function(bookings) {
-                var booking, i, len;
-                for (i = 0, len = bookings.length; i < len; i++) {
-                  booking = bookings[i];
-                  booking.resourceIds = [];
-                  if (booking.person_id != null) {
-                    booking.resourceIds.push(booking.person_id + '_p');
-                  }
-                  if (booking.resource_id != null) {
-                    booking.resourceIds.push(booking.resource_id + '_r');
-                  }
-                  if (options.externalLabelAssembler != null) {
-                    booking.title = TitleAssembler.getTitle(booking, options.externalLabelAssembler);
-                  }
-                  booking.type = 'external';
-                }
-                return deferred.resolve(bookings);
-              }, function(err) {
-                return deferred.reject(err);
-              });
-            }, function(err) {
-              return deferred.reject(err);
-            });
-          } else {
-            deferred.resolve([]);
-          }
-          return deferred.promise;
-        },
-
-        /*
-        * @ngdoc method
-        * @name getAvailabilityBackground
-        * @methodOf BBAdminDashboard.calendar.services.service:CalendarEventSources
-        * @description
-        * Returns all availability for a certain period of time,
-        * filtered by a list of resources if one is provided through the options,
-        * and grouped per calendar day if in week or month view
-        *
-        * @param {object} company  The company to be queried for bookings and blocks
-        * @param {Moment} start    Moment object containing the start of the requested period
-        * @param {Moment} end      Moment object containing the end of the requested period
-        * @param {object} options  Object which contains usefull flags and params
-                                   The relevant ones for this method are:
-                                   - {boolean} noCache              skips the cache
-                                   - {boolean} showAll              skip the filter by resource filter
-                                   - {array}   selectedResources    array of selected resource to filter against
-                                   - {string}  calendarView         identifies which view the calendar is curently displaying (enum: 'timelineDay', 'agendaWeek', 'month')
-        
-        * @returns {Promise} Promise which once resolved returns an array of availability background events
-         */
-        getAvailabilityBackground: function(company, start, end, options) {
-          var deferred;
-          if (options == null) {
-            options = {};
-          }
-          deferred = $q.defer();
-          AdminScheduleService.getAssetsScheduleEvents(company, start, end, !options.showAll, options.selectedResources).then(function(availabilities) {
-            var overAllAvailabilities;
-            if (options.calendarView === 'timelineDay') {
-              return deferred.resolve(availabilities);
-            } else {
-              overAllAvailabilities = [];
-              angular.forEach(availabilities, function(availability, index) {
-                var dayAvailability;
-                dayAvailability = _.filter(overAllAvailabilities, function(overAllAvailability) {
-                  if (moment(overAllAvailability.start).dayOfYear() === moment(availability.start).dayOfYear()) {
-                    return true;
-                  }
-                  return false;
-                });
-                if (dayAvailability.length > 0) {
-                  if (moment(availability.start).unix() < moment(dayAvailability[0].start).unix()) {
-                    dayAvailability[0].start = availability.start;
-                  }
-                  if (moment(availability.end).unix() > moment(dayAvailability[0].end).unix()) {
-                    return dayAvailability[0].end = availability.end;
-                  }
-                } else {
-                  return overAllAvailabilities.push({
-                    start: availability.start,
-                    end: availability.end,
-                    rendering: "background",
-                    title: "Joined availability " + moment(availability.start).format('YYYY-MM-DD'),
-                    allDay: options.calendarView === 'month' ? true : false
-                  });
-                }
-              });
-              return deferred.resolve(overAllAvailabilities);
-            }
-          }, function(err) {
-            return deferred.reject(err);
-          });
-          return deferred.promise;
-        },
-
-        /*
-        * @ngdoc method
-        * @name getAllCalendarEntries
-        * @methodOf BBAdminDashboard.calendar.services.service:CalendarEventSources
-        * @description
-        * Returns all event type information to be displayed in the calendar
-        *
-        * @param {object} company  The company to be queried for bookings and blocks
-        * @param {Moment} start    Moment object containing the start of the requested period
-        * @param {Moment} end      Moment object containing the end of the requested period
-        * @param {object} options  Object which contains usefull flags and params (see above methodds for details)
-        *
-        * @returns {Promise} Promise which once resolved returns an array of availability background events
-         */
-        getAllCalendarEntries: function(company, start, end, options) {
-          var deferred, promises;
-          if (options == null) {
-            options = {};
-          }
-          deferred = $q.defer();
-          promises = [this.getBookingsAndBlocks(company, start, end, options), this.getExternalBookings(company, start, end, options), this.getAvailabilityBackground(company, start, end, options)];
-          $q.all(promises).then(function(resolutions) {
-            var allResults;
-            allResults = [];
-            angular.forEach(resolutions, function(results, index) {
-              return allResults = allResults.concat(results);
-            });
-            return deferred.resolve(allResults);
-          }, function(err) {
-            return deferred.reject(err);
-          });
-          return deferred.promise;
-        }
-      };
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  angular.module('BBAdminDashboard.calendar.services').factory("PrePostTime", [
-    '$compile', function($compile) {
-      return {
-        apply: function(event, elements, view, scope) {
-          var contentDiv, e, element, i, len, post, postHeight, postWidth, pre, preHeight, preWidth, results, totalDuration;
-          results = [];
-          for (i = 0, len = elements.length; i < len; i++) {
-            e = elements[i];
-            element = angular.element(e);
-            totalDuration = event.duration + event.pre_time + event.post_time;
-            if (event.pre_time) {
-              switch (view.name) {
-                case "agendaWeek":
-                case "agendaDay":
-                  preHeight = event.pre_time * (element.height() + 2) / totalDuration;
-                  pre = $compile("<div class='pre' style='height:" + preHeight + "px'></div>")(scope);
-                  element.prepend(pre);
-                  break;
-                case "timelineDay":
-                  contentDiv = element.children()[0];
-                  preWidth = event.pre_time * (element.width() + 2) / totalDuration;
-                  pre = $compile("<div class='pre' style='width:" + preWidth + "px'></div>")(scope);
-                  element.prepend(pre);
-                  angular.element(contentDiv).css("padding-left", preWidth + "px");
-              }
-            }
-            if (event.post_time) {
-              switch (view.name) {
-                case "agendaWeek":
-                case "agendaDay":
-                  postHeight = event.post_time * (element.height() + 2) / totalDuration;
-                  post = $compile("<div class='post' style='height:" + postHeight + "px'></div>")(scope);
-                  results.push(element.append(post));
-                  break;
-                case "timelineDay":
-                  postWidth = event.post_time * (element.width() + 2) / totalDuration;
-                  post = $compile("<div class='post' style='width:" + postWidth + "px'></div>")(scope);
-                  results.push(element.append(post));
-                  break;
-                default:
-                  results.push(void 0);
-              }
-            } else {
-              results.push(void 0);
-            }
-          }
-          return results;
-        }
-      };
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc service
-  * @name BBAdminDashboard.calendar.services.service:TitleAssembler
-  *
-  * @description
-  * Assembles a string based on a pattern and an object provided according to the following rules
-  * ex: '{service_name} - {client_name} - {created_at|date:shortTime}'
-  * everything outside  {} will remain as is, inside the {} the first param (required) is the property name
-  * second after the '|' (optional) is the filter and third after the ':' (optional) are the options for filter
-  * if the requested property is not part of the given object it will be skipped
-   */
-  angular.module('BBAdminDashboard.calendar.services').factory('TitleAssembler', [
-    function() {
-      var expression;
-      expression = new RegExp("\\{([a-zA-z_-]+)\\|?([a-zA-z_-]+)?:?([a-zA-z0-9{}_-]+)?\\}", "g");
-      return {
-        getTitle: function(object, pattern) {
-          var i, index, label, len, match, parts, patternMatches, replaceWith;
-          if ((object == null) || (pattern == null)) {
-            return null;
-          }
-          patternMatches = pattern.match(expression);
-          if ((patternMatches == null) || patternMatches.length === 0) {
-            return pattern;
-          }
-          label = pattern;
-          for (index = i = 0, len = patternMatches.length; i < len; index = ++i) {
-            match = patternMatches[index];
-            parts = match.split(expression);
-            parts.splice(0, 1);
-            parts.pop();
-            if (object.hasOwnProperty(parts[0])) {
-              replaceWith = object[parts[0]];
-              if ((parts[1] != null) && ($filter(parts[1]) != null)) {
-                if (parts[2] != null) {
-                  replaceWith = $filter(parts[1])(replaceWith, $scope.$eval(parts[2]));
-                } else {
-                  replaceWith = $filter(parts[1])(replaceWith);
-                }
-              }
-              label = label.replace(match, replaceWith);
-            } else {
-              label = label.replace(match, '');
-            }
-          }
-          return label;
-        }
-      };
     }
   ]);
 
@@ -1374,15 +954,52 @@
   'use strict';
 
   /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.clients.controllers.controller:ClientsAllPageCtrl
-   *
+  * @ngdoc service
+  * @name BBAdminDashboard.calendar.services.service:AdminCalendarOptions
+  *
   * @description
-  * Controller for the clients all page
+  * Returns a set of admin calendar configuration options
    */
-  angular.module('BBAdminDashboard.clients.controllers').controller('ClientsAllPageCtrl', [
-    '$scope', '$state', function($scope, $state) {
-      return $scope.set_current_client(null);
+
+  /*
+  * @ngdoc service
+  * @name BBAdminDashboard.calendar.services.service:AdminCalendarOptionsProvider
+  *
+  * @description
+  * Provider
+  *
+  * @example
+    <example>
+    angular.module('ExampleModule').config ['AdminCalendarOptionsProvider', (AdminCalendarOptionsProvider) ->
+      AdminCalendarOptionsProvider.setOption('option', 'value')
+    ]
+    </example>
+   */
+  angular.module('BBAdminDashboard.calendar.services').provider('AdminCalendarOptions', [
+    function() {
+      var options;
+      options = {
+        use_default_states: true,
+        show_in_navigation: true,
+        parent_state: 'root',
+        column_format: null,
+        bookings_label_assembler: '{service_name} - {client_name}',
+        block_label_assembler: 'Blocked',
+        external_label_assembler: null
+      };
+      this.setOption = function(option, value) {
+        if (options.hasOwnProperty(option)) {
+          options[option] = value;
+        }
+      };
+      this.getOption = function(option) {
+        if (options.hasOwnProperty(option)) {
+          return options[option];
+        }
+      };
+      this.$get = function() {
+        return options;
+      };
     }
   ]);
 
@@ -1392,27 +1009,305 @@
   'use strict';
 
   /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.clients.controllers.controller:ClientsEditPageCtrl
-   *
+  * @ngdoc service
+  * @name BBAdminDashboard.calendar.services.service:CalendarEventSources
+  *
   * @description
-  * Controller for the clients edit page
+  * This services exposes methods to get all event-type information to be shown in the calendar
    */
-  angular.module('BBAdminDashboard.clients.controllers').controller('ClientsEditPageCtrl', [
-    '$scope', 'client', '$state', 'company', 'AdminClientService', function($scope, client, $state, company, AdminClientService) {
-      $scope.client = client;
-      $scope.historicalStartDate = moment().add(-1, 'years');
-      $scope.historicalEndDate = moment();
-      return $scope.memberSaveCallback = function() {
-        var params;
-        params = {
-          company_id: company.id,
-          id: $state.params.id,
-          flush: true
-        };
-        return AdminClientService.query(params).then(function(client) {
-          return $scope.client = client;
+  angular.module('BBAdminDashboard.calendar.services').factory('CalendarEventSources', [
+    '$exceptionHandler', '$q', 'TitleAssembler', 'AdminBookingService', 'AdminScheduleService', function($exceptionHandler, $q, TitleAssembler, AdminBookingService, AdminScheduleService) {
+      var bookingBelongsToSelectedResources;
+      bookingBelongsToSelectedResources = function(resources, booking) {
+        var belongs;
+        belongs = false;
+        _.each(resources, function(asset) {
+          if (_.contains(booking.resourceIds, asset.id)) {
+            return belongs = true;
+          }
         });
+        return belongs;
+      };
+      return {
+
+        /*
+        * @ngdoc method
+        * @name getBookingsAndBlocks
+        * @methodOf BBAdminDashboard.calendar.services.service:CalendarEventSources
+        * @description
+        * Returns all bookings and blocks for a certain period of time,
+        * filtered by a list of resources if one is provided through the options
+        *
+        * @param {object} company  The company to be queried for bookings and blocks
+        * @param {Moment} start    Moment object containing the start of the requested period
+        * @param {Moment} end      Moment object containing the end of the requested period
+        * @param {object} options  Object which contains usefull flags and params
+                                   The relevant ones for this method are:
+                                   - {boolean} noCache              skips the cache
+                                   - {boolean} showAll              skip the filter by resource filter
+                                   - {array}   selectedResources    array of selected resource to filter against
+                                   - {string}  labelAssembler       the pattern to use for bookings (see TitleAssembler)
+                                   - {string}  blockLabelAssembler  the pattern to use for blocks (see TitleAssembler)
+        
+        * @returns {Promise} Promise which once resolved returns an array of bookings and blocks
+         */
+        getBookingsAndBlocks: function(company, start, end, options) {
+          var deferred, params;
+          if (options == null) {
+            options = {};
+          }
+          deferred = $q.defer();
+          params = {
+            company: company,
+            start_date: start.format('YYYY-MM-DD'),
+            end_date: end.format('YYYY-MM-DD'),
+            skip_cache: (options.noCache != null) && options.noCache ? true : false
+          };
+          AdminBookingService.query(params).then(function(bookings) {
+            var booking, filteredBookings, i, len, ref;
+            filteredBookings = [];
+            ref = bookings.items;
+            for (i = 0, len = ref.length; i < len; i++) {
+              booking = ref[i];
+              booking.resourceIds = [];
+              if (booking.person_id != null) {
+                booking.resourceIds.push(booking.person_id + '_p');
+              }
+              if (booking.resource_id != null) {
+                booking.resourceIds.push(booking.resource_id + '_r');
+              }
+              if ((options.showAll == null) || ((options.showAll != null) && options.showAll) || bookingBelongsToSelectedResources(options.selectedResources, booking)) {
+                booking.useFullTime();
+                if (booking.$has('edit')) {
+                  booking.startEditable = true;
+                }
+                if (booking.status !== 3 && (options.labelAssembler != null)) {
+                  booking.title = TitleAssembler.getTitle(booking, options.labelAssembler);
+                } else if (booking.status === 3 && (options.blockLabelAssembler != null)) {
+                  booking.title = TitleAssembler.getTitle(booking, options.blockLabelAssembler);
+                }
+                filteredBookings.push(booking);
+              }
+            }
+            return deferred.resolve(filteredBookings);
+          }, function(err) {
+            return deferred.reject(err);
+          });
+          return deferred.promise;
+        },
+
+        /*
+        * @ngdoc method
+        * @name getExternalBookings
+        * @methodOf BBAdminDashboard.calendar.services.service:CalendarEventSources
+        * @description
+        * Returns all external bookings for a certain period of time
+        *
+        * @param {object} company  The company to be queried for bookings and blocks
+        * @param {Moment} start    Moment object containing the start of the requested period
+        * @param {Moment} end      Moment object containing the end of the requested period
+        * @param {object} options  Object which contains usefull flags and params
+                                   The relevant ones for this method are:
+                                   - {string}  externalLabelAssembler  the pattern to use for the title (see TitleAssembler)
+        
+        * @returns {Promise} Promise which once resolved returns an array of bookings
+         */
+        getExternalBookings: function(company, start, end, options) {
+          var deferred, params;
+          if (options == null) {
+            options = {};
+          }
+          deferred = $q.defer();
+          if (company.$has('external_bookings')) {
+            params = {
+              start: start.format(),
+              end: end.format(),
+              no_cache: (options.noCache != null) && options.noCache ? true : false
+            };
+            company.$get('external_bookings', params).then(function(collection) {
+              return collection.$get('external_bookings').then(function(bookings) {
+                var booking, i, len;
+                for (i = 0, len = bookings.length; i < len; i++) {
+                  booking = bookings[i];
+                  booking.resourceIds = [];
+                  if (booking.person_id != null) {
+                    booking.resourceIds.push(booking.person_id + '_p');
+                  }
+                  if (booking.resource_id != null) {
+                    booking.resourceIds.push(booking.resource_id + '_r');
+                  }
+                  if (options.externalLabelAssembler != null) {
+                    booking.title = TitleAssembler.getTitle(booking, options.externalLabelAssembler);
+                  }
+                  booking.type = 'external';
+                }
+                return deferred.resolve(bookings);
+              }, function(err) {
+                return deferred.reject(err);
+              });
+            }, function(err) {
+              return deferred.reject(err);
+            });
+          } else {
+            deferred.resolve([]);
+          }
+          return deferred.promise;
+        },
+
+        /*
+        * @ngdoc method
+        * @name getAvailabilityBackground
+        * @methodOf BBAdminDashboard.calendar.services.service:CalendarEventSources
+        * @description
+        * Returns all availability for a certain period of time,
+        * filtered by a list of resources if one is provided through the options,
+        * and grouped per calendar day if in week or month view
+        *
+        * @param {object} company  The company to be queried for bookings and blocks
+        * @param {Moment} start    Moment object containing the start of the requested period
+        * @param {Moment} end      Moment object containing the end of the requested period
+        * @param {object} options  Object which contains usefull flags and params
+                                   The relevant ones for this method are:
+                                   - {boolean} noCache              skips the cache
+                                   - {boolean} showAll              skip the filter by resource filter
+                                   - {array}   selectedResources    array of selected resource to filter against
+                                   - {string}  calendarView         identifies which view the calendar is curently displaying (enum: 'timelineDay', 'agendaWeek', 'month')
+        
+        * @returns {Promise} Promise which once resolved returns an array of availability background events
+         */
+        getAvailabilityBackground: function(company, start, end, options) {
+          var deferred;
+          if (options == null) {
+            options = {};
+          }
+          deferred = $q.defer();
+          AdminScheduleService.getAssetsScheduleEvents(company, start, end, !options.showAll, options.selectedResources).then(function(availabilities) {
+            var overAllAvailabilities;
+            if (options.calendarView === 'timelineDay') {
+              return deferred.resolve(availabilities);
+            } else {
+              overAllAvailabilities = [];
+              angular.forEach(availabilities, function(availability, index) {
+                var dayAvailability;
+                dayAvailability = _.filter(overAllAvailabilities, function(overAllAvailability) {
+                  if (moment(overAllAvailability.start).dayOfYear() === moment(availability.start).dayOfYear()) {
+                    return true;
+                  }
+                  return false;
+                });
+                if (dayAvailability.length > 0) {
+                  if (moment(availability.start).unix() < moment(dayAvailability[0].start).unix()) {
+                    dayAvailability[0].start = availability.start;
+                  }
+                  if (moment(availability.end).unix() > moment(dayAvailability[0].end).unix()) {
+                    return dayAvailability[0].end = availability.end;
+                  }
+                } else {
+                  return overAllAvailabilities.push({
+                    start: availability.start,
+                    end: availability.end,
+                    rendering: "background",
+                    title: "Joined availability " + moment(availability.start).format('YYYY-MM-DD'),
+                    allDay: options.calendarView === 'month' ? true : false
+                  });
+                }
+              });
+              return deferred.resolve(overAllAvailabilities);
+            }
+          }, function(err) {
+            return deferred.reject(err);
+          });
+          return deferred.promise;
+        },
+
+        /*
+        * @ngdoc method
+        * @name getAllCalendarEntries
+        * @methodOf BBAdminDashboard.calendar.services.service:CalendarEventSources
+        * @description
+        * Returns all event type information to be displayed in the calendar
+        *
+        * @param {object} company  The company to be queried for bookings and blocks
+        * @param {Moment} start    Moment object containing the start of the requested period
+        * @param {Moment} end      Moment object containing the end of the requested period
+        * @param {object} options  Object which contains usefull flags and params (see above methodds for details)
+        *
+        * @returns {Promise} Promise which once resolved returns an array of availability background events
+         */
+        getAllCalendarEntries: function(company, start, end, options) {
+          var deferred, promises;
+          if (options == null) {
+            options = {};
+          }
+          deferred = $q.defer();
+          promises = [this.getBookingsAndBlocks(company, start, end, options), this.getExternalBookings(company, start, end, options), this.getAvailabilityBackground(company, start, end, options)];
+          $q.all(promises).then(function(resolutions) {
+            var allResults;
+            allResults = [];
+            angular.forEach(resolutions, function(results, index) {
+              return allResults = allResults.concat(results);
+            });
+            return deferred.resolve(allResults);
+          }, function(err) {
+            return deferred.reject(err);
+          });
+          return deferred.promise;
+        }
+      };
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  angular.module('BBAdminDashboard.calendar.services').factory("PrePostTime", [
+    '$compile', function($compile) {
+      return {
+        apply: function(event, elements, view, scope) {
+          var contentDiv, e, element, i, len, post, postHeight, postWidth, pre, preHeight, preWidth, results, totalDuration;
+          results = [];
+          for (i = 0, len = elements.length; i < len; i++) {
+            e = elements[i];
+            element = angular.element(e);
+            totalDuration = event.duration + event.pre_time + event.post_time;
+            if (event.pre_time) {
+              switch (view.name) {
+                case "agendaWeek":
+                case "agendaDay":
+                  preHeight = event.pre_time * (element.height() + 2) / totalDuration;
+                  pre = $compile("<div class='pre' style='height:" + preHeight + "px'></div>")(scope);
+                  element.prepend(pre);
+                  break;
+                case "timelineDay":
+                  contentDiv = element.children()[0];
+                  preWidth = event.pre_time * (element.width() + 2) / totalDuration;
+                  pre = $compile("<div class='pre' style='width:" + preWidth + "px'></div>")(scope);
+                  element.prepend(pre);
+                  angular.element(contentDiv).css("padding-left", preWidth + "px");
+              }
+            }
+            if (event.post_time) {
+              switch (view.name) {
+                case "agendaWeek":
+                case "agendaDay":
+                  postHeight = event.post_time * (element.height() + 2) / totalDuration;
+                  post = $compile("<div class='post' style='height:" + postHeight + "px'></div>")(scope);
+                  results.push(element.append(post));
+                  break;
+                case "timelineDay":
+                  postWidth = event.post_time * (element.width() + 2) / totalDuration;
+                  post = $compile("<div class='post' style='width:" + postWidth + "px'></div>")(scope);
+                  results.push(element.append(post));
+                  break;
+                default:
+                  results.push(void 0);
+              }
+            } else {
+              results.push(void 0);
+            }
+          }
+          return results;
+        }
       };
     }
   ]);
@@ -1423,56 +1318,53 @@
   'use strict';
 
   /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.clients.controllers.controller:ClientsNewPageCtrl
-   *
+  * @ngdoc service
+  * @name BBAdminDashboard.calendar.services.service:TitleAssembler
+  *
   * @description
-  * Controller for the clients new page
+  * Assembles a string based on a pattern and an object provided according to the following rules
+  * ex: '{service_name} - {client_name} - {created_at|date:shortTime}'
+  * everything outside  {} will remain as is, inside the {} the first param (required) is the property name
+  * second after the '|' (optional) is the filter and third after the ':' (optional) are the options for filter
+  * if the requested property is not part of the given object it will be skipped
    */
-  angular.module('BBAdminDashboard.clients.controllers').controller('ClientsNewPageCtrl', ['$scope', '$state', function($scope, $state) {}]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.clients.controllers.controller:ClientsPageCtrl
-   *
-  * @description
-  * Controller for the clients page
-   */
-  angular.module('BBAdminDashboard.clients.controllers').controller('ClientsPageCtrl', [
-    '$scope', '$state', function($scope, $state) {
-      $scope.adminlte.heading = null;
-      $scope.clientsOptions = {
-        search: null
+  angular.module('BBAdminDashboard.calendar.services').factory('TitleAssembler', [
+    function() {
+      var expression;
+      expression = new RegExp("\\{([a-zA-z_-]+)\\|?([a-zA-z_-]+)?:?([a-zA-z0-9{}_-]+)?\\}", "g");
+      return {
+        getTitle: function(object, pattern) {
+          var i, index, label, len, match, parts, patternMatches, replaceWith;
+          if ((object == null) || (pattern == null)) {
+            return null;
+          }
+          patternMatches = pattern.match(expression);
+          if ((patternMatches == null) || patternMatches.length === 0) {
+            return pattern;
+          }
+          label = pattern;
+          for (index = i = 0, len = patternMatches.length; i < len; index = ++i) {
+            match = patternMatches[index];
+            parts = match.split(expression);
+            parts.splice(0, 1);
+            parts.pop();
+            if (object.hasOwnProperty(parts[0])) {
+              replaceWith = object[parts[0]];
+              if ((parts[1] != null) && ($filter(parts[1]) != null)) {
+                if (parts[2] != null) {
+                  replaceWith = $filter(parts[1])(replaceWith, $scope.$eval(parts[2]));
+                } else {
+                  replaceWith = $filter(parts[1])(replaceWith);
+                }
+              }
+              label = label.replace(match, replaceWith);
+            } else {
+              label = label.replace(match, '');
+            }
+          }
+          return label;
+        }
       };
-      $scope.adminlte.side_menu = true;
-      return $scope.set_current_client = function(client) {
-        return $scope.current_client = client;
-      };
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc overview
-  * @name BBAdminDashboard.clients.translations
-   *
-  * @description
-  * Translations for the admin clients module
-   */
-  angular.module('BBAdminDashboard.clients.translations').config([
-    '$translateProvider', function($translateProvider) {
-      return $translateProvider.translations('en', {
-        'TEXT_1': 'Hello here!'
-      });
     }
   ]);
 
@@ -1492,171 +1384,6 @@
     '$translateProvider', function($translateProvider) {
       return $translateProvider.translations('en', {
         'TEXT_2': 'Hello there!'
-      });
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc service
-  * @name BBAdminDashboard.clients.services.service:AdminClientsOptions
-  *
-  * @description
-  * Returns a set of admin calendar configuration options
-   */
-
-  /*
-  * @ngdoc service
-  * @name BBAdminDashboard.clients.services.service:AdminClientsOptionsProvider
-  *
-  * @description
-  * Provider
-  *
-  * @example
-    <example>
-    angular.module('ExampleModule').config ['AdminClientsOptionsProvider', (AdminClientsOptionsProvider) ->
-      AdminClientsOptionsProvider.setOption('option', 'value')
-    ]
-    </example>
-   */
-  angular.module('BBAdminDashboard.clients.services').provider('AdminClientsOptions', [
-    function() {
-      var options;
-      options = {
-        use_default_states: true,
-        show_in_navigation: true,
-        parent_state: 'root'
-      };
-      this.setOption = function(option, value) {
-        if (options.hasOwnProperty(option)) {
-          options[option] = value;
-        }
-      };
-      this.getOption = function(option) {
-        if (options.hasOwnProperty(option)) {
-          return options[option];
-        }
-      };
-      this.$get = function() {
-        return options;
-      };
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.config-iframe.controllers.controller:ConfigIframePageCtrl
-   *
-  * @description
-  * Controller for the config page
-   */
-  angular.module('BBAdminDashboard.config-iframe.controllers').controller('ConfigIframePageCtrl', [
-    '$scope', '$state', '$rootScope', function($scope, $state, $rootScope) {
-      $scope.parent_state = $state.is("config");
-      $scope.path = "edit";
-      return $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
-        $scope.parent_state = false;
-        if (toState.name === "config") {
-          return $scope.parent_state = true;
-        }
-      });
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.config-iframe.controllers.controller:ConfigSubIframePageCtrl
-   *
-  * @description
-  * Controller for the config sub page
-   */
-  angular.module('BBAdminDashboard.config-iframe.controllers').controller('ConfigSubIframePageCtrl', [
-    '$scope', '$state', '$stateParams', function($scope, $state, $stateParams) {
-      return $scope.path = $stateParams.path;
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc service
-  * @name BBAdminDashboard.config-iframe.services.service:AdminConfigIframeOptions
-  *
-  * @description
-  * Returns a set of admin calendar configuration options
-   */
-
-  /*
-  * @ngdoc service
-  * @name BBAdminDashboard.config-iframe.services.service:AdminConfigIframeOptionsProvider
-  *
-  * @description
-  * Provider
-  *
-  * @example
-    <example>
-    angular.module('ExampleModule').config ['AdminConfigIframeOptionsProvider', (AdminConfigIframeOptionsProvider) ->
-      AdminConfigIframeOptionsProvider.setOption('option', 'value')
-    ]
-    </example>
-   */
-  angular.module('BBAdminDashboard.config-iframe.services').provider('AdminConfigIframeOptions', [
-    function() {
-      var options;
-      options = {
-        use_default_states: true,
-        show_in_navigation: true,
-        parent_state: 'root'
-      };
-      this.setOption = function(option, value) {
-        if (options.hasOwnProperty(option)) {
-          options[option] = value;
-        }
-      };
-      this.getOption = function(option) {
-        if (options.hasOwnProperty(option)) {
-          return options[option];
-        }
-      };
-      this.$get = function() {
-        return options;
-      };
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc overview
-  * @name BBAdminDashboard.config-iframe.translations
-   *
-  * @description
-  * Translations for the admin config-iframe module
-   */
-  angular.module('BBAdminDashboard.config-iframe.translations').config([
-    '$translateProvider', function($translateProvider) {
-      return $translateProvider.translations('en', {
-        'TEXT_1': 'Hello here!'
       });
     }
   ]);
@@ -1875,68 +1602,15 @@
   'use strict';
 
   /*
-  * @ngdoc service
-  * @name BBAdminDashboard.departments.services.service:AdminDepartmentsOptions
-  *
-  * @description
-  * Returns a set of admin calendar configuration options
-   */
-
-  /*
-  * @ngdoc service
-  * @name BBAdminDashboard.departments.services.service:AdminDepartmentsOptionsProvider
-  *
-  * @description
-  * Provider
-  *
-  * @example
-    <example>
-    angular.module('ExampleModule').config ['AdminDepartmentsOptionsProvider', (AdminDepartmentsOptionsProvider) ->
-      AdminDepartmentsOptionsProvider.setOption('option', 'value')
-    ]
-    </example>
-   */
-  angular.module('BBAdminDashboard.departments.services').provider('AdminDepartmentsOptions', [
-    function() {
-      var options;
-      options = {
-        use_default_states: true,
-        show_in_navigation: true,
-        parent_state: 'bb-admin'
-      };
-      this.setOption = function(option, value) {
-        if (options.hasOwnProperty(option)) {
-          options[option] = value;
-        }
-      };
-      this.getOption = function(option) {
-        if (options.hasOwnProperty(option)) {
-          return options[option];
-        }
-      };
-      this.$get = function() {
-        return options;
-      };
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc overview
-  * @name BBAdminDashboard.departments.translations
+  * @ngdoc controller
+  * @name BBAdminDashboard.clients.controllers.controller:ClientsAllPageCtrl
    *
   * @description
-  * Translations for the admin departments module
+  * Controller for the clients all page
    */
-  angular.module('BBAdminDashboard.departments.translations').config([
-    '$translateProvider', function($translateProvider) {
-      return $translateProvider.translations('en', {
-        'TEXT_1': 'Hello here!'
-      });
+  angular.module('BBAdminDashboard.clients.controllers').controller('ClientsAllPageCtrl', [
+    '$scope', '$state', function($scope, $state) {
+      return $scope.set_current_client(null);
     }
   ]);
 
@@ -1947,22 +1621,25 @@
 
   /*
   * @ngdoc controller
-  * @name BBAdminDashboard.departments.controllers.controller:DepartmentsPageCtrl
+  * @name BBAdminDashboard.clients.controllers.controller:ClientsEditPageCtrl
    *
   * @description
-  * Controller for the departments page
+  * Controller for the clients edit page
    */
-  angular.module('BBAdminDashboard.departments.controllers').controller('DepartmentsPageCtrl', [
-    '$scope', 'company', 'departments', 'AdminLoginService', '$state', '$timeout', function($scope, company, departments, AdminLoginService, $state, $timeout) {
-      $scope.company = company;
-      $scope.departments = departments;
-      return $scope.selectDepartment = function(department) {
-        return AdminLoginService.setCompany(department.id).then(function(user) {
-          return $timeout(function() {
-            return $state.go('calendar', {}, {
-              reload: true
-            });
-          });
+  angular.module('BBAdminDashboard.clients.controllers').controller('ClientsEditPageCtrl', [
+    '$scope', 'client', '$state', 'company', 'AdminClientService', function($scope, client, $state, company, AdminClientService) {
+      $scope.client = client;
+      $scope.historicalStartDate = moment().add(-1, 'years');
+      $scope.historicalEndDate = moment();
+      return $scope.memberSaveCallback = function() {
+        var params;
+        params = {
+          company_id: company.id,
+          id: $state.params.id,
+          flush: true
+        };
+        return AdminClientService.query(params).then(function(client) {
+          return $scope.client = client;
         });
       };
     }
@@ -1975,20 +1652,34 @@
 
   /*
   * @ngdoc controller
-  * @name BBAdminDashboard.login.controllers.controller:LoginPageCtrl
+  * @name BBAdminDashboard.clients.controllers.controller:ClientsNewPageCtrl
    *
   * @description
-  * Controller for the login page
+  * Controller for the clients new page
    */
-  angular.module('BBAdminDashboard.login.controllers').controller('LoginPageCtrl', [
-    '$scope', '$state', 'AdminLoginService', function($scope, $state, AdminLoginService) {
-      if (AdminLoginService.isLoggedIn()) {
-        AdminLoginService.logout();
-      }
-      return $scope.loginSuccess = function(company) {
-        $scope.company = company;
-        $scope.bb.company = company;
-        return $state.go('calendar');
+  angular.module('BBAdminDashboard.clients.controllers').controller('ClientsNewPageCtrl', ['$scope', '$state', function($scope, $state) {}]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.clients.controllers.controller:ClientsPageCtrl
+   *
+  * @description
+  * Controller for the clients page
+   */
+  angular.module('BBAdminDashboard.clients.controllers').controller('ClientsPageCtrl', [
+    '$scope', '$state', function($scope, $state) {
+      $scope.adminlte.heading = null;
+      $scope.clientsOptions = {
+        search: null
+      };
+      $scope.adminlte.side_menu = true;
+      return $scope.set_current_client = function(client) {
+        return $scope.current_client = client;
       };
     }
   ]);
@@ -2000,7 +1691,7 @@
 
   /*
   * @ngdoc service
-  * @name BBAdminDashboard.login.services.service:AdminLoginOptions
+  * @name BBAdminDashboard.clients.services.service:AdminClientsOptions
   *
   * @description
   * Returns a set of admin calendar configuration options
@@ -2008,301 +1699,19 @@
 
   /*
   * @ngdoc service
-  * @name BBAdminDashboard.login.services.service:AdminLoginOptionsProvider
+  * @name BBAdminDashboard.clients.services.service:AdminClientsOptionsProvider
   *
   * @description
   * Provider
   *
   * @example
     <example>
-    angular.module('ExampleModule').config ['AdminLoginOptionsProvider', (AdminLoginOptionsProvider) ->
-      AdminLoginOptionsProvider.setOption('option', 'value')
+    angular.module('ExampleModule').config ['AdminClientsOptionsProvider', (AdminClientsOptionsProvider) ->
+      AdminClientsOptionsProvider.setOption('option', 'value')
     ]
     </example>
    */
-  angular.module('BBAdminDashboard.login.services').provider('AdminLoginOptions', [
-    function() {
-      var options;
-      options = {
-        use_default_states: true,
-        show_in_navigation: true,
-        parent_state: 'root'
-      };
-      this.setOption = function(option, value) {
-        if (options.hasOwnProperty(option)) {
-          options[option] = value;
-        }
-      };
-      this.getOption = function(option) {
-        if (options.hasOwnProperty(option)) {
-          return options[option];
-        }
-      };
-      this.$get = function() {
-        return options;
-      };
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.logout.controllers.controller:LogoutPageCtrl
-   *
-  * @description
-  * Controller for the logout page
-   */
-  angular.module('BBAdminDashboard.logout.controllers').controller('LogoutPageCtrl', [
-    '$scope', '$state', 'AdminLoginService', '$timeout', function($scope, $state, AdminLoginService, $timeout) {
-      AdminLoginService.logout();
-      return $timeout(function() {
-        return $state.go('login', {}, {
-          reload: true
-        });
-      });
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc overview
-  * @name BBAdminDashboard.members-iframe.translations
-   *
-  * @description
-  * Translations for the admin members module
-   */
-  angular.module('BBAdminDashboard.members-iframe.translations').config([
-    '$translateProvider', function($translateProvider) {
-      return $translateProvider.translations('en', {
-        'TEXT_1': 'Hello here!'
-      });
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.members-iframe.controllers.controller:MembersIframePageCtrl
-   *
-  * @description
-  * Controller for the members page
-   */
-  angular.module('BBAdminDashboard.members-iframe.controllers').controller('MembersIframePageCtrl', [
-    '$scope', '$state', '$rootScope', '$window', function($scope, $state, $rootScope, $window) {
-      $scope.parent_state = $state.is("members");
-      $scope.bb.side_menu = "member_menu";
-      $scope.path = "client";
-      $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
-        $scope.adminlte.fixed_page = toParams.fixed;
-        $scope.parent_state = false;
-        if (toState.name === "members") {
-          $scope.parent_state = true;
-          return $scope.clearCurrentClient();
-        }
-      });
-      $scope.setCurrentClient = function(client) {
-        console.log("set current", client);
-        if (client) {
-          $rootScope.client_id = client;
-          return $scope.extra_params = "id=" + client;
-        } else {
-          return $scope.clearCurrentClient();
-        }
-      };
-      $scope.clearCurrentClient = function() {
-        $rootScope.client_id = null;
-        return $scope.extra_params = "";
-      };
-      return $window.addEventListener('message', (function(_this) {
-        return function(event) {
-          if (event && event.data) {
-            if (event.data.controller === "client") {
-              if (event.data.id) {
-                $scope.setCurrentClient(event.data.id);
-              }
-              if (event.data.action === "single") {
-                return $state.go("members.page", {
-                  path: 'client/single',
-                  id: event.data.id
-                });
-              }
-            }
-          }
-        };
-      })(this));
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.members-iframe.controllers.controller:MembersSubIframePageCtrl
-   *
-  * @description
-  * Controller for the members sub page
-   */
-  angular.module('BBAdminDashboard.members-iframe.controllers').controller('MembersSubIframePageCtrl', [
-    '$scope', '$state', '$stateParams', function($scope, $state, $stateParams) {
-      $scope.path = $stateParams.path;
-      if ($stateParams.id) {
-        return $scope.extra_params = "id=" + $stateParams.id;
-      } else {
-        return $scope.extra_params = "";
-      }
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc service
-  * @name BBAdminDashboard.members-iframe.services.service:AdminMembersIframeOptions
-  *
-  * @description
-  * Returns a set of General configuration options
-   */
-
-  /*
-  * @ngdoc service
-  * @name BBAdminDashboard.members-iframe.services.service:AdminMembersIframeOptionsProvider
-  *
-  * @description
-  * Provider
-  *
-  * @example
-    <example>
-    angular.module('ExampleModule').config ['AdminMembersIframeOptionsProvider', (AdminMembersIframeOptionsProvider) ->
-      AdminMembersIframeOptionsProvider.setOption('option', 'value')
-    ]
-    </example>
-   */
-  angular.module('BBAdminDashboard.members-iframe.services').provider('AdminMembersIframeOptions', [
-    function() {
-      var options;
-      options = {
-        use_default_states: true,
-        show_in_navigation: true,
-        parent_state: 'root'
-      };
-      this.setOption = function(option, value) {
-        if (options.hasOwnProperty(option)) {
-          options[option] = value;
-        }
-      };
-      this.getOption = function(option) {
-        if (options.hasOwnProperty(option)) {
-          return options[option];
-        }
-      };
-      this.$get = function() {
-        return options;
-      };
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.dashboard-iframe.controllers.controller:DashboardIframePageCtrl
-   *
-  * @description
-  * Controller for the dashboard page
-   */
-  angular.module('BBAdminDashboard.dashboard-iframe.controllers').controller('DashboardIframePageCtrl', [
-    '$scope', '$state', '$window', 'AdminBookingPopup', function($scope, $state, $window, AdminBookingPopup) {
-      $scope.parent_state = $state.is("view");
-      $scope.bb.side_menu = "dashboard_menu";
-      $scope.path = "view/dashboard/index";
-      return $window.addEventListener('message', (function(_this) {
-        return function(event) {
-          if (event && event.data) {
-            if (event.data.type && event.data.type === "booking") {
-              return AdminBookingPopup.open({
-                size: 'lg',
-                company_id: $scope.bb.company.id,
-                item_defaults: {
-                  date: event.data.date,
-                  time: event.data.iarray * 5,
-                  person: event.data.person,
-                  resource: event.data.resource
-                }
-              });
-            }
-          }
-        };
-      })(this));
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.dashboard-iframe.controllers.controller:DashboardSubIframePageCtrl
-   *
-  * @description
-  * Controller for the dashboard sub page
-   */
-  angular.module('BBAdminDashboard.dashboard-iframe.controllers').controller('DashboardSubIframePageCtrl', [
-    '$scope', '$state', '$stateParams', function($scope, $state, $stateParams) {
-      return $scope.path = $stateParams.path;
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc service
-  * @name BBAdminDashboard.dashboard-iframe.services.service:AdminDashboardIframeOptions
-  *
-  * @description
-  * Returns a set of admin calendar configuration options
-   */
-
-  /*
-  * @ngdoc service
-  * @name BBAdminDashboard.dashboard-iframe.services.service:AdminDashboardIframeOptionsProvider
-  *
-  * @description
-  * Provider
-  *
-  * @example
-    <example>
-    angular.module('ExampleModule').config ['AdminDashboardIframeOptionsProvider', (AdminDashboardIframeOptionsProvider) ->
-      AdminDashboardIframeOptionsProvider.setOption('option', 'value')
-    ]
-    </example>
-   */
-  angular.module('BBAdminDashboard.dashboard-iframe.services').provider('AdminDashboardIframeOptions', [
+  angular.module('BBAdminDashboard.clients.services').provider('AdminClientsOptions', [
     function() {
       var options;
       options = {
@@ -2333,12 +1742,12 @@
 
   /*
   * @ngdoc overview
-  * @name BBAdminDashboard.dashboard-iframe.translations
+  * @name BBAdminDashboard.clients.translations
    *
   * @description
-  * Translations for the admin dashboard-iframe module
+  * Translations for the admin clients module
    */
-  angular.module('BBAdminDashboard.dashboard-iframe.translations').config([
+  angular.module('BBAdminDashboard.clients.translations').config([
     '$translateProvider', function($translateProvider) {
       return $translateProvider.translations('en', {
         'TEXT_1': 'Hello here!'
@@ -2353,18 +1762,18 @@
 
   /*
   * @ngdoc controller
-  * @name BBAdminDashboard.publish-iframe.controllers.controller:PublishIframePageCtrl
+  * @name BBAdminDashboard.config-iframe.controllers.controller:ConfigIframePageCtrl
    *
   * @description
-  * Controller for the publish page
+  * Controller for the config page
    */
-  angular.module('BBAdminDashboard.publish-iframe.controllers').controller('PublishIframePageCtrl', [
+  angular.module('BBAdminDashboard.config-iframe.controllers').controller('ConfigIframePageCtrl', [
     '$scope', '$state', '$rootScope', function($scope, $state, $rootScope) {
-      $scope.parent_state = $state.is("publish");
-      $scope.path = "conf";
+      $scope.parent_state = $state.is("config");
+      $scope.path = "edit";
       return $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
         $scope.parent_state = false;
-        if (toState.name === "setting") {
+        if (toState.name === "config") {
           return $scope.parent_state = true;
         }
       });
@@ -2378,14 +1787,85 @@
 
   /*
   * @ngdoc controller
-  * @name BBAdminDashboard.publish-iframe.controllers.controller:PublishSubIframePageCtrl
+  * @name BBAdminDashboard.config-iframe.controllers.controller:ConfigSubIframePageCtrl
    *
   * @description
-  * Controller for the publish sub page
+  * Controller for the config sub page
    */
-  angular.module('BBAdminDashboard.publish-iframe.controllers').controller('PublishSubIframePageCtrl', [
+  angular.module('BBAdminDashboard.config-iframe.controllers').controller('ConfigSubIframePageCtrl', [
     '$scope', '$state', '$stateParams', function($scope, $state, $stateParams) {
       return $scope.path = $stateParams.path;
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc service
+  * @name BBAdminDashboard.config-iframe.services.service:AdminConfigIframeOptions
+  *
+  * @description
+  * Returns a set of admin calendar configuration options
+   */
+
+  /*
+  * @ngdoc service
+  * @name BBAdminDashboard.config-iframe.services.service:AdminConfigIframeOptionsProvider
+  *
+  * @description
+  * Provider
+  *
+  * @example
+    <example>
+    angular.module('ExampleModule').config ['AdminConfigIframeOptionsProvider', (AdminConfigIframeOptionsProvider) ->
+      AdminConfigIframeOptionsProvider.setOption('option', 'value')
+    ]
+    </example>
+   */
+  angular.module('BBAdminDashboard.config-iframe.services').provider('AdminConfigIframeOptions', [
+    function() {
+      var options;
+      options = {
+        use_default_states: true,
+        show_in_navigation: true,
+        parent_state: 'root'
+      };
+      this.setOption = function(option, value) {
+        if (options.hasOwnProperty(option)) {
+          options[option] = value;
+        }
+      };
+      this.getOption = function(option) {
+        if (options.hasOwnProperty(option)) {
+          return options[option];
+        }
+      };
+      this.$get = function() {
+        return options;
+      };
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc overview
+  * @name BBAdminDashboard.config-iframe.translations
+   *
+  * @description
+  * Translations for the admin config-iframe module
+   */
+  angular.module('BBAdminDashboard.config-iframe.translations').config([
+    '$translateProvider', function($translateProvider) {
+      return $translateProvider.translations('en', {
+        'TEXT_1': 'Hello here!'
+      });
     }
   ]);
 
@@ -2406,77 +1886,6 @@
       $scope.company = company;
       $scope.bb.company = company;
       return moment.tz.setDefault(company.timezone);
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc overview
-  * @name BBAdminDashboard.publish-iframe.translations
-   *
-  * @description
-  * Translations for the admin publish-iframe module
-   */
-  angular.module('BBAdminDashboard.publish-iframe.translations').config([
-    '$translateProvider', function($translateProvider) {
-      return $translateProvider.translations('en', {
-        'TEXT_1': 'Hello here!'
-      });
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc service
-  * @name BBAdminDashboard.publish-iframe.services.service:AdminPublishIframeOptions
-  *
-  * @description
-  * Returns a set of General configuration options
-   */
-
-  /*
-  * @ngdoc service
-  * @name BBAdminDashboard.publish-iframe.services.service:AdminPublishIframeOptionsProvider
-  *
-  * @description
-  * Provider
-  *
-  * @example
-    <example>
-    angular.module('ExampleModule').config ['AdminPublishIframeOptionsProvider', (AdminPublishIframeOptionsProvider) ->
-      AdminPublishIframeOptionsProvider.setOption('option', 'value')
-    ]
-    </example>
-   */
-  angular.module('BBAdminDashboard.publish-iframe.services').provider('AdminPublishIframeOptions', [
-    function() {
-      var options;
-      options = {
-        use_default_states: true,
-        show_in_navigation: true,
-        parent_state: 'root'
-      };
-      this.setOption = function(option, value) {
-        if (options.hasOwnProperty(option)) {
-          options[option] = value;
-        }
-      };
-      this.getOption = function(option) {
-        if (options.hasOwnProperty(option)) {
-          return options[option];
-        }
-      };
-      this.$get = function() {
-        return options;
-      };
     }
   ]);
 
@@ -3075,14 +2484,511 @@
 
   /*
   * @ngdoc controller
-  * @name BBAdminDashboard.settings-iframe.controllers.controller:SettingsIframePageCtrl
+  * @name BBAdminDashboard.dashboard-iframe.controllers.controller:DashboardIframePageCtrl
    *
   * @description
-  * Controller for the settings page
+  * Controller for the dashboard page
    */
-  angular.module('BBAdminDashboard.settings-iframe.controllers').controller('SettingsIframePageCtrl', [
+  angular.module('BBAdminDashboard.dashboard-iframe.controllers').controller('DashboardIframePageCtrl', [
+    '$scope', '$state', '$window', 'AdminBookingPopup', function($scope, $state, $window, AdminBookingPopup) {
+      $scope.parent_state = $state.is("view");
+      $scope.bb.side_menu = "dashboard_menu";
+      $scope.path = "view/dashboard/index";
+      return $window.addEventListener('message', (function(_this) {
+        return function(event) {
+          if (event && event.data) {
+            if (event.data.type && event.data.type === "booking") {
+              return AdminBookingPopup.open({
+                size: 'lg',
+                company_id: $scope.bb.company.id,
+                item_defaults: {
+                  date: event.data.date,
+                  time: event.data.iarray * 5,
+                  person: event.data.person,
+                  resource: event.data.resource
+                }
+              });
+            }
+          }
+        };
+      })(this));
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.dashboard-iframe.controllers.controller:DashboardSubIframePageCtrl
+   *
+  * @description
+  * Controller for the dashboard sub page
+   */
+  angular.module('BBAdminDashboard.dashboard-iframe.controllers').controller('DashboardSubIframePageCtrl', [
+    '$scope', '$state', '$stateParams', function($scope, $state, $stateParams) {
+      return $scope.path = $stateParams.path;
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc service
+  * @name BBAdminDashboard.dashboard-iframe.services.service:AdminDashboardIframeOptions
+  *
+  * @description
+  * Returns a set of admin calendar configuration options
+   */
+
+  /*
+  * @ngdoc service
+  * @name BBAdminDashboard.dashboard-iframe.services.service:AdminDashboardIframeOptionsProvider
+  *
+  * @description
+  * Provider
+  *
+  * @example
+    <example>
+    angular.module('ExampleModule').config ['AdminDashboardIframeOptionsProvider', (AdminDashboardIframeOptionsProvider) ->
+      AdminDashboardIframeOptionsProvider.setOption('option', 'value')
+    ]
+    </example>
+   */
+  angular.module('BBAdminDashboard.dashboard-iframe.services').provider('AdminDashboardIframeOptions', [
+    function() {
+      var options;
+      options = {
+        use_default_states: true,
+        show_in_navigation: true,
+        parent_state: 'root'
+      };
+      this.setOption = function(option, value) {
+        if (options.hasOwnProperty(option)) {
+          options[option] = value;
+        }
+      };
+      this.getOption = function(option) {
+        if (options.hasOwnProperty(option)) {
+          return options[option];
+        }
+      };
+      this.$get = function() {
+        return options;
+      };
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc overview
+  * @name BBAdminDashboard.dashboard-iframe.translations
+   *
+  * @description
+  * Translations for the admin dashboard-iframe module
+   */
+  angular.module('BBAdminDashboard.dashboard-iframe.translations').config([
+    '$translateProvider', function($translateProvider) {
+      return $translateProvider.translations('en', {
+        'TEXT_1': 'Hello here!'
+      });
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.departments.controllers.controller:DepartmentsPageCtrl
+   *
+  * @description
+  * Controller for the departments page
+   */
+  angular.module('BBAdminDashboard.departments.controllers').controller('DepartmentsPageCtrl', [
+    '$scope', 'company', 'departments', 'AdminLoginService', '$state', '$timeout', function($scope, company, departments, AdminLoginService, $state, $timeout) {
+      $scope.company = company;
+      $scope.departments = departments;
+      return $scope.selectDepartment = function(department) {
+        return AdminLoginService.setCompany(department.id).then(function(user) {
+          return $timeout(function() {
+            return $state.go('calendar', {}, {
+              reload: true
+            });
+          });
+        });
+      };
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc service
+  * @name BBAdminDashboard.departments.services.service:AdminDepartmentsOptions
+  *
+  * @description
+  * Returns a set of admin calendar configuration options
+   */
+
+  /*
+  * @ngdoc service
+  * @name BBAdminDashboard.departments.services.service:AdminDepartmentsOptionsProvider
+  *
+  * @description
+  * Provider
+  *
+  * @example
+    <example>
+    angular.module('ExampleModule').config ['AdminDepartmentsOptionsProvider', (AdminDepartmentsOptionsProvider) ->
+      AdminDepartmentsOptionsProvider.setOption('option', 'value')
+    ]
+    </example>
+   */
+  angular.module('BBAdminDashboard.departments.services').provider('AdminDepartmentsOptions', [
+    function() {
+      var options;
+      options = {
+        use_default_states: true,
+        show_in_navigation: true,
+        parent_state: 'bb-admin'
+      };
+      this.setOption = function(option, value) {
+        if (options.hasOwnProperty(option)) {
+          options[option] = value;
+        }
+      };
+      this.getOption = function(option) {
+        if (options.hasOwnProperty(option)) {
+          return options[option];
+        }
+      };
+      this.$get = function() {
+        return options;
+      };
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc overview
+  * @name BBAdminDashboard.departments.translations
+   *
+  * @description
+  * Translations for the admin departments module
+   */
+  angular.module('BBAdminDashboard.departments.translations').config([
+    '$translateProvider', function($translateProvider) {
+      return $translateProvider.translations('en', {
+        'TEXT_1': 'Hello here!'
+      });
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.login.controllers.controller:LoginPageCtrl
+   *
+  * @description
+  * Controller for the login page
+   */
+  angular.module('BBAdminDashboard.login.controllers').controller('LoginPageCtrl', [
+    '$scope', '$state', 'AdminLoginService', function($scope, $state, AdminLoginService) {
+      if (AdminLoginService.isLoggedIn()) {
+        AdminLoginService.logout();
+      }
+      return $scope.loginSuccess = function(company) {
+        $scope.company = company;
+        $scope.bb.company = company;
+        return $state.go('calendar');
+      };
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc service
+  * @name BBAdminDashboard.login.services.service:AdminLoginOptions
+  *
+  * @description
+  * Returns a set of admin calendar configuration options
+   */
+
+  /*
+  * @ngdoc service
+  * @name BBAdminDashboard.login.services.service:AdminLoginOptionsProvider
+  *
+  * @description
+  * Provider
+  *
+  * @example
+    <example>
+    angular.module('ExampleModule').config ['AdminLoginOptionsProvider', (AdminLoginOptionsProvider) ->
+      AdminLoginOptionsProvider.setOption('option', 'value')
+    ]
+    </example>
+   */
+  angular.module('BBAdminDashboard.login.services').provider('AdminLoginOptions', [
+    function() {
+      var options;
+      options = {
+        use_default_states: true,
+        show_in_navigation: true,
+        parent_state: 'root'
+      };
+      this.setOption = function(option, value) {
+        if (options.hasOwnProperty(option)) {
+          options[option] = value;
+        }
+      };
+      this.getOption = function(option) {
+        if (options.hasOwnProperty(option)) {
+          return options[option];
+        }
+      };
+      this.$get = function() {
+        return options;
+      };
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc overview
+  * @name BBAdminDashboard.login.translations
+   *
+  * @description
+  * Translations for the admin login module
+   */
+  angular.module('BBAdminDashboard.login.translations').config([
+    '$translateProvider', function($translateProvider) {
+      return $translateProvider.translations('en', {
+        'TEXT_1': 'Hello here!'
+      });
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.logout.controllers.controller:LogoutPageCtrl
+   *
+  * @description
+  * Controller for the logout page
+   */
+  angular.module('BBAdminDashboard.logout.controllers').controller('LogoutPageCtrl', [
+    '$scope', '$state', 'AdminLoginService', '$timeout', function($scope, $state, AdminLoginService, $timeout) {
+      AdminLoginService.logout();
+      return $timeout(function() {
+        return $state.go('login', {}, {
+          reload: true
+        });
+      });
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.members-iframe.controllers.controller:MembersIframePageCtrl
+   *
+  * @description
+  * Controller for the members page
+   */
+  angular.module('BBAdminDashboard.members-iframe.controllers').controller('MembersIframePageCtrl', [
+    '$scope', '$state', '$rootScope', '$window', function($scope, $state, $rootScope, $window) {
+      $scope.parent_state = $state.is("members");
+      $scope.bb.side_menu = "member_menu";
+      $scope.path = "client";
+      $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
+        $scope.adminlte.fixed_page = toParams.fixed;
+        $scope.parent_state = false;
+        if (toState.name === "members") {
+          $scope.parent_state = true;
+          return $scope.clearCurrentClient();
+        }
+      });
+      $scope.setCurrentClient = function(client) {
+        console.log("set current", client);
+        if (client) {
+          $rootScope.client_id = client;
+          return $scope.extra_params = "id=" + client;
+        } else {
+          return $scope.clearCurrentClient();
+        }
+      };
+      $scope.clearCurrentClient = function() {
+        $rootScope.client_id = null;
+        return $scope.extra_params = "";
+      };
+      return $window.addEventListener('message', (function(_this) {
+        return function(event) {
+          if (event && event.data) {
+            if (event.data.controller === "client") {
+              if (event.data.id) {
+                $scope.setCurrentClient(event.data.id);
+              }
+              if (event.data.action === "single") {
+                return $state.go("members.page", {
+                  path: 'client/single',
+                  id: event.data.id
+                });
+              }
+            }
+          }
+        };
+      })(this));
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.members-iframe.controllers.controller:MembersSubIframePageCtrl
+   *
+  * @description
+  * Controller for the members sub page
+   */
+  angular.module('BBAdminDashboard.members-iframe.controllers').controller('MembersSubIframePageCtrl', [
+    '$scope', '$state', '$stateParams', function($scope, $state, $stateParams) {
+      $scope.path = $stateParams.path;
+      if ($stateParams.id) {
+        return $scope.extra_params = "id=" + $stateParams.id;
+      } else {
+        return $scope.extra_params = "";
+      }
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc service
+  * @name BBAdminDashboard.members-iframe.services.service:AdminMembersIframeOptions
+  *
+  * @description
+  * Returns a set of General configuration options
+   */
+
+  /*
+  * @ngdoc service
+  * @name BBAdminDashboard.members-iframe.services.service:AdminMembersIframeOptionsProvider
+  *
+  * @description
+  * Provider
+  *
+  * @example
+    <example>
+    angular.module('ExampleModule').config ['AdminMembersIframeOptionsProvider', (AdminMembersIframeOptionsProvider) ->
+      AdminMembersIframeOptionsProvider.setOption('option', 'value')
+    ]
+    </example>
+   */
+  angular.module('BBAdminDashboard.members-iframe.services').provider('AdminMembersIframeOptions', [
+    function() {
+      var options;
+      options = {
+        use_default_states: true,
+        show_in_navigation: true,
+        parent_state: 'root'
+      };
+      this.setOption = function(option, value) {
+        if (options.hasOwnProperty(option)) {
+          options[option] = value;
+        }
+      };
+      this.getOption = function(option) {
+        if (options.hasOwnProperty(option)) {
+          return options[option];
+        }
+      };
+      this.$get = function() {
+        return options;
+      };
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc overview
+  * @name BBAdminDashboard.members-iframe.translations
+   *
+  * @description
+  * Translations for the admin members module
+   */
+  angular.module('BBAdminDashboard.members-iframe.translations').config([
+    '$translateProvider', function($translateProvider) {
+      return $translateProvider.translations('en', {
+        'TEXT_1': 'Hello here!'
+      });
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.publish-iframe.controllers.controller:PublishIframePageCtrl
+   *
+  * @description
+  * Controller for the publish page
+   */
+  angular.module('BBAdminDashboard.publish-iframe.controllers').controller('PublishIframePageCtrl', [
     '$scope', '$state', '$rootScope', function($scope, $state, $rootScope) {
-      $scope.parent_state = $state.is("setting");
+      $scope.parent_state = $state.is("publish");
       $scope.path = "conf";
       return $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
         $scope.parent_state = false;
@@ -3100,19 +3006,85 @@
 
   /*
   * @ngdoc controller
-  * @name BBAdminDashboard.settings-iframe.controllers.controller:SettingsSubIframePageCtrl
+  * @name BBAdminDashboard.publish-iframe.controllers.controller:PublishSubIframePageCtrl
    *
   * @description
-  * Controller for the settings sub page
+  * Controller for the publish sub page
    */
-  angular.module('BBAdminDashboard.settings-iframe.controllers').controller('SettingsSubIframePageCtrl', [
+  angular.module('BBAdminDashboard.publish-iframe.controllers').controller('PublishSubIframePageCtrl', [
     '$scope', '$state', '$stateParams', function($scope, $state, $stateParams) {
-      $scope.path = $stateParams.path;
-      if ($stateParams.id) {
-        return $scope.extra_params = "id=" + $stateParams.id;
-      } else {
-        return $scope.extra_params = "";
-      }
+      return $scope.path = $stateParams.path;
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc service
+  * @name BBAdminDashboard.publish-iframe.services.service:AdminPublishIframeOptions
+  *
+  * @description
+  * Returns a set of General configuration options
+   */
+
+  /*
+  * @ngdoc service
+  * @name BBAdminDashboard.publish-iframe.services.service:AdminPublishIframeOptionsProvider
+  *
+  * @description
+  * Provider
+  *
+  * @example
+    <example>
+    angular.module('ExampleModule').config ['AdminPublishIframeOptionsProvider', (AdminPublishIframeOptionsProvider) ->
+      AdminPublishIframeOptionsProvider.setOption('option', 'value')
+    ]
+    </example>
+   */
+  angular.module('BBAdminDashboard.publish-iframe.services').provider('AdminPublishIframeOptions', [
+    function() {
+      var options;
+      options = {
+        use_default_states: true,
+        show_in_navigation: true,
+        parent_state: 'root'
+      };
+      this.setOption = function(option, value) {
+        if (options.hasOwnProperty(option)) {
+          options[option] = value;
+        }
+      };
+      this.getOption = function(option) {
+        if (options.hasOwnProperty(option)) {
+          return options[option];
+        }
+      };
+      this.$get = function() {
+        return options;
+      };
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc overview
+  * @name BBAdminDashboard.publish-iframe.translations
+   *
+  * @description
+  * Translations for the admin publish-iframe module
+   */
+  angular.module('BBAdminDashboard.publish-iframe.translations').config([
+    '$translateProvider', function($translateProvider) {
+      return $translateProvider.translations('en', {
+        'TEXT_1': 'Hello here!'
+      });
     }
   ]);
 
@@ -3173,16 +3145,21 @@
   'use strict';
 
   /*
-  * @ngdoc overview
-  * @name BBAdminDashboard.settings-iframe.translations
+  * @ngdoc controller
+  * @name BBAdminDashboard.settings-iframe.controllers.controller:SettingsIframePageCtrl
    *
   * @description
-  * Translations for the admin settings-iframe module
+  * Controller for the settings page
    */
-  angular.module('BBAdminDashboard.settings-iframe.translations').config([
-    '$translateProvider', function($translateProvider) {
-      return $translateProvider.translations('en', {
-        'TEXT_1': 'Hello here!'
+  angular.module('BBAdminDashboard.settings-iframe.controllers').controller('SettingsIframePageCtrl', [
+    '$scope', '$state', '$rootScope', function($scope, $state, $rootScope) {
+      $scope.parent_state = $state.is("setting");
+      $scope.path = "conf";
+      return $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
+        $scope.parent_state = false;
+        if (toState.name === "setting") {
+          return $scope.parent_state = true;
+        }
       });
     }
   ]);
@@ -3193,13 +3170,36 @@
   'use strict';
 
   /*
-  * @ngdoc overview
-  * @name BBAdminDashboard.login.translations
+  * @ngdoc controller
+  * @name BBAdminDashboard.settings-iframe.controllers.controller:SettingsSubIframePageCtrl
    *
   * @description
-  * Translations for the admin login module
+  * Controller for the settings sub page
    */
-  angular.module('BBAdminDashboard.login.translations').config([
+  angular.module('BBAdminDashboard.settings-iframe.controllers').controller('SettingsSubIframePageCtrl', [
+    '$scope', '$state', '$stateParams', function($scope, $state, $stateParams) {
+      $scope.path = $stateParams.path;
+      if ($stateParams.id) {
+        return $scope.extra_params = "id=" + $stateParams.id;
+      } else {
+        return $scope.extra_params = "";
+      }
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc overview
+  * @name BBAdminDashboard.settings-iframe.translations
+   *
+  * @description
+  * Translations for the admin settings-iframe module
+   */
+  angular.module('BBAdminDashboard.settings-iframe.translations').config([
     '$translateProvider', function($translateProvider) {
       return $translateProvider.translations('en', {
         'TEXT_1': 'Hello here!'
