@@ -471,36 +471,6 @@
 }).call(this);
 
 (function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.calendar.controllers.controller:CalendarPageCtrl
-   *
-  * @description
-  * Controller for the calendar page
-   */
-  angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPageCtrl', [
-    '$scope', '$state', '$log', function($scope, $state, $log) {
-      var pusher_channel, refetch;
-      $scope.adminlte.side_menu = false;
-      $scope.adminlte.heading = null;
-      pusher_channel = $scope.company.getPusherChannel('bookings');
-      refetch = _.throttle(function(data) {
-        $log.info('== booking push received in bookins == ', data);
-        return $scope.$broadcast('refetchBookings', data);
-      }, 1000, {
-        leading: false
-      });
-      pusher_channel.bind('create', refetch);
-      pusher_channel.bind('update', refetch);
-      return pusher_channel.bind('destroy', refetch);
-    }
-  ]);
-
-}).call(this);
-
-(function() {
   angular.module('BBAdminDashboard.calendar.directives').directive('bbResourceCalendar', function(uiCalendarConfig, AdminCompanyService, $q, ModalForm, BBModel, AdminBookingPopup, AdminMoveBookingPopup, $window, $bbug, ColorPalette, Dialog, $timeout, $compile, $templateCache, PrePostTime, $filter) {
     var controller, link;
     controller = function($scope, $attrs, BBAssets, ProcessAssetsFilter, $state, GeneralOptions, AdminCalendarOptions, CalendarEventSources) {
@@ -1003,6 +973,36 @@
   'use strict';
 
   /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.calendar.controllers.controller:CalendarPageCtrl
+   *
+  * @description
+  * Controller for the calendar page
+   */
+  angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPageCtrl', [
+    '$scope', '$state', '$log', function($scope, $state, $log) {
+      var pusher_channel, refetch;
+      $scope.adminlte.side_menu = false;
+      $scope.adminlte.heading = null;
+      pusher_channel = $scope.company.getPusherChannel('bookings');
+      refetch = _.throttle(function(data) {
+        $log.info('== booking push received in bookins == ', data);
+        return $scope.$broadcast('refetchBookings', data);
+      }, 1000, {
+        leading: false
+      });
+      pusher_channel.bind('create', refetch);
+      pusher_channel.bind('update', refetch);
+      return pusher_channel.bind('destroy', refetch);
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
   * @ngdoc service
   * @name BBAdminDashboard.calendar.services.service:AdminCalendarOptions
   *
@@ -1440,6 +1440,35 @@
 }).call(this);
 
 (function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.check-in.controllers.controller:CheckInPageCtrl
+   *
+  * @description
+  * Controller for the check-in page
+   */
+  angular.module('BBAdminDashboard.check-in.controllers').controller('CheckInPageCtrl', [
+    '$scope', '$state', '$log', function($scope, $state, $log) {
+      var pusher_channel, refetch;
+      $scope.adminlte.heading = '';
+      pusher_channel = $scope.company.getPusherChannel('bookings');
+      refetch = _.throttle(function(data) {
+        $log.info('== booking push received in checkin  == ', data);
+        return $scope.$broadcast('refetchCheckin', data);
+      }, 1000, {
+        leading: false
+      });
+      pusher_channel.bind('create', refetch);
+      pusher_channel.bind('update', refetch);
+      return pusher_channel.bind('destroy', refetch);
+    }
+  ]);
+
+}).call(this);
+
+(function() {
   angular.module('BBAdminDashboard.check-in.directives').directive('bbCheckinTable', function() {
     return {
       restrict: 'AE',
@@ -1544,35 +1573,6 @@
     })(this);
     return $scope.getAppointments(null, null, null, null, null, true);
   });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.check-in.controllers.controller:CheckInPageCtrl
-   *
-  * @description
-  * Controller for the check-in page
-   */
-  angular.module('BBAdminDashboard.check-in.controllers').controller('CheckInPageCtrl', [
-    '$scope', '$state', '$log', function($scope, $state, $log) {
-      var pusher_channel, refetch;
-      $scope.adminlte.heading = '';
-      pusher_channel = $scope.company.getPusherChannel('bookings');
-      refetch = _.throttle(function(data) {
-        $log.info('== booking push received in checkin  == ', data);
-        return $scope.$broadcast('refetchCheckin', data);
-      }, 1000, {
-        leading: false
-      });
-      pusher_channel.bind('create', refetch);
-      pusher_channel.bind('update', refetch);
-      return pusher_channel.bind('destroy', refetch);
-    }
-  ]);
 
 }).call(this);
 
