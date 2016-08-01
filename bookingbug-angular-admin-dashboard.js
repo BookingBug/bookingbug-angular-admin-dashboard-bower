@@ -457,6 +457,35 @@
 }).call(this);
 
 (function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.calendar.controllers.controller:CalendarPageCtrl
+   *
+  * @description
+  * Controller for the calendar page
+   */
+  angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPageCtrl', ["$scope", "$state", "$log", function($scope, $state, $log) {
+      var pusher_channel, refetch;
+      $scope.adminlte.side_menu = false;
+      $scope.adminlte.heading = null;
+      pusher_channel = $scope.company.getPusherChannel('bookings');
+      refetch = _.throttle(function(data) {
+        $log.info('== booking push received in bookins == ', data);
+        return $scope.$broadcast('refetchBookings', data);
+      }, 1000, {
+        leading: false
+      });
+      pusher_channel.bind('create', refetch);
+      pusher_channel.bind('update', refetch);
+      return pusher_channel.bind('destroy', refetch);
+    }
+  ]);
+
+}).call(this);
+
+(function() {
   angular.module('BBAdminDashboard.calendar.directives').directive('bbResourceCalendar', ["uiCalendarConfig", "AdminCompanyService", "$q", "ModalForm", "BBModel", "AdminBookingPopup", "AdminMoveBookingPopup", "$window", "$bbug", "ColorPalette", "Dialog", "$timeout", "$compile", "$templateCache", "PrePostTime", "$filter", function(uiCalendarConfig, AdminCompanyService, $q, ModalForm, BBModel, AdminBookingPopup, AdminMoveBookingPopup, $window, $bbug, ColorPalette, Dialog, $timeout, $compile, $templateCache, PrePostTime, $filter) {
     var controller, link;
     controller = function($scope, $attrs, BBAssets, ProcessAssetsFilter, $state, GeneralOptions, AdminCalendarOptions, CalendarEventSources) {
@@ -952,35 +981,6 @@
       }
     };
   }]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.calendar.controllers.controller:CalendarPageCtrl
-   *
-  * @description
-  * Controller for the calendar page
-   */
-  angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPageCtrl', ["$scope", "$state", "$log", function($scope, $state, $log) {
-      var pusher_channel, refetch;
-      $scope.adminlte.side_menu = false;
-      $scope.adminlte.heading = null;
-      pusher_channel = $scope.company.getPusherChannel('bookings');
-      refetch = _.throttle(function(data) {
-        $log.info('== booking push received in bookins == ', data);
-        return $scope.$broadcast('refetchBookings', data);
-      }, 1000, {
-        leading: false
-      });
-      pusher_channel.bind('create', refetch);
-      pusher_channel.bind('update', refetch);
-      return pusher_channel.bind('destroy', refetch);
-    }
-  ]);
 
 }).call(this);
 
