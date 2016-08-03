@@ -488,8 +488,8 @@
 (function() {
   angular.module('BBAdminDashboard.calendar.directives').directive('bbResourceCalendar', ["uiCalendarConfig", "AdminCompanyService", "$q", "ModalForm", "BBModel", "AdminBookingPopup", "AdminMoveBookingPopup", "$window", "$bbug", "ColorPalette", "Dialog", "$timeout", "$compile", "$templateCache", "PrePostTime", "$filter", function(uiCalendarConfig, AdminCompanyService, $q, ModalForm, BBModel, AdminBookingPopup, AdminMoveBookingPopup, $window, $bbug, ColorPalette, Dialog, $timeout, $compile, $templateCache, PrePostTime, $filter) {
     var controller, link;
-    controller = function($scope, $attrs, BBAssets, ProcessAssetsFilter, $state, GeneralOptions, AdminCalendarOptions, CalendarEventSources) {
-      var dayHasAvailability, filters, getCalendarAssets, height, isTimeRangeAvailable, pusherBooking, setTimeToMoment;
+    controller = function($scope, $attrs, BBAssets, ProcessAssetsFilter, $state, GeneralOptions, AdminCalendarOptions, CalendarEventSources, TitleAssembler) {
+      var dayHasAvailability, filters, getBookingTitle, getCalendarAssets, height, isTimeRangeAvailable, pusherBooking, setTimeToMoment;
       setTimeToMoment = function(date, time) {
         var newDate;
         newDate = moment(time, 'HH:mm');
@@ -808,6 +808,17 @@
           }
         });
       };
+      getBookingTitle = function(booking) {
+        var blockLabelAssembler, labelAssembler;
+        labelAssembler = $scope.labelAssembler ? $scope.labelAssembler : AdminCalendarOptions.bookings_label_assembler;
+        blockLabelAssembler = $scope.blockLabelAssembler ? $scope.blockLabelAssembler : AdminCalendarOptions.block_label_assembler;
+        if (booking.status !== 3 && labelAssembler) {
+          return TitleAssembler.getTitle(booking, labelAssembler);
+        } else if (booking.status === 3 && blockLabelAssembler) {
+          return TitleAssembler.getTitle(booking, blockLabelAssembler);
+        }
+        return booking.title;
+      };
       $scope.refreshBooking = function(booking) {
         return booking.$refetch().then(function(response) {
           booking.resourceIds = [];
@@ -818,6 +829,7 @@
           if (booking.resource_id != null) {
             booking.resourceIds.push(booking.resource_id + '_r');
           }
+          booking.title = getBookingTitle(booking);
           return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('updateEvent', booking);
         });
       };
@@ -838,6 +850,7 @@
           if (booking.resource_id != null) {
             booking.resourceIds.push(booking.resource_id + '_r');
           }
+          booking.title = getBookingTitle(booking);
           return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('updateEvent', booking);
         });
       };
@@ -883,6 +896,7 @@
               if (response.is_cancelled) {
                 return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('removeEvents', [response.id]);
               } else {
+                booking.title = getBookingTitle(booking);
                 return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('updateEvent', booking);
               }
             };
@@ -895,6 +909,7 @@
           booking = _.first(uiCalendarConfig.calendars.resourceCalendar.fullCalendar('clientEvents', res.id));
           if (booking && booking.$refetch) {
             return booking.$refetch().then(function() {
+              booking.title = getBookingTitle(booking);
               return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('updateEvent', booking);
             });
           } else {
@@ -981,6 +996,25 @@
       }
     };
   }]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc overview
+  * @name BBAdminDashboard.calendar.translations
+   *
+  * @description
+  * Translations for the admin calendar module
+   */
+  angular.module('BBAdminDashboard.calendar.translations').config(["$translateProvider", function($translateProvider) {
+      return $translateProvider.translations('en', {
+        'TEXT_2': 'Hello there!'
+      });
+    }
+  ]);
 
 }).call(this);
 
@@ -1395,25 +1429,6 @@
         }
       };
     });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc overview
-  * @name BBAdminDashboard.calendar.translations
-   *
-  * @description
-  * Translations for the admin calendar module
-   */
-  angular.module('BBAdminDashboard.calendar.translations').config(["$translateProvider", function($translateProvider) {
-      return $translateProvider.translations('en', {
-        'TEXT_2': 'Hello there!'
-      });
-    }
-  ]);
 
 }).call(this);
 
@@ -2607,33 +2622,6 @@
   'use strict';
 
   /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.departments.controllers.controller:DepartmentsPageCtrl
-   *
-  * @description
-  * Controller for the departments page
-   */
-  angular.module('BBAdminDashboard.departments.controllers').controller('DepartmentsPageCtrl', ["$scope", "company", "departments", "AdminLoginService", "$state", "$timeout", function($scope, company, departments, AdminLoginService, $state, $timeout) {
-      $scope.company = company;
-      $scope.departments = departments;
-      return $scope.selectDepartment = function(department) {
-        return AdminLoginService.setCompany(department.id).then(function(user) {
-          return $timeout(function() {
-            return $state.go('calendar', {}, {
-              reload: true
-            });
-          });
-        });
-      };
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
   * @ngdoc service
   * @name BBAdminDashboard.departments.services.service:AdminDepartmentsOptions
   *
@@ -2676,6 +2664,33 @@
         return options;
       };
     });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.departments.controllers.controller:DepartmentsPageCtrl
+   *
+  * @description
+  * Controller for the departments page
+   */
+  angular.module('BBAdminDashboard.departments.controllers').controller('DepartmentsPageCtrl', ["$scope", "company", "departments", "AdminLoginService", "$state", "$timeout", function($scope, company, departments, AdminLoginService, $state, $timeout) {
+      $scope.company = company;
+      $scope.departments = departments;
+      return $scope.selectDepartment = function(department) {
+        return AdminLoginService.setCompany(department.id).then(function(user) {
+          return $timeout(function() {
+            return $state.go('calendar', {}, {
+              reload: true
+            });
+          });
+        });
+      };
+    }
+  ]);
 
 }).call(this);
 
@@ -3072,52 +3087,6 @@
   'use strict';
 
   /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.settings-iframe.controllers.controller:SettingsIframePageCtrl
-   *
-  * @description
-  * Controller for the settings page
-   */
-  angular.module('BBAdminDashboard.settings-iframe.controllers').controller('SettingsIframePageCtrl', ["$scope", "$state", "$rootScope", function($scope, $state, $rootScope) {
-      $scope.parent_state = $state.is("setting");
-      $scope.path = "conf";
-      return $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
-        $scope.parent_state = false;
-        if (toState.name === "setting") {
-          return $scope.parent_state = true;
-        }
-      });
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.settings-iframe.controllers.controller:SettingsSubIframePageCtrl
-   *
-  * @description
-  * Controller for the settings sub page
-   */
-  angular.module('BBAdminDashboard.settings-iframe.controllers').controller('SettingsSubIframePageCtrl', ["$scope", "$state", "$stateParams", function($scope, $state, $stateParams) {
-      $scope.path = $stateParams.path;
-      if ($stateParams.id) {
-        return $scope.extra_params = "id=" + $stateParams.id;
-      } else {
-        return $scope.extra_params = "";
-      }
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
   * @ngdoc service
   * @name BBAdminDashboard.settings-iframe.services.service:AdminSettingsIframeOptions
   *
@@ -3160,6 +3129,52 @@
         return options;
       };
     });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.settings-iframe.controllers.controller:SettingsIframePageCtrl
+   *
+  * @description
+  * Controller for the settings page
+   */
+  angular.module('BBAdminDashboard.settings-iframe.controllers').controller('SettingsIframePageCtrl', ["$scope", "$state", "$rootScope", function($scope, $state, $rootScope) {
+      $scope.parent_state = $state.is("setting");
+      $scope.path = "conf";
+      return $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
+        $scope.parent_state = false;
+        if (toState.name === "setting") {
+          return $scope.parent_state = true;
+        }
+      });
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.settings-iframe.controllers.controller:SettingsSubIframePageCtrl
+   *
+  * @description
+  * Controller for the settings sub page
+   */
+  angular.module('BBAdminDashboard.settings-iframe.controllers').controller('SettingsSubIframePageCtrl', ["$scope", "$state", "$stateParams", function($scope, $state, $stateParams) {
+      $scope.path = $stateParams.path;
+      if ($stateParams.id) {
+        return $scope.extra_params = "id=" + $stateParams.id;
+      } else {
+        return $scope.extra_params = "";
+      }
+    }
+  ]);
 
 }).call(this);
 
