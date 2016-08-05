@@ -3090,52 +3090,6 @@
   'use strict';
 
   /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.settings-iframe.controllers.controller:SettingsIframePageCtrl
-   *
-  * @description
-  * Controller for the settings page
-   */
-  angular.module('BBAdminDashboard.settings-iframe.controllers').controller('SettingsIframePageCtrl', ["$scope", "$state", "$rootScope", function($scope, $state, $rootScope) {
-      $scope.parent_state = $state.is("setting");
-      $scope.path = "conf";
-      return $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
-        $scope.parent_state = false;
-        if (toState.name === "setting") {
-          return $scope.parent_state = true;
-        }
-      });
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.settings-iframe.controllers.controller:SettingsSubIframePageCtrl
-   *
-  * @description
-  * Controller for the settings sub page
-   */
-  angular.module('BBAdminDashboard.settings-iframe.controllers').controller('SettingsSubIframePageCtrl', ["$scope", "$state", "$stateParams", function($scope, $state, $stateParams) {
-      $scope.path = $stateParams.path;
-      if ($stateParams.id) {
-        return $scope.extra_params = "id=" + $stateParams.id;
-      } else {
-        return $scope.extra_params = "";
-      }
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
   * @ngdoc service
   * @name BBAdminDashboard.settings-iframe.services.service:AdminSettingsIframeOptions
   *
@@ -3178,6 +3132,52 @@
         return options;
       };
     });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.settings-iframe.controllers.controller:SettingsIframePageCtrl
+   *
+  * @description
+  * Controller for the settings page
+   */
+  angular.module('BBAdminDashboard.settings-iframe.controllers').controller('SettingsIframePageCtrl', ["$scope", "$state", "$rootScope", function($scope, $state, $rootScope) {
+      $scope.parent_state = $state.is("setting");
+      $scope.path = "conf";
+      return $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
+        $scope.parent_state = false;
+        if (toState.name === "setting") {
+          return $scope.parent_state = true;
+        }
+      });
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.settings-iframe.controllers.controller:SettingsSubIframePageCtrl
+   *
+  * @description
+  * Controller for the settings sub page
+   */
+  angular.module('BBAdminDashboard.settings-iframe.controllers').controller('SettingsSubIframePageCtrl', ["$scope", "$state", "$stateParams", function($scope, $state, $stateParams) {
+      $scope.path = $stateParams.path;
+      if ($stateParams.id) {
+        return $scope.extra_params = "id=" + $stateParams.id;
+      } else {
+        return $scope.extra_params = "";
+      }
+    }
+  ]);
 
 }).call(this);
 
