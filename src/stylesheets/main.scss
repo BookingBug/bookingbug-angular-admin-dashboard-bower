@@ -1,5 +1,8 @@
+html,body {
+  min-height: 100%;
+  height: 100%;
+}
 
-@import "skin_bb";
 
 .bb-page-frame {
   width:100%;
@@ -8,19 +11,18 @@
   background: transparent;
 }
 
-.clickable {
-  cursor: pointer;
-}
+#bb {
+  @import "ng-scrollable";
+  @import "switch";
 
-//bootstrap overrides
-.panel-heading {
-  .btn-sm {
-    position: relative;
-    top:5px;
-  }
-}
+	/*BB specific CSS*/
+	@import "animations";
+	@import "general";
+	@import "login";
 
-@import "resource_calendar";
+	@import "default-theme";
+	@import "resource-calendar";
+}
 
 #bb .modal-content .bb-content, .modal-content #bb .bb-content{
 	min-height: 100px !important;
