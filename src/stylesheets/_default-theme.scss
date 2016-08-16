@@ -1,29 +1,4 @@
 //Default bookingbug admin theme
-//SIDEBAR SKINS
-//--------------------------------------------------------
-
-//Dark sidebar
-$sidebar-dark-bg                  : #222d32;
-$sidebar-dark-hover-bg            : darken($sidebar-dark-bg, 2%);
-$sidebar-dark-color               : lighten($sidebar-dark-bg, 60%);
-$sidebar-dark-hover-color         : #fff;
-$sidebar-dark-submenu-bg          : lighten($sidebar-dark-bg, 5%);
-$sidebar-dark-submenu-color       : lighten($sidebar-dark-submenu-bg, 40%);
-$sidebar-dark-submenu-hover-color : #fff;
-
-//Light sidebar
-$sidebar-light-bg                  : #f8f8f8;
-$sidebar-light-hover-bg            : lighten(#f0f0f1, 1.5%);
-$sidebar-light-color               : #444;
-$sidebar-light-hover-color         : #000;
-$sidebar-light-submenu-bg          : $sidebar-light-hover-bg;
-$sidebar-light-submenu-color       : #777;
-$sidebar-light-submenu-hover-color : #000;
-
-$transition-speed                  : 0.3s;
-$transition-fn                     : ease-in-out;
-
-
 $theme-color                       : #81bc00;
 $screen-header-collapse            : $screen-xs-max;
 
@@ -32,6 +7,11 @@ $screen-header-collapse            : $screen-xs-max;
     position: absolute;
     bottom: 0;
     z-index: -1;
+  }
+
+  .ui-select-bootstrap .ui-select-choices-row.active>a {
+    color: $btn-primary-color;
+    background-color: $brand-primary;
   }
 
   //Navbar
@@ -94,10 +74,37 @@ $screen-header-collapse            : $screen-xs-max;
 
   //Create the sidebar skin
   @include skin-light-sidebar($theme-color);
+
+  // Calendar
+  .fc {
+    .fc-button-group {
+      .fc-button.fc-state-active {
+        background-color: $brand-primary;
+        color: $btn-primary-color;
+        box-shadow: none;
+        text-shadow: none;
+        border-color: $brand-primary;
+      }
+    }
+
+    .fc-bgevent {
+      background: $brand-primary;
+      opacity: 0.1;
+    }
+
+    .fc-event {
+      border: none;
+      padding: 7px 0;
+      &.status_blocked {
+        background-color: $gray;
+      }
+
+      .fc-bg {
+        background: none;
+      }
+    }
+  }
 }
-
-
-
 
 
 //Buttons
@@ -131,4 +138,3 @@ $screen-header-collapse            : $screen-xs-max;
     }
   }
 }
-
