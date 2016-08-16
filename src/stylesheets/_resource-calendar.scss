@@ -11,7 +11,7 @@
 .resource-calendar {
 	.fc-toolbar {
 		p.datepicker {
-			padding-top: 0; 
+			padding-top: 0;
 
 			input.form-control {
 				height: 29px;
@@ -58,25 +58,51 @@
   .fc-time-grid-event,
   .fc-timeline-event {
     .pre, .post {
-      background-color: $gray-light;
+    	position: relative;
+    	opacity: 0.4;
+
+    	&:before{
+    		display: block;
+    		content: '';
+    		position: absolute;
+    		top: 0;
+    		right:0;
+    		bottom:0;
+    		left:0;
+    		background-color: #fff;
+      	opacity: 0.6;
+    	}
     }
   }
 
-  .fc-time-grid-event .post {
-    width: 100%;
-    bottom: 0px;
-    position: absolute;
+  .fc-time-grid-event {
+  	.pre {
+  		border-bottom: 1px dotted #fff;
+  	}
+
+  	.post {
+  		border-top: 1px dotted #fff;
+	    width: 100%;
+	    bottom: 0px;
+	    position: absolute;
+	  }
   }
 
-  .fc-timeline-event .post {
-    right: 0px;
-    z-index: 10;
-  }
+  .fc-timeline-event {
+  	.pre, .post {
+	    height: 100%;
+	    bottom: 0px;
+	    position: absolute;
+	  }
 
-  .fc-timeline-event .pre,
-  .fc-timeline-event .post {
-    height: 100%;
-    bottom: 0px;
-    position: absolute;
+	  .pre {
+	  	border-right: 1px dotted #fff;
+  	}
+
+  	.post {
+	  	border-left: 1px dotted #fff;
+	    right: 0px;
+	    z-index: 10;
+	  }
   }
 }
