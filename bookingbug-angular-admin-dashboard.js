@@ -795,7 +795,7 @@
           },
           eventClick: function(event, jsEvent, view) {
             if (event.$has('edit')) {
-              return $scope.editBooking(event);
+              return $scope.editBooking(new BBModel.Admin.Booking(event));
             }
           },
           eventRender: function(event, element) {
