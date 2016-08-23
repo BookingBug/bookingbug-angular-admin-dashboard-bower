@@ -848,12 +848,18 @@
             }
           },
           viewRender: function(view, element) {
-            var date;
+            var date, newDate;
             date = uiCalendarConfig.calendars.resourceCalendar.fullCalendar('getDate');
-            date.set('hour', 0);
-            date.set('minute', 0);
-            date.set('second', 0);
-            return $scope.currentDate = date.toDate();
+            newDate = moment().tz(moment.tz.guess());
+            newDate.set({
+              'year': parseInt(date.get('year')),
+              'month': parseInt(date.get('month')),
+              'date': parseInt(date.get('date')),
+              'hour': 0,
+              'minute': 0,
+              'second': 0
+            });
+            return $scope.currentDate = newDate.toDate();
           },
           eventResize: function(event, delta, revertFunc, jsEvent, ui, view) {
             event.duration = event.end.diff(event.start, 'minutes');
@@ -1089,7 +1095,7 @@
       $scope.updateDate = function(date) {
         var assembledDate;
         if (uiCalendarConfig.calendars.resourceCalendar) {
-          assembledDate = moment();
+          assembledDate = moment.utc();
           assembledDate.set({
             'year': parseInt(date.getFullYear()),
             'month': parseInt(date.getMonth()),
