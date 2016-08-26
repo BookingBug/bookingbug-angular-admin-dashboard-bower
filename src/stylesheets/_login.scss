@@ -22,6 +22,12 @@
       font-weight: bold;
     }
 
+    .panel-heading {
+      .panel-title {
+        margin-bottom: 0 !important;
+      }
+    }
+
     .panel-body {
       padding-bottom: 0 ;
     }
