@@ -96,12 +96,32 @@ $screen-header-collapse            : $screen-xs-max;
       border: none;
       padding: 7px 0;
       &.status_blocked {
-        background-color: $gray;
+        background-color: $gray !important;
       }
+      &.status_no_show {
+        background-color: $gray !important;
+      }
+      &.status_external {
+        background-color: #DDD !important;
+        border-color: #AAA !important;
 
+      }
       .fc-bg {
         background: none;
       }
+    }
+
+    .fc-list-item {
+      &.status_blocked span.fc-event-dot {
+          background-color: $gray !important;
+      }
+      &.status_no_show span.fc-event-dot {
+        background-color: $gray !important;
+      }
+      &.status_external {
+        background-color: #DDD !important;
+      }
+
     }
   }
 }
