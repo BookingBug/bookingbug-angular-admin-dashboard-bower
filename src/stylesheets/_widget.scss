@@ -19,3 +19,14 @@
 
 // hide the print button in popups
 .print-row {display:none;}
+
+
+.bb-calendar .panel-heading,
+[bb-time-ranges] .panel-heading,
+.bb-time-ranges .panel-heading {
+    background: none;
+    padding: 10px 4px 10px 4px;
+    position: relative;
+    cursor: pointer;
+    color: inherit;
+}
