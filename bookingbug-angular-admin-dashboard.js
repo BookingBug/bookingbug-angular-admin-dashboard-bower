@@ -1178,6 +1178,31 @@
 }).call(this);
 
 (function() {
+  angular.module('BBAdminDashboard.calendar.directives').directive('bbNewBooking', function() {
+    return {
+      restrict: 'AE',
+      replace: true,
+      scope: true,
+      controller: function($scope, AdminBookingPopup, $uibModal, $timeout, $rootScope, AdminBookingOptions) {
+        return $scope.newBooking = function() {
+          return AdminBookingPopup.open({
+            item_defaults: {
+              day_view: AdminBookingOptions.day_view,
+              merge_people: true,
+              merge_resources: true,
+              date: moment($scope.$parent.currentDate).format('YYYY-MM-DD') || moment().format('YYYY-MM-DD')
+            },
+            company_id: $rootScope.bb.company.id,
+            template: 'main'
+          });
+        };
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
   'use strict';
 
   /*
@@ -1212,7 +1237,7 @@
         column_format: null,
         bookings_label_assembler: '{service_name} - {client_name}',
         block_label_assembler: 'Blocked',
-        external_label_assembler: 'Blocked'
+        external_label_assembler: '{title}'
       };
       this.setOption = function(option, value) {
         if (options.hasOwnProperty(option)) {
@@ -1351,8 +1376,9 @@
             no_cache: (options.noCache != null) && options.noCache ? true : false
           };
           company.$get('external_bookings', params).then(function(collection) {
-            return collection.$get('external_bookings').then(function(bookings) {
-              var booking, i, len;
+            var booking, bookings, i, len;
+            bookings = collection.external_bookings;
+            if (bookings) {
               for (i = 0, len = bookings.length; i < len; i++) {
                 booking = bookings[i];
                 booking.resourceIds = [];
@@ -1369,9 +1395,9 @@
                 booking.type = 'external';
               }
               return deferred.resolve(bookings);
-            }, function(err) {
-              return deferred.reject(err);
-            });
+            } else {
+              return deferred.resolve([]);
+            }
           }, function(err) {
             return deferred.reject(err);
           });
@@ -2745,6 +2771,35 @@
 }).call(this);
 
 (function() {
+  'use strict';
+
+  /**
+   * @ngdoc directive
+   * @name BBAdminDashboard.directive:bbClassicSwitch
+   * @scope
+   * @restrict A
+   *
+   * @description
+   * Create a link that switches back to BB Classic mode
+   *
+   */
+  angular.module('BBAdminDashboard').directive('bbClassicSwitch', [
+    function() {
+      return {
+        restrict: 'A',
+        scope: false,
+        link: function(scope, element, attrs) {
+          if (scope.bb.api_url) {
+            return attrs.$set('href', scope.bb.api_url + "?dashboard_redirect=true");
+          }
+        }
+      };
+    }
+  ]);
+
+}).call(this);
+
+(function() {
   angular.module('BBAdminDashboard').directive('bbIfLogin', function($uibModal, $log, $q, $rootScope, AdminCompanyService, $compile, $templateCache, ModalForm, BBModel) {
     var compile, link;
     compile = function() {
@@ -3679,14 +3734,14 @@
             $scope.formErrors = [];
             companySelection = function(user) {
               if (user.$has('administrators')) {
-                return user.getAdministratorsPromise().then(function(administrators) {
+                return user.$getAdministrators().then(function(administrators) {
                   var params;
                   $scope.administrators = administrators;
                   if (administrators.length > 1) {
                     $scope.template_vars.show_loading = false;
                     $scope.template_vars.show_login = false;
                     return $scope.template_vars.show_pick_company = true;
-                  } else {
+                  } else if (administrators.length === 1) {
                     params = {
                       email: $scope.login.email,
                       password: $scope.login.password
@@ -3706,6 +3761,11 @@
                           });
                         }
                       });
+                    });
+                  } else {
+                    $scope.template_vars.show_loading = false;
+                    return $scope.formErrors.push({
+                      message: "LOGIN_PAGE.ERROR_INCORRECT_CREDS"
                     });
                   }
                 });
