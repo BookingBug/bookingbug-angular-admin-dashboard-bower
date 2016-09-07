@@ -873,9 +873,11 @@
         }
       };
       isTimeRangeAvailable = function(start, end, resource) {
-        var events;
+        var en, events, st;
+        st = moment(start.toISOString()).unix();
+        en = moment(end.toISOString()).unix();
         events = uiCalendarConfig.calendars.resourceCalendar.fullCalendar('clientEvents', function(event) {
-          return event.rendering === 'background' && start >= event.start && end <= event.end && ((resource && parseInt(event.resourceId) === parseInt(resource.id)) || !resource);
+          return event.rendering === 'background' && st >= event.start.unix() && en <= event.end.unix() && ((resource && parseInt(event.resourceId) === parseInt(resource.id)) || !resource);
         });
         return events.length > 0;
       };
