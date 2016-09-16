@@ -3652,7 +3652,7 @@
                     };
                     $scope.login.selected_admin = _.first(administrators);
                     return $scope.login.selected_admin.$post('login', {}, params).then(function(login) {
-                      return $scope.login.selected_admin.getCompanyPromise().then(function(company) {
+                      return $scope.login.selected_admin.$getCompany().then(function(company) {
                         $scope.template_vars.show_loading = false;
                         if (company.companies && company.companies.length > 0) {
                           $scope.template_vars.show_pick_department = true;
@@ -3741,7 +3741,7 @@
                 password: $scope.login.password
               };
               return $scope.login.selected_admin.$post('login', {}, params).then(function(login) {
-                return $scope.login.selected_admin.getCompanyPromise().then(function(company) {
+                return $scope.login.selected_admin.$getCompany().then(function(company) {
                   $scope.template_vars.show_loading = false;
                   if (company.companies && company.companies.length > 0) {
                     $scope.template_vars.show_pick_department = true;
