@@ -13,9 +13,15 @@
       if (AdminCalendarOptions.use_default_states) {
         RuntimeStates.state('calendar', {
           parent: AdminCalendarOptions.parent_state,
-          url: "calendar/:assets",
+          url: "calendar",
           templateUrl: "calendar/index.html",
           controller: 'CalendarPageCtrl'
+        }).state('calendar.people', {
+          url: "/people/:assets",
+          templateUrl: "calendar/people.html"
+        }).state('calendar.resources', {
+          url: "/resources/:assets",
+          templateUrl: "calendar/resources.html"
         });
       }
       if (AdminCalendarOptions.show_in_navigation) {
@@ -208,7 +214,7 @@
   'use strict';
   var BBAdminDashboardDependencies, adminBookingApp;
 
-  BBAdminDashboardDependencies = ['ngStorage', 'ngResource', 'ngTouch', 'ngSanitize', 'ngLocalData', 'ngCookies', 'BBAdmin', 'BBAdminServices', 'BBAdminBooking', 'BBAdmin.Directives', 'BBMember', 'ui.calendar', 'ui.bootstrap', 'ui.router', 'ui.select', 'ct.ui.router.extras', 'trNgGrid', 'toggle-switch', 'pascalprecht.translate', 'angular-loading-bar', 'ngScrollable', 'toastr', 'BBAdminDashboard.check-in', 'BBAdminDashboard.clients', 'BBAdminDashboard.login', 'BBAdminDashboard.logout', 'BBAdminDashboard.calendar', 'BBAdminDashboard.dashboard-iframe', 'BBAdminDashboard.members-iframe', 'BBAdminDashboard.settings-iframe', 'BBAdminDashboard.config-iframe', 'BBAdminDashboard.publish-iframe'];
+  BBAdminDashboardDependencies = ['ngStorage', 'ngResource', 'ngTouch', 'ngSanitize', 'ngLocalData', 'ngCookies', 'BBAdmin', 'BBAdminServices', 'BBAdminBooking', 'BBAdmin.Directives', 'BBMember', 'ui.calendar', 'ui.bootstrap', 'ui.router', 'ct.ui.router.extras', 'trNgGrid', 'toggle-switch', 'pascalprecht.translate', 'angular-loading-bar', 'ngScrollable', 'toastr', 'BBAdminDashboard.check-in', 'BBAdminDashboard.clients', 'BBAdminDashboard.login', 'BBAdminDashboard.logout', 'BBAdminDashboard.calendar', 'BBAdminDashboard.dashboard-iframe', 'BBAdminDashboard.members-iframe', 'BBAdminDashboard.settings-iframe', 'BBAdminDashboard.config-iframe', 'BBAdminDashboard.publish-iframe'];
 
   adminBookingApp = angular.module('BBAdminDashboard', BBAdminDashboardDependencies).run([
     'RuntimeStates', 'AdminCoreOptions', 'RuntimeRoutes', 'AdminLoginService', function(RuntimeStates, AdminCoreOptions, RuntimeRoutes, AdminLoginService) {
@@ -284,25 +290,7 @@
   ]).config(function($logProvider, $httpProvider) {
     $logProvider.debugEnabled(true);
     return $httpProvider.defaults.withCredentials = true;
-  }).config([
-    '$translateProvider', 'AdminCoreOptionsProvider', function($translateProvider, AdminCoreOptionsProvider) {
-      $translateProvider.useSanitizeValueStrategy('sanitize');
-      $translateProvider.useLocalStorage();
-      return $translateProvider.fallbackLanguage(AdminCoreOptionsProvider.getOption('available_languages'));
-    }
-  ]).run([
-    '$translate', 'AdminCoreOptions', 'RuntimeTranslate', function($translate, AdminCoreOptions, RuntimeTranslate) {
-      var browserLocale;
-      RuntimeTranslate.registerAvailableLanguageKeys(AdminCoreOptions.available_languages, AdminCoreOptions.available_language_associations);
-      $translate.preferredLanguage(AdminCoreOptions.default_language);
-      if (AdminCoreOptions.use_browser_language) {
-        browserLocale = $translate.negotiateLocale($translate.resolveClientLocale());
-        if (_.contains(AdminCoreOptions.available_languages, browserLocale)) {
-          return $translate.preferredLanguage(browserLocale);
-        }
-      }
-    }
-  ]);
+  });
 
 }).call(this);
 
@@ -615,23 +603,39 @@
   * @description
   * Controller for the calendar page
    */
-  angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPageCtrl', [
-    '$scope', '$state', '$log', function($scope, $state, $log) {
-      var pusher_channel, refetch;
-      pusher_channel = $scope.company.getPusherChannel('bookings');
-      refetch = _.throttle(function(data) {
-        $log.info('== booking push received in bookins == ', data);
-        return $scope.$broadcast('refetchBookings', data);
-      }, 1000, {
-        leading: false
-      });
-      if (pusher_channel) {
-        pusher_channel.bind('create', refetch);
-        pusher_channel.bind('update', refetch);
-        return pusher_channel.bind('destroy', refetch);
+  angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPageCtrl', function($log, $scope, $state) {
+    'ngInject';
+    var bindToPusherChannel, gotToProperState, init, refetch;
+    init = function() {
+      bindToPusherChannel();
+      if ($state.current.name === 'calendar') {
+        gotToProperState();
       }
-    }
-  ]);
+    };
+    gotToProperState = function() {
+      if ($scope.bb.company.$has('people')) {
+        $state.go("calendar.people");
+      } else if ($scope.bb.company.$has('resources')) {
+        $state.go("calendar.resources");
+      }
+    };
+    bindToPusherChannel = function() {
+      var pusherChannel;
+      pusherChannel = $scope.company.getPusherChannel('bookings');
+      if (pusherChannel) {
+        pusherChannel.bind('create', refetch);
+        pusherChannel.bind('update', refetch);
+        pusherChannel.bind('destroy', refetch);
+      }
+    };
+    refetch = _.throttle(function(data) {
+      $log.info('== booking push received in bookings == ', data);
+      return $scope.$broadcast('refetchBookings', data);
+    }, 1000, {
+      leading: false
+    });
+    init();
+  });
 
 }).call(this);
 
@@ -702,7 +706,7 @@
           maxTime: $scope.options.max_time,
           height: 'auto',
           buttonText: {
-            today: $translate.instant('CALENDAR_PAGE.TODAY')
+            today: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.TODAY')
           },
           header: {
             left: 'today,prev,next',
@@ -712,22 +716,22 @@
           defaultView: 'timelineDay',
           views: {
             listDay: {
-              buttonText: $translate.instant('CALENDAR_PAGE.AGENDA')
+              buttonText: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.AGENDA')
             },
             agendaWeek: {
               slotDuration: $filter('minutesToString')($scope.options.cal_slot_duration),
-              buttonText: $translate.instant('CALENDAR_PAGE.WEEK'),
+              buttonText: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.WEEK'),
               groupByDateAndResource: false
             },
             month: {
               eventLimit: 5,
-              buttonText: $translate.instant('CALENDAR_PAGE.MONTH')
+              buttonText: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MONTH')
             },
             timelineDay: {
               slotDuration: $filter('minutesToString')($scope.options.cal_slot_duration),
               eventOverlap: false,
               slotWidth: 25,
-              buttonText: $translate.instant('CALENDAR_PAGE.DAY', {
+              buttonText: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.DAY', {
                 minutes: $scope.options.cal_slot_duration
               }),
               resourceAreaWidth: '18%'
@@ -786,9 +790,9 @@
               return;
             }
             return Dialog.confirm({
-              title: $translate.instant('CALENDAR_PAGE.MOVE_MODAL_TITLE'),
+              title: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MOVE_MODAL_TITLE'),
               model: event,
-              body: $translate.instant('CALENDAR_PAGE.MOVE_MODAL_BODY'),
+              body: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MOVE_MODAL_BODY'),
               success: (function(_this) {
                 return function(model) {
                   return $scope.updateBooking(event);
@@ -892,7 +896,7 @@
         st = moment(start.toISOString()).unix();
         en = moment(end.toISOString()).unix();
         events = uiCalendarConfig.calendars.resourceCalendar.fullCalendar('clientEvents', function(event) {
-          return event.rendering === 'background' && st >= event.start.unix() && en <= event.end.unix() && ((resource && parseInt(event.resourceId) === parseInt(resource.id)) || !resource);
+          return event.rendering === 'background' && st >= event.start.unix() && event.end && en <= event.end.unix() && ((resource && parseInt(event.resourceId) === parseInt(resource.id)) || !resource);
         });
         return events.length > 0;
       };
@@ -936,6 +940,11 @@
             asset.id = asset.identifier;
           }
           $scope.loading = false;
+          if ($scope.options.type) {
+            assets = _.filter(assets, function(a) {
+              return a.type === $scope.options.type;
+            });
+          }
           $scope.assets = assets;
           if (filters.requestedAssets.length > 0) {
             angular.forEach($scope.assets, function(asset) {
@@ -972,10 +981,15 @@
           if ($scope.showAll) {
             return BBAssets(company).then(function(assets) {
               var asset, i, len;
+              if ($scope.options.type) {
+                assets = _.filter(assets, function(a) {
+                  return a.type === $scope.options.type;
+                });
+              }
               for (i = 0, len = assets.length; i < len; i++) {
                 asset = assets[i];
                 asset.id = asset.identifier;
-                asset.group = $translate.instant('CALENDAR_PAGE.' + asset.group.toUpperCase());
+                asset.group = $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.' + asset.group.toUpperCase());
               }
               $scope.loading = false;
               return callback(assets);
@@ -1652,27 +1666,31 @@
   angular.module('BBAdminDashboard.calendar.translations').config([
     '$translateProvider', function($translateProvider) {
       return $translateProvider.translations('en', {
-        'SIDE_NAV': {
+        'ADMIN_DASHBOARD': {
+          'SIDE_NAV': {
+            'CALENDAR_PAGE': {
+              'CALENDAR': 'Calendar',
+              'PEOPLE': 'Staff',
+              'RESOURCES': 'Resources'
+            }
+          },
           'CALENDAR_PAGE': {
-            'CALENDAR': 'Calendar'
+            'SHOW': 'Show',
+            'ALL': 'all',
+            'SOME': 'some',
+            'SELECT_STAFF_RESOURCES': 'Select staff or resource...',
+            'EMAIL': 'email',
+            'TODAY': 'Today',
+            'WEEK': 'Week',
+            'MONTH': 'Month',
+            'DAY': 'Day ({{minutes}}m)',
+            'AGENDA': 'Agenda',
+            'STAFF': 'Staff',
+            'RESOURCES': 'Resources',
+            'MOVE_MODAL_TITLE': 'Move',
+            'MOVE_MODAL_BODY': 'Are you sure you want to move this booking?',
+            'ADD_BOOKING': 'Add Booking'
           }
-        },
-        'CALENDAR_PAGE': {
-          'SHOW': 'Show',
-          'ALL': 'all',
-          'SOME': 'some',
-          'SELECT_STAFF_RESOURCES': 'Select staff or resource...',
-          'EMAIL': 'email',
-          'TODAY': 'Today',
-          'WEEK': 'Week',
-          'MONTH': 'Month',
-          'DAY': 'Day ({{minutes}}m)',
-          'AGENDA': 'Agenda',
-          'STAFF': 'Staff',
-          'RESOURCES': 'Resources',
-          'MOVE_MODAL_TITLE': 'Move',
-          'MOVE_MODAL_BODY': 'Are you sure you want to move this booking?',
-          'ADD_BOOKING': 'Add Booking'
         }
       });
     }
@@ -1928,29 +1946,31 @@
   angular.module('BBAdminDashboard.check-in.translations').config([
     '$translateProvider', function($translateProvider) {
       return $translateProvider.translations('en', {
-        'SIDE_NAV': {
+        'ADMIN_DASHBOARD': {
+          'SIDE_NAV': {
+            'CHECK_IN_PAGE': {
+              'CHECK_IN': 'Check in'
+            }
+          },
           'CHECK_IN_PAGE': {
-            'CHECK_IN': 'Check in'
+            'CHECK_IN': 'Check in',
+            'NO_SHOW': 'No Show',
+            'WALK_IN': 'Walk in',
+            'CUSTOMER': 'Customer',
+            'STAFF_MEMBER': 'Staff Member',
+            'DUE': 'Due',
+            'ARRIVED': 'Arrived',
+            'BEEING_SEEN': 'Being Seen',
+            'COMPLETED': 'Completed',
+            'NO_SHOW_BUTTON': 'Mark No Show',
+            'CHECK_IN_BUTTON': 'Check in',
+            'WAS_DUE': 'Was due at',
+            'SERVE': 'Serve',
+            'WAITING_FOR': 'Waiting for {{period}}',
+            'BEING_SEEN_FOR': 'Being seen for {{period}}',
+            'WAS_DUE': 'Was due {{period}}',
+            'COMPLETED_BUTTON': 'Completed'
           }
-        },
-        'CHECK_IN_PAGE': {
-          'CHECK_IN': 'Check in',
-          'NO_SHOW': 'No Show',
-          'WALK_IN': 'Walk in',
-          'CUSTOMER': 'Customer',
-          'STAFF_MEMBER': 'Staff Member',
-          'DUE': 'Due',
-          'ARRIVED': 'Arrived',
-          'BEEING_SEEN': 'Being Seen',
-          'COMPLETED': 'Completed',
-          'NO_SHOW_BUTTON': 'Mark No Show',
-          'CHECK_IN_BUTTON': 'Check in',
-          'CHECK_IN_PAGE.WAS_DUE': 'Was due at',
-          'SERVE': 'Serve',
-          'WAITING_FOR': 'Waiting for {{period}}',
-          'BEING_SEEN_FOR': 'Being seen for {{period}}',
-          'WAS_DUE': 'Was due {{period}}',
-          'COMPLETED_BUTTON': 'Completed'
         }
       });
     }
@@ -2160,25 +2180,27 @@
   angular.module('BBAdminDashboard.clients.translations').config([
     '$translateProvider', function($translateProvider) {
       return $translateProvider.translations('en', {
-        'SIDE_NAV': {
+        'ADMIN_DASHBOARD': {
+          'SIDE_NAV': {
+            'CLIENTS_PAGE': {
+              'CLIENTS': 'Customers'
+            }
+          },
           'CLIENTS_PAGE': {
-            'CLIENTS': 'Customers'
+            'CLIENTS': 'Customers',
+            'CLIENT': 'Customer',
+            'NAME': 'Name',
+            'EMAIL': 'Email',
+            'MOBILE': 'Mobile',
+            'PHONE': 'Phone',
+            'ACTIONS': 'Actions',
+            'EDIT': 'Edit',
+            'ABOUT': 'About',
+            'ADDRESS': 'Address',
+            'UPCOMING_BOOKINGS': 'Upcoming Bookings',
+            'PAST_BOOKINGS': 'Past Bookings',
+            'CUSTOMER_DETAILS': 'Customer Details'
           }
-        },
-        'CLIENTS_PAGE': {
-          'CLIENTS': 'Customers',
-          'CLIENT': 'Customer',
-          'NAME': 'Name',
-          'EMAIL': 'Email',
-          'MOBILE': 'Mobile',
-          'PHONE': 'Phone',
-          'ACTIONS': 'Actions',
-          'EDIT': 'Edit',
-          'ABOUT': 'About',
-          'ADDRESS': 'Address',
-          'UPCOMING_BOOKINGS': 'Upcoming Bookings',
-          'PAST_BOOKINGS': 'Past Bookings',
-          'CUSTOMER_DETAILS': 'Customer Details'
         }
       });
     }
@@ -2198,26 +2220,26 @@
    */
   angular.module('BBAdminDashboard.config-iframe.controllers').controller('ConfigIframeBookingSettingsPageCtrl', [
     '$scope', '$state', '$rootScope', function($scope, $state, $rootScope) {
-      $scope.pageHeader = 'CONFIG_IFRAME_PAGE.BOOKING_SETTINGS.TITLE';
+      $scope.pageHeader = 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BOOKING_SETTINGS.TITLE';
       $scope.tabs = [
         {
-          name: 'CONFIG_IFRAME_PAGE.BOOKING_SETTINGS.TAB_QUESTIONS',
+          name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BOOKING_SETTINGS.TAB_QUESTIONS',
           icon: 'fa fa-question-circle',
           path: 'config.booking-settings.page({path: "detail_type"})'
         }, {
-          name: 'CONFIG_IFRAME_PAGE.BOOKING_SETTINGS.TAB_QUESTION_GROUPS',
+          name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BOOKING_SETTINGS.TAB_QUESTION_GROUPS',
           icon: 'fa fa-question-circle',
           path: 'config.booking-settings.page({path: "detail_group"})'
         }, {
-          name: 'CONFIG_IFRAME_PAGE.BOOKING_SETTINGS.TAB_BOOKING_TEXT',
+          name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BOOKING_SETTINGS.TAB_BOOKING_TEXT',
           icon: 'fa fa-file-text',
           path: 'config.booking-settings.page({path: "conf/text/text_edit"})'
         }, {
-          name: 'CONFIG_IFRAME_PAGE.BOOKING_SETTINGS.TAB_ADDRESSES',
+          name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BOOKING_SETTINGS.TAB_ADDRESSES',
           icon: 'fa fa-building-o',
           path: 'config.booking-settings.page({path: "address"})'
         }, {
-          name: 'CONFIG_IFRAME_PAGE.BOOKING_SETTINGS.TAB_IMAGES',
+          name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BOOKING_SETTINGS.TAB_IMAGES',
           icon: 'fa fa-picture-o',
           path: 'config.booking-settings.page({path: "media/image/all"})'
         }
@@ -2247,26 +2269,26 @@
    */
   angular.module('BBAdminDashboard.config-iframe.controllers').controller('ConfigIframeBusinessPageCtrl', [
     '$scope', '$state', '$rootScope', function($scope, $state, $rootScope) {
-      $scope.pageHeader = 'CONFIG_IFRAME_PAGE.BUSINESS.TITLE';
+      $scope.pageHeader = 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BUSINESS.TITLE';
       $scope.tabs = [
         {
-          name: 'CONFIG_IFRAME_PAGE.BUSINESS.TAB_STAFF',
+          name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BUSINESS.TAB_STAFF',
           icon: 'fa fa-male',
           path: 'config.business.page({path: "person"})'
         }, {
-          name: 'CONFIG_IFRAME_PAGE.BUSINESS.TAB_RESOURCES',
+          name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BUSINESS.TAB_RESOURCES',
           icon: 'fa fa-diamond',
           path: 'config.business.page({path: "resource"})'
         }, {
-          name: 'CONFIG_IFRAME_PAGE.BUSINESS.TAB_SERVICES',
+          name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BUSINESS.TAB_SERVICES',
           icon: 'fa fa-wrench',
           path: 'config.business.page({path: "service"})'
         }, {
-          name: 'CONFIG_IFRAME_PAGE.BUSINESS.TAB_WHO_WHAT_WHERE',
+          name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BUSINESS.TAB_WHO_WHAT_WHERE',
           icon: 'fa fa-question-circle',
           path: 'config.business.page({path: "grid"})'
         }, {
-          name: 'CONFIG_IFRAME_PAGE.BUSINESS.TAB_QUEUES',
+          name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BUSINESS.TAB_QUEUES',
           icon: 'fa fa-users',
           path: 'config.business.page({path: "client_queue"})'
         }
@@ -2296,26 +2318,26 @@
    */
   angular.module('BBAdminDashboard.config-iframe.controllers').controller('ConfigIframeEventSettingsPageCtrl', [
     '$scope', '$state', '$rootScope', function($scope, $state, $rootScope) {
-      $scope.pageHeader = 'CONFIG_IFRAME_PAGE.EVENT_SETTINGS.TITLE';
+      $scope.pageHeader = 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.EVENT_SETTINGS.TITLE';
       $scope.tabs = [
         {
-          name: 'CONFIG_IFRAME_PAGE.EVENT_SETTINGS.TAB_COURSES',
+          name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.EVENT_SETTINGS.TAB_COURSES',
           icon: 'fa fa-clipboard',
           path: 'config.event-settings.page({path: "sessions/courses"})'
         }, {
-          name: 'CONFIG_IFRAME_PAGE.EVENT_SETTINGS.TAB_SINGLE_EVENTS',
+          name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.EVENT_SETTINGS.TAB_SINGLE_EVENTS',
           icon: 'fa fa-ticket',
           path: 'config.event-settings.page({path: "sessions/events"})'
         }, {
-          name: 'CONFIG_IFRAME_PAGE.EVENT_SETTINGS.TAB_REGULAR_EVENTS',
+          name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.EVENT_SETTINGS.TAB_REGULAR_EVENTS',
           icon: 'fa fa-calendar',
           path: 'config.event-settings.page({path: "sessions/recurring"})'
         }, {
-          name: 'CONFIG_IFRAME_PAGE.EVENT_SETTINGS.TAB_GROUPS',
+          name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.EVENT_SETTINGS.TAB_GROUPS',
           icon: 'fa fa-object-group',
           path: 'config.event-settings.page({path: "sessions/types"})'
         }, {
-          name: 'CONFIG_IFRAME_PAGE.EVENT_SETTINGS.TAB_TEMPLATES',
+          name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.EVENT_SETTINGS.TAB_TEMPLATES',
           icon: 'fa fa-folder-open',
           path: 'config.event-settings.page({path: "sessions/template"})'
         }
@@ -2370,22 +2392,22 @@
    */
   angular.module('BBAdminDashboard.config-iframe.controllers').controller('ConfigIframePromotionsPageCtrl', [
     '$scope', '$state', '$rootScope', function($scope, $state, $rootScope) {
-      $scope.pageHeader = 'CONFIG_IFRAME_PAGE.PROMOTIONS.TITLE';
+      $scope.pageHeader = 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.PROMOTIONS.TITLE';
       $scope.tabs = [
         {
-          name: 'CONFIG_IFRAME_PAGE.PROMOTIONS.TAB_DEALS',
+          name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.PROMOTIONS.TAB_DEALS',
           icon: 'fa fa-exclamation-triangle',
           path: 'config.promotions.page({path: "price/deal/summary"})'
         }, {
-          name: 'CONFIG_IFRAME_PAGE.PROMOTIONS.TAB_COUPONS',
+          name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.PROMOTIONS.TAB_COUPONS',
           icon: 'fa fa-money',
           path: 'config.promotions.page({path: "price/coupon"})'
         }, {
-          name: 'CONFIG_IFRAME_PAGE.PROMOTIONS.TAB_BULK_PURCHASES',
+          name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.PROMOTIONS.TAB_BULK_PURCHASES',
           icon: 'fa fa-th',
           path: 'config.promotions.page({path: "price/block"})'
         }, {
-          name: 'CONFIG_IFRAME_PAGE.PROMOTIONS.TAB_PACKAGES',
+          name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.PROMOTIONS.TAB_PACKAGES',
           icon: 'fa fa-gift',
           path: 'config.promotions.page({path: "package"})'
         }
@@ -2490,46 +2512,48 @@
   angular.module('BBAdminDashboard.config-iframe.translations').config([
     '$translateProvider', function($translateProvider) {
       return $translateProvider.translations('en', {
-        'SIDE_NAV': {
+        'ADMIN_DASHBOARD': {
+          'SIDE_NAV': {
+            'CONFIG_IFRAME_PAGE': {
+              'CONFIG': 'Config',
+              'YOUR_BUSINESS': 'Your business',
+              'EVENT_SETTINGS': 'Event settings',
+              'PROMOTIONS': 'Promotions',
+              'BOOKING_SETTINGS': 'Booking settings'
+            }
+          },
           'CONFIG_IFRAME_PAGE': {
-            'CONFIG': 'Config',
-            'YOUR_BUSINESS': 'Your business',
-            'EVENT_SETTINGS': 'Event settings',
-            'PROMOTIONS': 'Promotions',
-            'BOOKING_SETTINGS': 'Booking settings'
-          }
-        },
-        'CONFIG_IFRAME_PAGE': {
-          'BUSINESS': {
-            'TITLE': 'Configure: Business',
-            'TAB_STAFF': 'Staff',
-            'TAB_RESOURCES': 'Resource',
-            'TAB_SERVICES': 'Services',
-            'TAB_WHO_WHAT_WHERE': 'Who / What / Where',
-            'TAB_QUEUES': 'Queues'
-          },
-          'EVENT_SETTINGS': {
-            'TITLE': 'Event settings',
-            'TAB_COURSES': 'Courses',
-            'TAB_SINGLE_EVENTS': 'Single events',
-            'TAB_REGULAR_EVENTS': 'Regular events',
-            'TAB_GROUPS': 'Groups',
-            'TAB_TEMPLATES': 'Templates'
-          },
-          'PROMOTIONS': {
-            'TITLE': 'Promotions',
-            'TAB_DEALS': 'Deals',
-            'TAB_COUPONS': 'Coupons',
-            'TAB_BULK_PURCHASES': 'Bulk purchases',
-            'TAB_PACKAGES': 'Packages'
-          },
-          'BOOKING_SETTINGS': {
-            'TITLE': 'Booking settings',
-            'TAB_QUESTIONS': 'Questions',
-            'TAB_QUESTION_GROUPS': 'Question Groups',
-            'TAB_BOOKING_TEXT': 'Booking text',
-            'TAB_ADDRESSES': 'Addresses',
-            'TAB_IMAGES': 'Images'
+            'BUSINESS': {
+              'TITLE': 'Configure: Business',
+              'TAB_STAFF': 'Staff',
+              'TAB_RESOURCES': 'Resource',
+              'TAB_SERVICES': 'Services',
+              'TAB_WHO_WHAT_WHERE': 'Who / What / Where',
+              'TAB_QUEUES': 'Queues'
+            },
+            'EVENT_SETTINGS': {
+              'TITLE': 'Event settings',
+              'TAB_COURSES': 'Courses',
+              'TAB_SINGLE_EVENTS': 'Single events',
+              'TAB_REGULAR_EVENTS': 'Regular events',
+              'TAB_GROUPS': 'Groups',
+              'TAB_TEMPLATES': 'Templates'
+            },
+            'PROMOTIONS': {
+              'TITLE': 'Promotions',
+              'TAB_DEALS': 'Deals',
+              'TAB_COUPONS': 'Coupons',
+              'TAB_BULK_PURCHASES': 'Bulk purchases',
+              'TAB_PACKAGES': 'Packages'
+            },
+            'BOOKING_SETTINGS': {
+              'TITLE': 'Booking settings',
+              'TAB_QUESTIONS': 'Questions',
+              'TAB_QUESTION_GROUPS': 'Question Groups',
+              'TAB_BOOKING_TEXT': 'Booking text',
+              'TAB_ADDRESSES': 'Addresses',
+              'TAB_IMAGES': 'Images'
+            }
           }
         }
       });
@@ -2549,12 +2573,15 @@
    */
   var controller;
 
-  controller = function($scope, $state, company, $uibModalStack, $rootScope) {
+  controller = function($scope, $state, company, $uibModalStack, $rootScope, SettingsService) {
     'ngInject';
     $scope.company = company;
     $scope.bb.company = company;
     $scope.user = $rootScope.user;
     moment.tz.setDefault(company.timezone);
+    SettingsService.setCountryCode(company.country_code);
+    SettingsService.setCurrency(company.currency_code);
+    SettingsService.setTimeZone(company.timezone);
     $scope.isState = function(states) {
       return $state.includes(states);
     };
@@ -2632,56 +2659,6 @@
                 return element.find('iframe').height(event.data.height + 'px');
               }
             });
-          }
-        }
-      };
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /**
-   * @ngdoc directive
-   * @name BBAdminDashboard.directive:adminLanguagePicker
-   * @scope
-   * @restrict A
-   *
-   * @description
-   * Responsible for providing a ui representation of available translations
-   *
-   */
-  angular.module('BBAdminDashboard').directive('adminLanguagePicker', [
-    function() {
-      return {
-        restrict: 'A',
-        templateUrl: 'core/admin-language-picker.html',
-        controller: [
-          '$scope', '$translate', 'AdminCoreOptions', '$rootScope', function($scope, $translate, AdminCoreOptions, $rootScope) {
-            $scope.availableLanguages = [];
-            $scope.language = {
-              selected: {
-                identifier: $translate.use(),
-                label: 'LANGUAGE_' + $translate.use().toUpperCase()
-              }
-            };
-            angular.forEach(AdminCoreOptions.available_languages, function(language, index) {
-              return $scope.availableLanguages.push({
-                identifier: language,
-                label: 'LANGUAGE_' + language.toUpperCase()
-              });
-            });
-            return $scope.pickLanguage = function(language) {
-              $translate.use(language);
-              return $rootScope.$broadcast('LanguagePicker:changeLanguage');
-            };
-          }
-        ],
-        link: function(scope, element, attrs) {
-          if (scope.availableLanguages.length <= 1) {
-            return angular.element(element).addClass('hidden');
           }
         }
       };
@@ -2980,49 +2957,6 @@
 
 }).call(this);
 
-
-/**
-* @ngdoc filter
-* @name BBAdminDashboard.filter:propsFilter
-* @description
-* Does an OR operation
- */
-
-(function() {
-  angular.module('BBAdminDashboard').filter('propsFilter', [
-    '$translate', function($translate) {
-      return function(items, props) {
-        var keys, out;
-        out = [];
-        if (angular.isArray(items)) {
-          keys = Object.keys(props);
-          items.forEach(function(item) {
-            var i, itemMatches, prop, text;
-            itemMatches = false;
-            i = 0;
-            while (i < keys.length) {
-              prop = keys[i];
-              text = props[prop].toLowerCase();
-              if ((item[prop] != null) && $translate.instant(item[prop]).toString().toLowerCase().indexOf(text) !== -1) {
-                itemMatches = true;
-                break;
-              }
-              i++;
-            }
-            if (itemMatches) {
-              out.push(item);
-            }
-          });
-        } else {
-          out = items;
-        }
-        return out;
-      };
-    }
-  ]);
-
-}).call(this);
-
 (function() {
   'use strict';
 
@@ -3053,22 +2987,15 @@
     angular.module('ExampleModule').config config
   </pre>
    */
-  var provider;
-
-  provider = function() {
+  angular.module('BBAdminDashboard').provider('AdminCoreOptions', function() {
+    'ngInject';
     var options;
     options = {
       default_state: 'calendar',
-      default_language: 'en',
-      use_browser_language: true,
-      available_languages: ['en'],
       deactivate_sidenav: false,
       deactivate_boxed_layout: false,
       sidenav_start_open: true,
       boxed_layout_start: false,
-      available_language_associations: {
-        'en_*': 'en'
-      },
       side_navigation: [
         {
           group_name: 'SIDE_NAV_BOOKINGS',
@@ -3092,9 +3019,7 @@
     this.$get = function() {
       return options;
     };
-  };
-
-  angular.module('BBAdminDashboard').provider('AdminCoreOptions', provider);
+  });
 
 }).call(this);
 
@@ -3364,46 +3289,6 @@
 
   /**
   * @ngdoc service
-  * @name BBAdminDashboard.RuntimeTranslate
-  *
-  * @description
-  * Returns an instance of $translateProvider that allows late language binding (on runtime)
-   */
-
-  /**
-  * @ngdoc service
-  * @name BBAdminDashboard.RuntimeTranslateProvider
-  *
-  * @description
-  * Provider
-  *
-  * @example
-    <pre>
-    angular.module('ExampleModule').config ['RuntimeTranslateProvider', '$translateProvider', (RuntimeTranslateProvider, $translateProvider) ->
-      RuntimeTranslateProvider.setProvider($translateProvider)
-    ]
-    </pre>
-   */
-  angular.module('BBAdminDashboard').provider('RuntimeTranslate', [
-    '$translateProvider', function($translateProvider) {
-      var translateProvider;
-      translateProvider = $translateProvider;
-      this.setProvider = function(provider) {
-        return translateProvider = provider;
-      };
-      this.$get = function() {
-        return translateProvider;
-      };
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /**
-  * @ngdoc service
   * @name BBAdminDashboard.SideNavigationPartials
   *
   * @description
@@ -3522,25 +3407,24 @@
   * @description
   * Translations for the admin core module
    */
-  var config;
-
-  config = function($translateProvider) {
+  angular.module('BBAdminDashboard').config(function($translateProvider) {
     'ngInject';
-    var enTranslations;
-    enTranslations = {
-      'SIDE_NAV_BOOKINGS': 'BOOKINGS',
-      'SIDE_NAV_CONFIG': 'CONFIGURATION',
-      'LANGUAGE_EN': 'English',
-      'GREETING': 'Hi',
-      'LOGOUT': 'Logout',
-      'VERSION': 'Version',
-      'COPYRIGHT': 'Copyright',
-      'SWITCH_TO_CLASSIC': 'Switch to Classic'
+    var translations;
+    translations = {
+      SIDE_NAV_BOOKINGS: "BOOKINGS",
+      SIDE_NAV_CONFIG: "CONFIGURATION",
+      ADMIN_DASHBOARD: {
+        CORE: {
+          GREETING: 'Hi',
+          LOGOUT: 'Logout',
+          VERSION: 'Version',
+          COPYRIGHT: 'Copyright',
+          SWITCH_TO_CLASSIC: 'Switch to Classic'
+        }
+      }
     };
-    $translateProvider.translations('en', enTranslations);
-  };
-
-  angular.module('BBAdminDashboard').config(config);
+    $translateProvider.translations('en', translations);
+  });
 
 }).call(this);
 
@@ -3667,13 +3551,15 @@
   angular.module('BBAdminDashboard.dashboard-iframe.translations').config([
     '$translateProvider', function($translateProvider) {
       return $translateProvider.translations('en', {
-        'SIDE_NAV': {
-          'DASHBOARD_IFRAME_PAGE': {
-            'DASHBOARD': 'Dashboard',
-            'UPCOMING_RECENT': 'Upcoming &amp; Recent',
-            'SEARCH': 'Search',
-            'BULK_BOOKINGS': 'Bulk bookings',
-            'INSIGHTS': 'Insights'
+        'ADMIN_DASHBOARD': {
+          'SIDE_NAV': {
+            'DASHBOARD_IFRAME_PAGE': {
+              'DASHBOARD': 'Dashboard',
+              'UPCOMING_RECENT': 'Upcoming &amp; Recent',
+              'SEARCH': 'Search',
+              'BULK_BOOKINGS': 'Bulk bookings',
+              'INSIGHTS': 'Insights'
+            }
           }
         }
       });
@@ -3783,7 +3669,7 @@
                   } else {
                     $scope.template_vars.show_loading = false;
                     return $scope.formErrors.push({
-                      message: "LOGIN_PAGE.ERROR_INCORRECT_CREDS"
+                      message: "ADMIN_DASHBOARD.LOGIN_PAGE.ERROR_INCORRECT_CREDS"
                     });
                   }
                 });
@@ -3805,13 +3691,13 @@
                 }, function(err) {
                   $scope.template_vars.show_loading = false;
                   return $scope.formErrors.push({
-                    message: "LOGIN_PAGE.ERROR_ISSUE_WITH_COMPANY"
+                    message: "ADMIN_DASHBOARD.LOGIN_PAGE.ERROR_ISSUE_WITH_COMPANY"
                   });
                 });
               } else {
                 $scope.template_vars.show_loading = false;
                 return $scope.formErrors.push({
-                  message: "LOGIN_PAGE.ERROR_ACCOUNT_ISSUES"
+                  message: "ADMIN_DASHBOARD.LOGIN_PAGE.ERROR_ACCOUNT_ISSUES"
                 });
               }
             };
@@ -3841,7 +3727,7 @@
                 }, function(err) {
                   $scope.template_vars.show_loading = false;
                   return $scope.formErrors.push({
-                    message: "LOGIN_PAGE.ERROR_INCORRECT_CREDS"
+                    message: "ADMIN_DASHBOARD.LOGIN_PAGE.ERROR_INCORRECT_CREDS"
                   });
                 });
               }
@@ -4057,22 +3943,24 @@
   angular.module('BBAdminDashboard.login.translations').config([
     '$translateProvider', function($translateProvider) {
       return $translateProvider.translations('en', {
-        'LOGIN_PAGE': {
-          'COMPANIES': 'Companies',
-          'DEPARTMENTS': 'Departments',
-          'FORGOT_PASSWORD': 'Forgot your password?',
-          'HEADING': 'Login to view your account',
-          'LOGIN': ' Login',
-          'PASSWORD': 'Password',
-          'SITE': 'Site',
-          'SEARCH_COMPANY_PLACEHOLDER': 'Select or search a company in the list...',
-          'SEARCH_DEPARTMENT_PLACEHOLDER': 'Select or search a department in the list...',
-          'SELECT': 'Select',
-          'SELECT_COMPANY': 'Select company',
-          'USERNAME': 'Username',
-          'ERROR_ISSUE_WITH_COMPANY': 'Sorry, there seems to be a problem with the company associated with this account',
-          'ERROR_INCORRECT_CREDS': 'Sorry, either your email or password was incorrect',
-          'ERROR_ACCOUNT_ISSUES': 'Sorry, there seems to be a problem with this account'
+        'ADMIN_DASHBOARD': {
+          'LOGIN_PAGE': {
+            'COMPANIES': 'Companies',
+            'DEPARTMENTS': 'Departments',
+            'FORGOT_PASSWORD': 'Forgot your password?',
+            'HEADING': 'Login to view your account',
+            'LOGIN': ' Login',
+            'PASSWORD': 'Password',
+            'SITE': 'Site',
+            'SEARCH_COMPANY_PLACEHOLDER': 'Select or search a company in the list...',
+            'SEARCH_DEPARTMENT_PLACEHOLDER': 'Select or search a department in the list...',
+            'SELECT': 'Select',
+            'SELECT_COMPANY': 'Select company',
+            'USERNAME': 'Username',
+            'ERROR_ISSUE_WITH_COMPANY': 'Sorry, there seems to be a problem with the company associated with this account',
+            'ERROR_INCORRECT_CREDS': 'Sorry, either your email or password was incorrect',
+            'ERROR_ACCOUNT_ISSUES': 'Sorry, there seems to be a problem with this account'
+          }
         }
       });
     }
@@ -4248,12 +4136,14 @@
   angular.module('BBAdminDashboard.members-iframe.translations').config([
     '$translateProvider', function($translateProvider) {
       return $translateProvider.translations('en', {
-        'SIDE_NAV': {
-          'MEMBERS_IFRAME_PAGE': {
-            'MEMBERS': 'Members',
-            'ALL_CLIENTS': 'All clients',
-            'QUESTIONS': 'Questions',
-            'EXPORT_TO_MAILCHIMP': 'Export to Mailchimp'
+        'ADMIN_DASHBOARD': {
+          'SIDE_NAV': {
+            'MEMBERS_IFRAME_PAGE': {
+              'MEMBERS': 'Members',
+              'ALL_CLIENTS': 'All clients',
+              'QUESTIONS': 'Questions',
+              'EXPORT_TO_MAILCHIMP': 'Export to Mailchimp'
+            }
           }
         }
       });
@@ -4374,15 +4264,17 @@
   angular.module('BBAdminDashboard.publish-iframe.translations').config([
     '$translateProvider', function($translateProvider) {
       return $translateProvider.translations('en', {
-        'SIDE_NAV': {
-          'PUBLISH_IRAME_PAGE': {
-            'PUBLISH': 'Publish',
-            'PUBLISH_BUSINESS': 'Publish business',
-            'PUBLIC_SITE': 'Public site',
-            'CUSTOMISE_WIDGETS': 'Customise widgets',
-            'SINGLE_WIDGET': 'Single widget',
-            'BOOK_NOW_BUTTONS': '\'Book Now\' buttons',
-            'OTHER_TOOLS': 'Other tools'
+        'ADMIN_DASHBOARD': {
+          'SIDE_NAV': {
+            'PUBLISH_IRAME_PAGE': {
+              'PUBLISH': 'Publish',
+              'PUBLISH_BUSINESS': 'Publish business',
+              'PUBLIC_SITE': 'Public site',
+              'CUSTOMISE_WIDGETS': 'Customise widgets',
+              'SINGLE_WIDGET': 'Single widget',
+              'BOOK_NOW_BUTTONS': '\'Book Now\' buttons',
+              'OTHER_TOOLS': 'Other tools'
+            }
           }
         }
       });
@@ -4403,22 +4295,22 @@
    */
   angular.module('BBAdminDashboard.settings-iframe.controllers').controller('SettingsIframeAdvancedSettingsPageCtrl', [
     '$scope', '$state', '$rootScope', function($scope, $state, $rootScope) {
-      $scope.pageHeader = 'SETTINGS_IFRAME_PAGE.ADVANCED_SETTINGS.TITLE';
+      $scope.pageHeader = 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.ADVANCED_SETTINGS.TITLE';
       $scope.tabs = [
         {
-          name: 'SETTINGS_IFRAME_PAGE.ADVANCED_SETTINGS.TAB_ONLINE_PAYMENTS',
+          name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.ADVANCED_SETTINGS.TAB_ONLINE_PAYMENTS',
           icon: 'fa fa-credit-card',
           path: 'settings.advanced-settings.page({path: "conf/payment/payment_edit"})'
         }, {
-          name: 'SETTINGS_IFRAME_PAGE.ADVANCED_SETTINGS.TAB_ACCOUNTING_INTEGRATIONS',
+          name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.ADVANCED_SETTINGS.TAB_ACCOUNTING_INTEGRATIONS',
           icon: 'fa fa-pencil-square-o',
           path: 'settings.advanced-settings.page({path: "conf/accounting/accounting_integration"})'
         }, {
-          name: 'SETTINGS_IFRAME_PAGE.ADVANCED_SETTINGS.TAB_BUSINESS_QUESTIONS',
+          name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.ADVANCED_SETTINGS.TAB_BUSINESS_QUESTIONS',
           icon: 'fa fa-question',
           path: 'settings.advanced-settings.page({path: "conf/extra_question"})'
         }, {
-          name: 'SETTINGS_IFRAME_PAGE.ADVANCED_SETTINGS.TAB_API_SETTINGS',
+          name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.ADVANCED_SETTINGS.TAB_API_SETTINGS',
           icon: 'fa fa-code',
           path: 'settings.advanced-settings.page({path: "conf/developer/parameter"})'
         }
@@ -4448,50 +4340,50 @@
    */
   angular.module('BBAdminDashboard.settings-iframe.controllers').controller('SettingsIframeBasicSettingsPageCtrl', [
     '$scope', '$state', '$rootScope', function($scope, $state, $rootScope) {
-      $scope.pageHeader = 'SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TITLE';
+      $scope.pageHeader = 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TITLE';
       $scope.tabs = [
         {
-          name: 'SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_BUSINESS',
+          name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_BUSINESS',
           icon: 'fa fa-globe',
           path: 'settings.basic-settings.page({path: "conf/setting/user_edit"})'
         }, {
-          name: 'SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_SERVICES',
+          name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_SERVICES',
           icon: 'fa fa-wrench',
           path: 'settings.basic-settings.page({path: "conf/setting/service_edit"})'
         }, {
-          name: 'SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_EVENTS',
+          name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_EVENTS',
           icon: 'fa fa-ticket',
           path: 'settings.basic-settings.page({path: "conf/setting/session_edit"})'
         }, {
-          name: 'SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_RESOURCES',
+          name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_RESOURCES',
           icon: 'fa fa-archive',
           path: 'settings.basic-settings.page({path: "conf/setting/resource_edit"})'
         }, {
-          name: 'SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_WIDGET',
+          name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_WIDGET',
           icon: 'fa fa-calendar-times-o',
           path: 'settings.basic-settings.page({path: "conf/setting/widget_edit"})'
         }, {
-          name: 'SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_BOOKINGS',
+          name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_BOOKINGS',
           icon: 'fa fa-book',
           path: 'settings.basic-settings.page({path: "conf/setting/booking_edit"})'
         }, {
-          name: 'SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_NOTIFICATIONS',
+          name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_NOTIFICATIONS',
           icon: 'fa fa-envelope',
           path: 'settings.basic-settings.page({path: "conf/setting/notifier_edit"})'
         }, {
-          name: 'SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_PRICING',
+          name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_PRICING',
           icon: 'fa fa-credit-card',
           path: 'settings.basic-settings.page({path: "conf/setting/pricing_edit"})'
         }, {
-          name: 'SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_TERMINOLOGY',
+          name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_TERMINOLOGY',
           icon: 'fa fa-language',
           path: 'settings.basic-settings.page({path: "conf/language/user_edit"})'
         }, {
-          name: 'SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_CUSTOM_TCS',
+          name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_CUSTOM_TCS',
           icon: 'fa fa-pencil-square-o',
           path: 'settings.basic-settings.page({path: "conf/text/terms_conditions"})'
         }, {
-          name: 'SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_EXTRA_FEATURES',
+          name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_EXTRA_FEATURES',
           icon: 'fa fa-trophy',
           path: 'settings.basic-settings.page({path: "conf/setting/features_edit"})'
         }
@@ -4521,18 +4413,18 @@
    */
   angular.module('BBAdminDashboard.settings-iframe.controllers').controller('SettingsIframeIntegrationsPageCtrl', [
     '$scope', '$state', '$rootScope', function($scope, $state, $rootScope) {
-      $scope.pageHeader = 'SETTINGS_IFRAME_PAGE.INTEGRATIONS.TITLE';
+      $scope.pageHeader = 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.INTEGRATIONS.TITLE';
       $scope.tabs = [
         {
-          name: 'SETTINGS_IFRAME_PAGE.INTEGRATIONS.TAB_PAYMENT',
+          name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.INTEGRATIONS.TAB_PAYMENT',
           icon: 'fa fa-credit-card',
           path: 'settings.integrations.page({path: "conf/addons/payment"})'
         }, {
-          name: 'SETTINGS_IFRAME_PAGE.INTEGRATIONS.TAB_ACCOUNTING',
+          name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.INTEGRATIONS.TAB_ACCOUNTING',
           icon: 'fa fa-pencil-square-o',
           path: 'settings.integrations.page({path: "conf/addons/accounting"})'
         }, {
-          name: 'SETTINGS_IFRAME_PAGE.INTEGRATIONS.TAB_OTHER',
+          name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.INTEGRATIONS.TAB_OTHER',
           icon: 'fa fa-question',
           path: 'settings.integrations.page({path: "conf/addons/other"})'
         }
@@ -4587,18 +4479,18 @@
    */
   angular.module('BBAdminDashboard.settings-iframe.controllers').controller('SettingsIframeSubscriptionPageCtrl', [
     '$scope', '$state', '$rootScope', function($scope, $state, $rootScope) {
-      $scope.pageHeader = 'SETTINGS_IFRAME_PAGE.SUBSCRIPTION.TITLE';
+      $scope.pageHeader = 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.SUBSCRIPTION.TITLE';
       $scope.tabs = [
         {
-          name: 'SETTINGS_IFRAME_PAGE.SUBSCRIPTION.TAB_STATUS',
+          name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.SUBSCRIPTION.TAB_STATUS',
           icon: null,
           path: 'settings.subscription.page({path: "subscription/show"})'
         }, {
-          name: 'SETTINGS_IFRAME_PAGE.SUBSCRIPTION.TAB_PAYMENT_HISTORY',
+          name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.SUBSCRIPTION.TAB_PAYMENT_HISTORY',
           icon: null,
           path: 'settings.subscription.page({path: "payment_event"})'
         }, {
-          name: 'SETTINGS_IFRAME_PAGE.SUBSCRIPTION.TAB_INVOICES',
+          name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.SUBSCRIPTION.TAB_INVOICES',
           icon: null,
           path: 'settings.subscription.page({path: "payment_invoice"})'
         }
@@ -4713,53 +4605,55 @@
   angular.module('BBAdminDashboard.settings-iframe.translations').config([
     '$translateProvider', function($translateProvider) {
       return $translateProvider.translations('en', {
-        'SIDE_NAV': {
+        'ADMIN_DASHBOARD': {
+          'SIDE_NAV': {
+            'SETTINGS_IFRAME_PAGE': {
+              'ACCOUNT_SETTINGS': 'Account settings',
+              'MY_BUSINESS': 'My business',
+              'BASIC_SETTINGS': 'Basic settings',
+              'ADVANCED_SETTINGS': 'Advanced settings',
+              'INTEGRATIONS': 'Integrations',
+              'IMAGES': 'Images',
+              'USERS_ADMINS': 'Users &amp; Admins',
+              'ANNOUNCEMENTS': 'Announcements',
+              'SUBSCRIPTION': 'Subscription'
+            }
+          },
           'SETTINGS_IFRAME_PAGE': {
-            'ACCOUNT_SETTINGS': 'Account settings',
-            'MY_BUSINESS': 'My business',
-            'BASIC_SETTINGS': 'Basic settings',
-            'ADVANCED_SETTINGS': 'Advanced settings',
-            'INTEGRATIONS': 'Integrations',
-            'IMAGES': 'Images',
-            'USERS_ADMINS': 'Users &amp; Admins',
-            'ANNOUNCEMENTS': 'Announcements',
-            'SUBSCRIPTION': 'Subscription'
-          }
-        },
-        'SETTINGS_IFRAME_PAGE': {
-          'BASIC_SETTINGS': {
-            'TITLE': 'Settings',
-            'TAB_BUSINESS': 'Business',
-            'TAB_SERVICES': 'Services',
-            'TAB_STAFF': 'Staff',
-            'TAB_EVENTS': 'Events',
-            'TAB_RESOURCES': 'Resources',
-            'TAB_WIDGET': 'Widget',
-            'TAB_BOOKINGS': 'Bookings',
-            'TAB_NOTIFICATIONS': 'Notifications',
-            'TAB_PRICING': 'Pricing',
-            'TAB_TERMINOLOGY': 'Terminology',
-            'TAB_CUSTOM_TCS': 'Custom T&amp;Cs',
-            'TAB_EXTRA_FEATURES': 'Extra features'
-          },
-          'ADVANCED_SETTINGS': {
-            'TITLE': 'Advanced settings',
-            'TAB_ONLINE_PAYMENTS': 'Online payments',
-            'TAB_ACCOUNTING_INTEGRATIONS': 'Accounting Integrations',
-            'TAB_BUSINESS_QUESTIONS': 'Business Questions',
-            'TAB_API_SETTINGS': 'API settings'
-          },
-          'INTEGRATIONS': {
-            'TITLE': 'Integrations',
-            'TAB_PAYMENT': 'Payment',
-            'TAB_ACCOUNTING': 'Accounting',
-            'TAB_OTHER': 'Other'
-          },
-          'SUBSCRIPTION': {
-            'TITLE': 'Subscription',
-            'TAB_STATUS': 'Status',
-            'TAB_PAYMENT_HISTORY': 'Payment history',
-            'TAB_INVOICES': 'Invoices'
+            'BASIC_SETTINGS': {
+              'TITLE': 'Settings',
+              'TAB_BUSINESS': 'Business',
+              'TAB_SERVICES': 'Services',
+              'TAB_STAFF': 'Staff',
+              'TAB_EVENTS': 'Events',
+              'TAB_RESOURCES': 'Resources',
+              'TAB_WIDGET': 'Widget',
+              'TAB_BOOKINGS': 'Bookings',
+              'TAB_NOTIFICATIONS': 'Notifications',
+              'TAB_PRICING': 'Pricing',
+              'TAB_TERMINOLOGY': 'Terminology',
+              'TAB_CUSTOM_TCS': 'Custom T&amp;Cs',
+              'TAB_EXTRA_FEATURES': 'Extra features'
+            },
+            'ADVANCED_SETTINGS': {
+              'TITLE': 'Advanced settings',
+              'TAB_ONLINE_PAYMENTS': 'Online payments',
+              'TAB_ACCOUNTING_INTEGRATIONS': 'Accounting Integrations',
+              'TAB_BUSINESS_QUESTIONS': 'Business Questions',
+              'TAB_API_SETTINGS': 'API settings'
+            },
+            'INTEGRATIONS': {
+              'TITLE': 'Integrations',
+              'TAB_PAYMENT': 'Payment',
+              'TAB_ACCOUNTING': 'Accounting',
+              'TAB_OTHER': 'Other'
+            },
+            'SUBSCRIPTION': {
+              'TITLE': 'Subscription',
+              'TAB_STATUS': 'Status',
+              'TAB_PAYMENT_HISTORY': 'Payment history',
+              'TAB_INVOICES': 'Invoices'
+            }
           }
         }
       });
