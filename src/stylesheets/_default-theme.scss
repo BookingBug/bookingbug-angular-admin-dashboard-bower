@@ -97,13 +97,22 @@ $screen-header-collapse            : $screen-xs-max;
       padding: 7px 0;
       &.status_blocked {
         background-color: $gray !important;
+        .fc-content {
+          background-color: $gray !important;
+        }
       }
       &.status_no_show {
         background-color: $gray !important;
+        .fc-content {
+          background-color: $gray !important;
+        }
       }
       &.status_external {
         background-color: #DDD !important;
         border-color: #AAA !important;
+        .fc-content {
+          background-color:  #DDD !important;
+        }
 
       }
       .fc-bg {
