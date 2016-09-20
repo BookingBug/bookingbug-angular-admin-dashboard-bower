@@ -699,6 +699,7 @@
       }
       $scope.uiCalOptions = {
         calendar: {
+          locale: $translate.use(),
           schedulerLicenseKey: '0598149132-fcs-1443104297',
           eventStartEditable: false,
           eventDurationEditable: false,
@@ -1059,6 +1060,9 @@
           templateUrl: templateUrl,
           model: booking,
           title: title,
+          params: {
+            locale: $translate.use()
+          },
           success: (function(_this) {
             return function(response) {
               var item_defaults;
@@ -1157,8 +1161,8 @@
       $scope.$on('newCheckout', function() {
         return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('refetchEvents');
       });
-      return $rootScope.$on('LanguagePicker:changeLanguage', function() {
-        return $state.go($state.current, {}, {
+      return $rootScope.$on('BBLanguagePicker:languageChanged', function() {
+        $state.go($state.current, {}, {
           reload: true
         });
       });
@@ -1419,6 +1423,7 @@
                 if (booking.resource_id != null) {
                   booking.resourceIds.push(booking.resource_id + '_r');
                 }
+                booking.title || (booking.title = "Blocked");
                 if (options.externalLabelAssembler != null) {
                   booking.title = TitleAssembler.getTitle(booking, options.externalLabelAssembler);
                 }
@@ -1964,7 +1969,6 @@
             'COMPLETED': 'Completed',
             'NO_SHOW_BUTTON': 'Mark No Show',
             'CHECK_IN_BUTTON': 'Check in',
-            'WAS_DUE': 'Was due at',
             'SERVE': 'Serve',
             'WAITING_FOR': 'Waiting for {{period}}',
             'BEING_SEEN_FOR': 'Being seen for {{period}}',
