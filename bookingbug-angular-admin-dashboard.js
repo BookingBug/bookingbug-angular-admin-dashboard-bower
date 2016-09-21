@@ -752,7 +752,7 @@
           },
           eventDrop: function(event, delta, revertFunc) {
             var end, item_defaults, newAssetId, orginal_resource, start;
-            if (event.person_id && event.resource_id || delta.days() > 0) {
+            if (false && event.person_id && event.resource_id || delta.days() > 0) {
               start = event.start;
               end = event.end;
               item_defaults = {
@@ -1429,6 +1429,10 @@
                 }
                 booking.className = 'status_external';
                 booking.type = 'external';
+                booking.editable = false;
+                booking.startEditable = false;
+                booking.durationEditable = false;
+                booking.resourceEditable = false;
               }
               return deferred.resolve(bookings);
             } else {
