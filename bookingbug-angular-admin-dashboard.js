@@ -678,6 +678,10 @@
                 selectedResources: $scope.selectedResources.selected,
                 calendarView: uiCalendarConfig.calendars.resourceCalendar.fullCalendar('getView').type
               };
+              if ($scope.model) {
+                options.showAll = false;
+                options.selectedResources = [$scope.model];
+              }
               return CalendarEventSources.getAllCalendarEntries(company, start, end, options).then(function(results) {
                 $scope.loading = false;
                 return callback(results);
@@ -688,6 +692,20 @@
       ];
       $scope.options = $scope.$eval($attrs.bbResourceCalendar);
       $scope.options || ($scope.options = {});
+      if (!$scope.options.defaultView) {
+        if ($scope.model) {
+          $scope.options.defaultView = 'agendaWeek';
+        } else {
+          $scope.options.defaultView = 'timelineDay';
+        }
+      }
+      if (!$scope.options.views) {
+        if ($scope.model) {
+          $scope.options.views = 'listDay,timelineDayThirty,agendaWeek,month';
+        } else {
+          $scope.options.views = 'timelineDay,listDay,timelineDayThirty,agendaWeek,month';
+        }
+      }
       if ($scope.options.min_time == null) {
         $scope.options.min_time = GeneralOptions.calendar_min_time;
       }
@@ -712,9 +730,9 @@
           header: {
             left: 'today,prev,next',
             center: 'title',
-            right: 'timelineDay,listDay,timelineDayThirty,agendaWeek,month'
+            right: $scope.options.views
           },
-          defaultView: 'timelineDay',
+          defaultView: $scope.options.defaultView,
           views: {
             listDay: {
               buttonText: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.AGENDA')
@@ -752,7 +770,7 @@
           },
           eventDrop: function(event, delta, revertFunc) {
             var end, item_defaults, newAssetId, orginal_resource, start;
-            if (false && event.person_id && event.resource_id || delta.days() > 0) {
+            if (event.person_id && event.resource_id || delta.days() > 0) {
               start = event.start;
               end = event.end;
               item_defaults = {
@@ -977,6 +995,10 @@
         }
       });
       getCalendarAssets = function(callback) {
+        if ($scope.model) {
+          callback([$scope.model]);
+          return;
+        }
         $scope.loading = true;
         return $scope.getCompanyPromise().then(function(company) {
           if ($scope.showAll) {
@@ -1205,7 +1227,8 @@
       scope: {
         labelAssembler: '@',
         blockLabelAssembler: '@',
-        externalLabelAssembler: '@'
+        externalLabelAssembler: '@',
+        model: '='
       }
     };
   });
@@ -2089,14 +2112,12 @@
     $scope.total_entries = 0;
     $scope.clients = [];
     return $scope.getClients = function(currentPage, filterBy, filterByFields, orderBy, orderByReverse) {
-      var clientDef, mobile, params;
-      if (filterByFields.name != null) {
-        filterByFields.name = filterByFields.name.replace(/\s/g, '');
-      }
-      if (filterByFields.mobile != null) {
-        mobile = filterByFields.mobile;
+      var clientDef, fields, mobile, params;
+      fields = angular.copy(filterByFields);
+      if (fields.mobile != null) {
+        mobile = fields.mobile;
         if (mobile.indexOf('0') === 0) {
-          filterByFields.mobile = mobile.substring(1);
+          fields.mobile = mobile.substring(1);
         }
       }
       clientDef = $q.defer();
@@ -2105,7 +2126,7 @@
         per_page: $scope.per_page,
         page: currentPage + 1,
         filter_by: filterBy,
-        filter_by_fields: filterByFields,
+        filter_by_fields: fields,
         order_by: orderBy,
         order_by_reverse: orderByReverse
       };
