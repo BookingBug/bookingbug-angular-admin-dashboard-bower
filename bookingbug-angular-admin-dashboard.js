@@ -1325,7 +1325,7 @@
   * @description
   * This services exposes methods to get all event-type information to be shown in the calendar
    */
-  angular.module('BBAdminDashboard.calendar.services').factory('CalendarEventSources', function($exceptionHandler, $q, TitleAssembler, AdminScheduleService, BBModel) {
+  angular.module('BBAdminDashboard.calendar.services').factory('CalendarEventSources', function($exceptionHandler, $q, TitleAssembler, AdminScheduleService, BBModel, $translate) {
     var bookingBelongsToSelectedResources;
     bookingBelongsToSelectedResources = function(resources, booking) {
       var belongs;
@@ -1378,6 +1378,7 @@
           ref = bookings.items;
           for (i = 0, len = ref.length; i < len; i++) {
             booking = ref[i];
+            booking.service_name = $translate.instant(booking.service_name);
             booking.resourceIds = [];
             if (booking.person_id != null) {
               booking.resourceIds.push(booking.person_id + '_p');
@@ -4007,15 +4008,15 @@
   * @description
   * Controller for the logout page
    */
-  angular.module('BBAdminDashboard.logout.controllers').controller('LogoutPageCtrl', [
-    '$scope', '$state', 'BBModel', function($scope, $state, BBModel) {
-      return BBModel.Admin.Login.$logout().then(function() {
-        return $state.go('login', {}, {
-          reload: true
-        });
+  angular.module('BBAdminDashboard.logout.controllers').controller('LogoutPageCtrl', function(BBModel, $scope, $state, $sessionStorage) {
+    BBModel.Admin.Login.$logout().then(function() {
+      $sessionStorage.removeItem("user");
+      $sessionStorage.removeItem("auth_token");
+      $state.go('login', {}, {
+        reload: true
       });
-    }
-  ]);
+    });
+  });
 
 }).call(this);
 
