@@ -641,596 +641,556 @@
 
 (function() {
   'use strict';
-  angular.module('BBAdminDashboard.calendar.directives').directive('bbResourceCalendar', function(uiCalendarConfig, AdminCompanyService, $q, ModalForm, BBModel, AdminBookingPopup, AdminMoveBookingPopup, $window, $bbug, ColorPalette, Dialog, $timeout, $compile, $templateCache, PrePostTime, $filter) {
-    var controller, link;
-    controller = function($scope, $rootScope, $attrs, BBAssets, ProcessAssetsFilter, $state, GeneralOptions, AdminCalendarOptions, CalendarEventSources, TitleAssembler, $translate) {
-      var dayHasAvailability, filters, getBookingTitle, getCalendarAssets, isTimeRangeAvailable, pusherBooking, setTimeToMoment;
-      setTimeToMoment = function(date, time) {
-        var newDate;
-        newDate = moment(time, 'HH:mm');
-        newDate.set({
-          'year': parseInt(date.get('year')),
-          'month': parseInt(date.get('month')),
-          'date': parseInt(date.get('date')),
-          'second': 0
-        });
-        return newDate;
-      };
-      filters = {
-        requestedAssets: ProcessAssetsFilter($state.params.assets)
-      };
-      $scope.showAll = true;
-      if (filters.requestedAssets.length > 0) {
-        $scope.showAll = false;
-      }
-      $scope.eventSources = [
-        {
-          events: function(start, end, timezone, callback) {
-            $scope.loading = true;
-            return $scope.getCompanyPromise().then(function(company) {
-              var options;
-              options = {
-                labelAssembler: $scope.labelAssembler ? $scope.labelAssembler : AdminCalendarOptions.bookings_label_assembler,
-                blockLabelAssembler: $scope.blockLabelAssembler ? $scope.blockLabelAssembler : AdminCalendarOptions.block_label_assembler,
-                externalLabelAssembler: $scope.externalLabelAssembler ? $scope.externalLabelAssembler : AdminCalendarOptions.external_label_assembler,
-                noCache: true,
-                showAll: $scope.showAll,
-                selectedResources: $scope.selectedResources.selected,
-                calendarView: uiCalendarConfig.calendars.resourceCalendar.fullCalendar('getView').type
-              };
-              if ($scope.model) {
-                options.showAll = false;
-                options.selectedResources = [$scope.model];
-              }
-              return CalendarEventSources.getAllCalendarEntries(company, start, end, options).then(function(results) {
-                $scope.loading = false;
-                return callback(results);
-              });
-            });
-          }
-        }
-      ];
-      $scope.options = $scope.$eval($attrs.bbResourceCalendar);
-      $scope.options || ($scope.options = {});
-      if (!$scope.options.defaultView) {
-        if ($scope.model) {
-          $scope.options.defaultView = 'agendaWeek';
-        } else {
-          $scope.options.defaultView = 'timelineDay';
-        }
-      }
-      if (!$scope.options.views) {
-        if ($scope.model) {
-          $scope.options.views = 'listDay,timelineDayThirty,agendaWeek,month';
-        } else {
-          $scope.options.views = 'timelineDay,listDay,timelineDayThirty,agendaWeek,month';
-        }
-      }
-      if ($scope.options.min_time == null) {
-        $scope.options.min_time = GeneralOptions.calendar_min_time;
-      }
-      if ($scope.options.max_time == null) {
-        $scope.options.max_time = GeneralOptions.calendar_max_time;
-      }
-      if ($scope.options.cal_slot_duration == null) {
-        $scope.options.cal_slot_duration = GeneralOptions.calendar_slot_duration;
-      }
-      $scope.uiCalOptions = {
-        calendar: {
-          locale: $translate.use(),
-          schedulerLicenseKey: '0598149132-fcs-1443104297',
-          eventStartEditable: false,
-          eventDurationEditable: false,
-          minTime: $scope.options.min_time,
-          maxTime: $scope.options.max_time,
-          height: 'auto',
-          buttonText: {
-            today: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.TODAY')
-          },
-          header: {
-            left: 'today,prev,next',
-            center: 'title',
-            right: $scope.options.views
-          },
-          defaultView: $scope.options.defaultView,
-          views: {
-            listDay: {
-              buttonText: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.AGENDA')
-            },
-            agendaWeek: {
-              slotDuration: $filter('minutesToString')($scope.options.cal_slot_duration),
-              buttonText: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.WEEK'),
-              groupByDateAndResource: false
-            },
-            month: {
-              eventLimit: 5,
-              buttonText: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MONTH')
-            },
-            timelineDay: {
-              slotDuration: $filter('minutesToString')($scope.options.cal_slot_duration),
-              eventOverlap: false,
-              slotWidth: 25,
-              buttonText: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.DAY', {
-                minutes: $scope.options.cal_slot_duration
-              }),
-              resourceAreaWidth: '18%'
-            }
-          },
-          resourceGroupField: 'group',
-          resourceLabelText: ' ',
-          eventResourceEditable: true,
-          selectable: true,
-          lazyFetching: false,
-          columnFormat: AdminCalendarOptions.column_format,
-          resources: function(callback) {
-            return getCalendarAssets(callback);
-          },
-          eventDragStop: function(event, jsEvent, ui, view) {
-            return event.oldResourceIds = event.resourceIds;
-          },
-          eventDrop: function(event, delta, revertFunc) {
-            var end, item_defaults, newAssetId, orginal_resource, start;
-            if (event.person_id && event.resource_id || delta.days() > 0) {
-              start = event.start;
-              end = event.end;
-              item_defaults = {
-                date: start.format('YYYY-MM-DD'),
-                time: start.hour() * 60 + start.minute()
-              };
-              if (event.resourceId) {
-                newAssetId = event.resourceId.substring(0, event.resourceId.indexOf('_'));
-                if (event.resourceId.indexOf('_p') > -1) {
-                  item_defaults.person = newAssetId;
-                  orginal_resource = "" + event.person_id + "_p";
-                } else if (event.resourceId.indexOf('_r') > -1) {
-                  item_defaults.resource = newAssetId;
-                  orginal_resource = "" + event.resource_id + "_r";
-                }
-              }
-              $scope.getCompanyPromise().then(function(company) {
-                return AdminMoveBookingPopup.open({
-                  min_date: setTimeToMoment(start, $scope.options.min_time),
-                  max_date: setTimeToMoment(end, $scope.options.max_time),
-                  from_datetime: moment(start.toISOString()),
-                  to_datetime: moment(end.toISOString()),
-                  item_defaults: item_defaults,
-                  company_id: company.id,
-                  booking_id: event.id,
-                  success: (function(_this) {
-                    return function(model) {
-                      return $scope.refreshBooking(event);
-                    };
-                  })(this),
-                  fail: function() {
-                    return $scope.refreshBooking(event);
-                  }
-                });
-              });
-              return;
-            }
-            return Dialog.confirm({
-              title: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MOVE_MODAL_TITLE'),
-              model: event,
-              body: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MOVE_MODAL_BODY'),
-              success: (function(_this) {
-                return function(model) {
-                  return $scope.updateBooking(event);
-                };
-              })(this),
-              fail: function() {
-                return revertFunc();
-              }
-            });
-          },
-          eventClick: function(event, jsEvent, view) {
-            if (event.$has('edit')) {
-              return $scope.editBooking(new BBModel.Admin.Booking(event));
-            }
-          },
-          eventRender: function(event, element) {
-            var a, link, service;
-            service = _.findWhere($scope.services, {
-              id: event.service_id
-            });
-            if (uiCalendarConfig.calendars.resourceCalendar.fullCalendar('getView').type === "listDay") {
-              link = $bbug(element.children()[2]);
-              if (link) {
-                a = link.children()[0];
-                if (a) {
-                  if (event.person_name) {
-                    a.innerHTML = event.person_name + " - " + a.innerHTML;
-                  }
-                }
-              }
-            } else if (service) {
-              element.css('background-color', service.color);
-              element.css('color', service.textColor);
-              element.css('border-color', service.textColor);
-            }
-            return element;
-          },
-          eventAfterRender: function(event, elements, view) {
-            if ((event.rendering == null) || event.rendering !== 'background') {
-              return PrePostTime.apply(event, elements, view, $scope);
-            }
-          },
-          select: function(start, end, jsEvent, view, resource) {
-            var item_defaults;
-            if (jsEvent.target.className === 'fc-scroller') {
-              return;
-            }
-            view.calendar.unselect();
-            if (isTimeRangeAvailable(start, end, resource) || (Math.abs(start.diff(end, 'days')) === 1 && dayHasAvailability(start))) {
-              if (Math.abs(start.diff(end, 'days')) > 0) {
-                end.subtract(1, 'days');
-                end = setTimeToMoment(end, $scope.options.max_time);
-              }
-              item_defaults = {
-                date: start.format('YYYY-MM-DD'),
-                time: start.hour() * 60 + start.minute()
-              };
-              if (resource && resource.type === 'person') {
-                item_defaults.person = resource.id.substring(0, resource.id.indexOf('_'));
-              } else if (resource && resource.type === 'resource') {
-                item_defaults.resource = resource.id.substring(0, resource.id.indexOf('_'));
-              }
-              return $scope.getCompanyPromise().then(function(company) {
-                return AdminBookingPopup.open({
-                  min_date: setTimeToMoment(start, $scope.options.min_time),
-                  max_date: setTimeToMoment(end, $scope.options.max_time),
-                  from_datetime: moment(start.toISOString()),
-                  to_datetime: moment(end.toISOString()),
-                  item_defaults: item_defaults,
-                  first_page: "quick_pick",
-                  company_id: company.id
-                });
-              });
-            }
-          },
-          viewRender: function(view, element) {
-            var date, newDate;
-            date = uiCalendarConfig.calendars.resourceCalendar.fullCalendar('getDate');
-            newDate = moment().tz(moment.tz.guess());
-            newDate.set({
-              'year': parseInt(date.get('year')),
-              'month': parseInt(date.get('month')),
-              'date': parseInt(date.get('date')),
-              'hour': 0,
-              'minute': 0,
-              'second': 0
-            });
-            return $scope.currentDate = newDate.toDate();
-          },
-          eventResize: function(event, delta, revertFunc, jsEvent, ui, view) {
-            event.duration = event.end.diff(event.start, 'minutes');
-            return $scope.updateBooking(event);
-          },
-          loading: function(isLoading, view) {
-            return $scope.calendarLoading = isLoading;
-          }
-        }
-      };
-      isTimeRangeAvailable = function(start, end, resource) {
-        var en, events, st;
-        st = moment(start.toISOString()).unix();
-        en = moment(end.toISOString()).unix();
-        events = uiCalendarConfig.calendars.resourceCalendar.fullCalendar('clientEvents', function(event) {
-          return event.rendering === 'background' && st >= event.start.unix() && event.end && en <= event.end.unix() && ((resource && parseInt(event.resourceId) === parseInt(resource.id)) || !resource);
-        });
-        return events.length > 0;
-      };
-      dayHasAvailability = function(start) {
-        var events;
-        events = uiCalendarConfig.calendars.resourceCalendar.fullCalendar('clientEvents', function(event) {
-          return event.rendering === 'background' && event.start.year() === start.year() && event.start.month() === start.month() && event.start.date() === start.date();
-        });
-        return events.length > 0;
-      };
-      $scope.getCompanyPromise = function() {
-        var defer;
-        defer = $q.defer();
-        if ($scope.company) {
-          defer.resolve($scope.company);
-        } else {
-          AdminCompanyService.query($attrs).then(function(company) {
-            $scope.company = company;
-            return defer.resolve($scope.company);
-          });
-        }
-        return defer.promise;
-      };
-      $scope.assets = [];
-      $scope.selectedResources = {
-        selected: []
-      };
-      $scope.changeSelectedResources = function() {
-        if ($scope.showAll) {
-          $scope.selectedResources.selected = [];
-        }
-        uiCalendarConfig.calendars.resourceCalendar.fullCalendar('refetchResources');
-        return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('refetchEvents');
-      };
-      $scope.getCompanyPromise().then(function(company) {
-        $scope.loading = true;
-        return BBAssets(company).then(function(assets) {
-          var asset, i, len;
-          for (i = 0, len = assets.length; i < len; i++) {
-            asset = assets[i];
-            asset.id = asset.identifier;
-          }
-          $scope.loading = false;
-          if ($scope.options.type) {
-            assets = _.filter(assets, function(a) {
-              return a.type === $scope.options.type;
-            });
-          }
-          $scope.assets = assets;
-          if (filters.requestedAssets.length > 0) {
-            angular.forEach($scope.assets, function(asset) {
-              var isInArray;
-              isInArray = _.find(filters.requestedAssets, function(id) {
-                return id === asset.id;
-              });
-              if (typeof isInArray !== 'undefined') {
-                return $scope.selectedResources.selected.push(asset);
-              }
-            });
-            return $scope.changeSelectedResources();
-          }
-        });
+  angular.module('BBAdminDashboard.calendar.controllers').controller('bbResourceCalendarController', function($scope, $rootScope, $attrs, BBAssets, ProcessAssetsFilter, $state, GeneralOptions, AdminCalendarOptions, CalendarEventSources, TitleAssembler, $translate, uiCalendarConfig, AdminCompanyService, $q, ModalForm, AdminBookingPopup, AdminMoveBookingPopup, $window, $bbug, Dialog, $filter, PrePostTime, BBModel) {
+    var dayHasAvailability, filters, getBookingTitle, getCalendarAssets, isTimeRangeAvailable, pusherBooking, setTimeToMoment;
+    setTimeToMoment = function(date, time) {
+      var newDate;
+      newDate = moment(time, 'HH:mm');
+      newDate.set({
+        'year': parseInt(date.get('year')),
+        'month': parseInt(date.get('month')),
+        'date': parseInt(date.get('date')),
+        'second': 0
       });
-      $scope.$watch('selectedResources.selected', function(newValue, oldValue) {
-        var assets, params;
-        if (newValue !== oldValue) {
-          assets = [];
-          angular.forEach(newValue, function(asset) {
-            return assets.push(asset.id);
-          });
-          params = $state.params;
-          params.assets = assets.join();
-          return $state.go($state.current.name, params, {
-            notify: false,
-            reload: false
-          });
-        }
-      });
-      getCalendarAssets = function(callback) {
-        if ($scope.model) {
-          callback([$scope.model]);
-          return;
-        }
-        $scope.loading = true;
-        return $scope.getCompanyPromise().then(function(company) {
-          if ($scope.showAll) {
-            return BBAssets(company).then(function(assets) {
-              var asset, i, len;
-              if ($scope.options.type) {
-                assets = _.filter(assets, function(a) {
-                  return a.type === $scope.options.type;
-                });
-              }
-              for (i = 0, len = assets.length; i < len; i++) {
-                asset = assets[i];
-                asset.id = asset.identifier;
-                asset.group = $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.' + asset.group.toUpperCase());
-              }
-              $scope.loading = false;
-              return callback(assets);
-            });
-          } else {
-            $scope.loading = false;
-            return callback($scope.selectedResources.selected);
-          }
-        });
-      };
-      getBookingTitle = function(booking) {
-        var blockLabelAssembler, labelAssembler;
-        labelAssembler = $scope.labelAssembler ? $scope.labelAssembler : AdminCalendarOptions.bookings_label_assembler;
-        blockLabelAssembler = $scope.blockLabelAssembler ? $scope.blockLabelAssembler : AdminCalendarOptions.block_label_assembler;
-        if (booking.status !== 3 && labelAssembler) {
-          return TitleAssembler.getTitle(booking, labelAssembler);
-        } else if (booking.status === 3 && blockLabelAssembler) {
-          return TitleAssembler.getTitle(booking, blockLabelAssembler);
-        }
-        return booking.title;
-      };
-      $scope.refreshBooking = function(booking) {
-        return booking.$refetch().then(function(response) {
-          booking.resourceIds = [];
-          booking.resourceId = null;
-          if (booking.person_id != null) {
-            booking.resourceIds.push(booking.person_id + '_p');
-          }
-          if (booking.resource_id != null) {
-            booking.resourceIds.push(booking.resource_id + '_r');
-          }
-          booking.title = getBookingTitle(booking);
-          return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('updateEvent', booking);
-        });
-      };
-      $scope.updateBooking = function(booking) {
-        var newAssetId;
-        newAssetId = booking.resourceId.substring(0, booking.resourceId.indexOf('_'));
-        if (booking.resourceId.indexOf('_p') > -1) {
-          booking.person_id = newAssetId;
-        } else if (booking.resourceId.indexOf('_r') > -1) {
-          booking.resource_id = newAssetId;
-        }
-        return booking.$update().then(function(response) {
-          booking.resourceIds = [];
-          booking.resourceId = null;
-          if (booking.person_id != null) {
-            booking.resourceIds.push(booking.person_id + '_p');
-          }
-          if (booking.resource_id != null) {
-            booking.resourceIds.push(booking.resource_id + '_r');
-          }
-          booking.title = getBookingTitle(booking);
-          return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('updateEvent', booking);
-        });
-      };
-      $scope.editBooking = function(booking) {
-        var templateUrl, title;
-        if (booking.status === 3) {
-          templateUrl = 'edit_block_modal_form.html';
-          title = 'Edit Block';
-        } else {
-          templateUrl = 'edit_booking_modal_form.html';
-          title = 'Edit Booking';
-        }
-        return ModalForm.edit({
-          templateUrl: templateUrl,
-          model: booking,
-          title: title,
-          params: {
-            locale: $translate.use()
-          },
-          success: (function(_this) {
-            return function(response) {
-              var item_defaults;
-              if (typeof response === 'string') {
-                if (response === "move") {
-                  item_defaults = {
-                    person: booking.person_id,
-                    resource: booking.resource_id
-                  };
-                  $scope.getCompanyPromise().then(function(company) {
-                    return AdminMoveBookingPopup.open({
-                      item_defaults: item_defaults,
-                      company_id: company.id,
-                      booking_id: booking.id,
-                      success: (function(_this) {
-                        return function(model) {
-                          return $scope.refreshBooking(booking);
-                        };
-                      })(this),
-                      fail: function() {
-                        return $scope.refreshBooking(booking);
-                      }
-                    });
-                  });
-                }
-              }
-              if (response.is_cancelled) {
-                return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('removeEvents', [response.id]);
-              } else {
-                booking.title = getBookingTitle(booking);
-                return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('updateEvent', booking);
-              }
+      return newDate;
+    };
+    filters = {
+      requestedAssets: ProcessAssetsFilter($state.params.assets)
+    };
+    $scope.showAll = true;
+    if (filters.requestedAssets.length > 0) {
+      $scope.showAll = false;
+    }
+    $scope.eventSources = [
+      {
+        events: function(start, end, timezone, callback) {
+          $scope.loading = true;
+          return $scope.getCompanyPromise().then(function(company) {
+            var options;
+            options = {
+              labelAssembler: $scope.labelAssembler ? $scope.labelAssembler : AdminCalendarOptions.bookings_label_assembler,
+              blockLabelAssembler: $scope.blockLabelAssembler ? $scope.blockLabelAssembler : AdminCalendarOptions.block_label_assembler,
+              externalLabelAssembler: $scope.externalLabelAssembler ? $scope.externalLabelAssembler : AdminCalendarOptions.external_label_assembler,
+              noCache: true,
+              showAll: $scope.showAll,
+              selectedResources: $scope.selectedResources.selected,
+              calendarView: uiCalendarConfig.calendars[$scope.calendar_name].fullCalendar('getView').type
             };
-          })(this)
-        });
-      };
-      pusherBooking = function(res) {
-        var booking;
-        if (res.id != null) {
-          booking = _.first(uiCalendarConfig.calendars.resourceCalendar.fullCalendar('clientEvents', res.id));
-          if (booking && booking.$refetch) {
-            return booking.$refetch().then(function() {
-              booking.title = getBookingTitle(booking);
-              return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('updateEvent', booking);
-            });
-          } else {
-            return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('refetchEvents');
-          }
-        }
-      };
-      $scope.pusherSubscribe = (function(_this) {
-        return function() {
-          var pusher_channel;
-          if ($scope.company) {
-            pusher_channel = $scope.company.getPusherChannel('bookings');
-            if (pusher_channel) {
-              pusher_channel.bind('create', pusherBooking);
-              pusher_channel.bind('update', pusherBooking);
-              return pusher_channel.bind('destroy', pusherBooking);
+            if ($scope.model) {
+              options.showAll = false;
+              options.selectedResources = [$scope.model];
             }
+            return CalendarEventSources.getAllCalendarEntries(company, start, end, options).then(function(results) {
+              $scope.loading = false;
+              return callback(results);
+            });
+          });
+        }
+      }
+    ];
+    $scope.options = $scope.$eval($attrs.bbResourceCalendar);
+    $scope.options || ($scope.options = {});
+    if (!$scope.options.defaultView) {
+      if ($scope.model) {
+        $scope.options.defaultView = 'agendaWeek';
+      } else {
+        $scope.options.defaultView = 'timelineDay';
+      }
+    }
+    if (!$scope.options.views) {
+      if ($scope.model) {
+        $scope.options.views = 'listDay,timelineDayThirty,agendaWeek,month';
+      } else {
+        $scope.options.views = 'timelineDay,listDay,timelineDayThirty,agendaWeek,month';
+      }
+    }
+    if ($scope.options.name) {
+      $scope.calendar_name = $scope.options.name;
+    } else {
+      $scope.calendar_name = "resourceCalendar";
+    }
+    if ($scope.options.min_time == null) {
+      $scope.options.min_time = GeneralOptions.calendar_min_time;
+    }
+    if ($scope.options.max_time == null) {
+      $scope.options.max_time = GeneralOptions.calendar_max_time;
+    }
+    if ($scope.options.cal_slot_duration == null) {
+      $scope.options.cal_slot_duration = GeneralOptions.calendar_slot_duration;
+    }
+    $scope.uiCalOptions = {
+      calendar: {
+        locale: $translate.use(),
+        schedulerLicenseKey: '0598149132-fcs-1443104297',
+        eventStartEditable: false,
+        eventDurationEditable: false,
+        minTime: $scope.options.min_time,
+        maxTime: $scope.options.max_time,
+        height: 'auto',
+        buttonText: {
+          today: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.TODAY')
+        },
+        header: {
+          left: 'today,prev,next',
+          center: 'title',
+          right: $scope.options.views
+        },
+        defaultView: $scope.options.defaultView,
+        views: {
+          listDay: {
+            buttonText: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.AGENDA')
+          },
+          agendaWeek: {
+            slotDuration: $filter('minutesToString')($scope.options.cal_slot_duration),
+            buttonText: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.WEEK'),
+            groupByDateAndResource: false
+          },
+          month: {
+            eventLimit: 5,
+            buttonText: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MONTH')
+          },
+          timelineDay: {
+            slotDuration: $filter('minutesToString')($scope.options.cal_slot_duration),
+            eventOverlap: false,
+            slotWidth: 25,
+            buttonText: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.DAY', {
+              minutes: $scope.options.cal_slot_duration
+            }),
+            resourceAreaWidth: '18%'
           }
-        };
-      })(this);
-      $scope.openDatePicker = function($event) {
-        $event.preventDefault();
-        $event.stopPropagation();
-        return $scope.datePickerOpened = true;
-      };
-      $scope.updateDate = function(date) {
-        var assembledDate;
-        if (uiCalendarConfig.calendars.resourceCalendar) {
-          assembledDate = moment.utc();
-          assembledDate.set({
-            'year': parseInt(date.getFullYear()),
-            'month': parseInt(date.getMonth()),
-            'date': parseInt(date.getDate()),
+        },
+        resourceGroupField: 'group',
+        resourceLabelText: ' ',
+        eventResourceEditable: true,
+        selectable: true,
+        lazyFetching: false,
+        columnFormat: AdminCalendarOptions.column_format,
+        resources: function(callback) {
+          return getCalendarAssets(callback);
+        },
+        eventDragStop: function(event, jsEvent, ui, view) {
+          return event.oldResourceIds = event.resourceIds;
+        },
+        eventDrop: function(event, delta, revertFunc) {
+          var end, item_defaults, newAssetId, orginal_resource, start;
+          if (event.person_id && event.resource_id || delta.days() > 0) {
+            start = event.start;
+            end = event.end;
+            item_defaults = {
+              date: start.format('YYYY-MM-DD'),
+              time: start.hour() * 60 + start.minute()
+            };
+            if (event.resourceId) {
+              newAssetId = event.resourceId.substring(0, event.resourceId.indexOf('_'));
+              if (event.resourceId.indexOf('_p') > -1) {
+                item_defaults.person = newAssetId;
+                orginal_resource = "" + event.person_id + "_p";
+              } else if (event.resourceId.indexOf('_r') > -1) {
+                item_defaults.resource = newAssetId;
+                orginal_resource = "" + event.resource_id + "_r";
+              }
+            }
+            $scope.getCompanyPromise().then(function(company) {
+              return AdminMoveBookingPopup.open({
+                min_date: setTimeToMoment(start, $scope.options.min_time),
+                max_date: setTimeToMoment(end, $scope.options.max_time),
+                from_datetime: moment(start.toISOString()),
+                to_datetime: moment(end.toISOString()),
+                item_defaults: item_defaults,
+                company_id: company.id,
+                booking_id: event.id,
+                success: (function(_this) {
+                  return function(model) {
+                    return $scope.refreshBooking(event);
+                  };
+                })(this),
+                fail: function() {
+                  return $scope.refreshBooking(event);
+                }
+              });
+            });
+            return;
+          }
+          return Dialog.confirm({
+            title: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MOVE_MODAL_TITLE'),
+            model: event,
+            body: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MOVE_MODAL_BODY'),
+            success: (function(_this) {
+              return function(model) {
+                return $scope.updateBooking(event);
+              };
+            })(this),
+            fail: function() {
+              return revertFunc();
+            }
+          });
+        },
+        eventClick: function(event, jsEvent, view) {
+          if (event.$has('edit')) {
+            return $scope.editBooking(new BBModel.Admin.Booking(event));
+          }
+        },
+        eventRender: function(event, element) {
+          var a, link, service;
+          service = _.findWhere($scope.services, {
+            id: event.service_id
+          });
+          if (uiCalendarConfig.calendars[$scope.calendar_name].fullCalendar('getView').type === "listDay") {
+            link = $bbug(element.children()[2]);
+            if (link) {
+              a = link.children()[0];
+              if (a) {
+                if (event.person_name) {
+                  a.innerHTML = event.person_name + " - " + a.innerHTML;
+                }
+              }
+            }
+          } else if (service) {
+            element.css('background-color', service.color);
+            element.css('color', service.textColor);
+            element.css('border-color', service.textColor);
+          }
+          return element;
+        },
+        eventAfterRender: function(event, elements, view) {
+          if ((event.rendering == null) || event.rendering !== 'background') {
+            return PrePostTime.apply(event, elements, view, $scope);
+          }
+        },
+        select: function(start, end, jsEvent, view, resource) {
+          var item_defaults;
+          if (jsEvent.target.className === 'fc-scroller') {
+            return;
+          }
+          view.calendar.unselect();
+          if (!$scope.options.enforce_schedules || (isTimeRangeAvailable(start, end, resource) || (Math.abs(start.diff(end, 'days')) === 1 && dayHasAvailability(start)))) {
+            if (Math.abs(start.diff(end, 'days')) > 0) {
+              end.subtract(1, 'days');
+              end = setTimeToMoment(end, $scope.options.max_time);
+            }
+            item_defaults = {
+              date: start.format('YYYY-MM-DD'),
+              time: start.hour() * 60 + start.minute()
+            };
+            if (resource && resource.type === 'person') {
+              item_defaults.person = resource.id.substring(0, resource.id.indexOf('_'));
+            } else if (resource && resource.type === 'resource') {
+              item_defaults.resource = resource.id.substring(0, resource.id.indexOf('_'));
+            }
+            return $scope.getCompanyPromise().then(function(company) {
+              return AdminBookingPopup.open({
+                min_date: setTimeToMoment(start, $scope.options.min_time),
+                max_date: setTimeToMoment(end, $scope.options.max_time),
+                from_datetime: moment(start.toISOString()),
+                to_datetime: moment(end.toISOString()),
+                item_defaults: item_defaults,
+                first_page: "quick_pick",
+                company_id: company.id
+              });
+            });
+          }
+        },
+        viewRender: function(view, element) {
+          var date, newDate;
+          date = uiCalendarConfig.calendars[$scope.calendar_name].fullCalendar('getDate');
+          newDate = moment().tz(moment.tz.guess());
+          newDate.set({
+            'year': parseInt(date.get('year')),
+            'month': parseInt(date.get('month')),
+            'date': parseInt(date.get('date')),
             'hour': 0,
             'minute': 0,
             'second': 0
           });
-          return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('gotoDate', assembledDate);
+          return $scope.currentDate = newDate.toDate();
+        },
+        eventResize: function(event, delta, revertFunc, jsEvent, ui, view) {
+          event.duration = event.end.diff(event.start, 'minutes');
+          return $scope.updateBooking(event);
+        },
+        loading: function(isLoading, view) {
+          return $scope.calendarLoading = isLoading;
         }
-      };
-      $scope.lazyUpdateDate = _.debounce($scope.updateDate, 400);
-      $scope.datePickerOptions = {
-        showButtonBar: false
-      };
-      $scope.$watch('currentDate', function(newDate, oldDate) {
-        if (newDate !== oldDate && (oldDate != null)) {
-          return $scope.lazyUpdateDate(newDate);
-        }
-      });
-      $scope.$on('refetchBookings', function() {
-        return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('refetchEvents');
-      });
-      $scope.$on('newCheckout', function() {
-        return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('refetchEvents');
-      });
-      return $rootScope.$on('BBLanguagePicker:languageChanged', function() {
-        $state.go($state.current, {}, {
-          reload: true
-        });
-      });
-    };
-    link = function(scope, element, attrs) {
-      scope.getCompanyPromise().then(function(company) {
-        return company.$get('services').then(function(collection) {
-          return collection.$get('services').then(function(services) {
-            var s;
-            scope.services = (function() {
-              var i, len, results1;
-              results1 = [];
-              for (i = 0, len = services.length; i < len; i++) {
-                s = services[i];
-                results1.push(new BBModel.Admin.Service(s));
-              }
-              return results1;
-            })();
-            return ColorPalette.setColors(scope.services);
-          });
-        });
-      });
-      scope.getCompanyPromise().then(function(company) {
-        return scope.pusherSubscribe();
-      });
-      return $timeout(function() {
-        var datePickerElement, toolbarElement, toolbarLeftElement, uiCalElement;
-        uiCalElement = angular.element(document.getElementById('uicalendar'));
-        toolbarElement = angular.element(uiCalElement.children()[0]);
-        toolbarLeftElement = angular.element(toolbarElement.children()[0]);
-        datePickerElement = $compile($templateCache.get('calendar_date_picker.html'))(scope);
-        return toolbarLeftElement.append(datePickerElement);
-      }, 0);
-    };
-    return {
-      controller: controller,
-      link: link,
-      templateUrl: 'calendar/resource-calendar.html',
-      replace: true,
-      scope: {
-        labelAssembler: '@',
-        blockLabelAssembler: '@',
-        externalLabelAssembler: '@',
-        model: '='
       }
     };
+    isTimeRangeAvailable = function(start, end, resource) {
+      var en, events, st;
+      st = moment(start.toISOString()).unix();
+      en = moment(end.toISOString()).unix();
+      events = uiCalendarConfig.calendars[$scope.calendar_name].fullCalendar('clientEvents', function(event) {
+        return event.rendering === 'background' && st >= event.start.unix() && event.end && en <= event.end.unix() && ((resource && parseInt(event.resourceId) === parseInt(resource.id)) || !resource);
+      });
+      return events.length > 0;
+    };
+    dayHasAvailability = function(start) {
+      var events;
+      events = uiCalendarConfig.calendars[$scope.calendar_name].fullCalendar('clientEvents', function(event) {
+        return event.rendering === 'background' && event.start.year() === start.year() && event.start.month() === start.month() && event.start.date() === start.date();
+      });
+      return events.length > 0;
+    };
+    $scope.getCompanyPromise = function() {
+      var defer;
+      defer = $q.defer();
+      if ($scope.company) {
+        defer.resolve($scope.company);
+      } else {
+        AdminCompanyService.query($attrs).then(function(company) {
+          $scope.company = company;
+          return defer.resolve($scope.company);
+        });
+      }
+      return defer.promise;
+    };
+    $scope.assets = [];
+    $scope.selectedResources = {
+      selected: []
+    };
+    $scope.changeSelectedResources = function() {
+      if ($scope.showAll) {
+        $scope.selectedResources.selected = [];
+      }
+      uiCalendarConfig.calendars[$scope.calendar_name].fullCalendar('refetchResources');
+      return uiCalendarConfig.calendars[$scope.calendar_name].fullCalendar('refetchEvents');
+    };
+    $scope.getCompanyPromise().then(function(company) {
+      $scope.loading = true;
+      return BBAssets(company).then(function(assets) {
+        var asset, i, len;
+        for (i = 0, len = assets.length; i < len; i++) {
+          asset = assets[i];
+          asset.id = asset.identifier;
+        }
+        $scope.loading = false;
+        if ($scope.options.type) {
+          assets = _.filter(assets, function(a) {
+            return a.type === $scope.options.type;
+          });
+        }
+        $scope.assets = assets;
+        if (filters.requestedAssets.length > 0) {
+          angular.forEach($scope.assets, function(asset) {
+            var isInArray;
+            isInArray = _.find(filters.requestedAssets, function(id) {
+              return id === asset.id;
+            });
+            if (typeof isInArray !== 'undefined') {
+              return $scope.selectedResources.selected.push(asset);
+            }
+          });
+          return $scope.changeSelectedResources();
+        }
+      });
+    });
+    $scope.$watch('selectedResources.selected', function(newValue, oldValue) {
+      var assets, params;
+      if (newValue !== oldValue) {
+        assets = [];
+        angular.forEach(newValue, function(asset) {
+          return assets.push(asset.id);
+        });
+        params = $state.params;
+        params.assets = assets.join();
+        return $state.go($state.current.name, params, {
+          notify: false,
+          reload: false
+        });
+      }
+    });
+    getCalendarAssets = function(callback) {
+      if ($scope.model) {
+        callback([$scope.model]);
+        return;
+      }
+      $scope.loading = true;
+      return $scope.getCompanyPromise().then(function(company) {
+        if ($scope.showAll) {
+          return BBAssets(company).then(function(assets) {
+            var asset, i, len;
+            if ($scope.options.type) {
+              assets = _.filter(assets, function(a) {
+                return a.type === $scope.options.type;
+              });
+            }
+            for (i = 0, len = assets.length; i < len; i++) {
+              asset = assets[i];
+              asset.id = asset.identifier;
+              asset.group = $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.' + asset.group.toUpperCase());
+            }
+            $scope.loading = false;
+            return callback(assets);
+          });
+        } else {
+          $scope.loading = false;
+          return callback($scope.selectedResources.selected);
+        }
+      });
+    };
+    getBookingTitle = function(booking) {
+      var blockLabelAssembler, labelAssembler;
+      labelAssembler = $scope.labelAssembler ? $scope.labelAssembler : AdminCalendarOptions.bookings_label_assembler;
+      blockLabelAssembler = $scope.blockLabelAssembler ? $scope.blockLabelAssembler : AdminCalendarOptions.block_label_assembler;
+      if (booking.status !== 3 && labelAssembler) {
+        return TitleAssembler.getTitle(booking, labelAssembler);
+      } else if (booking.status === 3 && blockLabelAssembler) {
+        return TitleAssembler.getTitle(booking, blockLabelAssembler);
+      }
+      return booking.title;
+    };
+    $scope.refreshBooking = function(booking) {
+      return booking.$refetch().then(function(response) {
+        booking.resourceIds = [];
+        booking.resourceId = null;
+        if (booking.person_id != null) {
+          booking.resourceIds.push(booking.person_id + '_p');
+        }
+        if (booking.resource_id != null) {
+          booking.resourceIds.push(booking.resource_id + '_r');
+        }
+        booking.title = getBookingTitle(booking);
+        return uiCalendarConfig.calendars[$scope.calendar_name].fullCalendar('updateEvent', booking);
+      });
+    };
+    $scope.updateBooking = function(booking) {
+      var newAssetId;
+      newAssetId = booking.resourceId.substring(0, booking.resourceId.indexOf('_'));
+      if (booking.resourceId.indexOf('_p') > -1) {
+        booking.person_id = newAssetId;
+      } else if (booking.resourceId.indexOf('_r') > -1) {
+        booking.resource_id = newAssetId;
+      }
+      return booking.$update().then(function(response) {
+        booking.resourceIds = [];
+        booking.resourceId = null;
+        if (booking.person_id != null) {
+          booking.resourceIds.push(booking.person_id + '_p');
+        }
+        if (booking.resource_id != null) {
+          booking.resourceIds.push(booking.resource_id + '_r');
+        }
+        booking.title = getBookingTitle(booking);
+        return uiCalendarConfig.calendars[$scope.calendar_name].fullCalendar('updateEvent', booking);
+      });
+    };
+    $scope.editBooking = function(booking) {
+      var templateUrl, title;
+      if (booking.status === 3) {
+        templateUrl = 'edit_block_modal_form.html';
+        title = 'Edit Block';
+      } else {
+        templateUrl = 'edit_booking_modal_form.html';
+        title = 'Edit Booking';
+      }
+      return ModalForm.edit({
+        templateUrl: templateUrl,
+        model: booking,
+        title: title,
+        params: {
+          locale: $translate.use()
+        },
+        success: (function(_this) {
+          return function(response) {
+            var item_defaults;
+            if (typeof response === 'string') {
+              if (response === "move") {
+                item_defaults = {
+                  person: booking.person_id,
+                  resource: booking.resource_id
+                };
+                $scope.getCompanyPromise().then(function(company) {
+                  return AdminMoveBookingPopup.open({
+                    item_defaults: item_defaults,
+                    company_id: company.id,
+                    booking_id: booking.id,
+                    success: (function(_this) {
+                      return function(model) {
+                        return $scope.refreshBooking(booking);
+                      };
+                    })(this),
+                    fail: function() {
+                      return $scope.refreshBooking(booking);
+                    }
+                  });
+                });
+              }
+            }
+            if (response.is_cancelled) {
+              return uiCalendarConfig.calendars[$scope.calendar_name].fullCalendar('removeEvents', [response.id]);
+            } else {
+              booking.title = getBookingTitle(booking);
+              return uiCalendarConfig.calendars[$scope.calendar_name].fullCalendar('updateEvent', booking);
+            }
+          };
+        })(this)
+      });
+    };
+    pusherBooking = function(res) {
+      var booking;
+      if (res.id != null) {
+        booking = _.first(uiCalendarConfig.calendars[$scope.calendar_name].fullCalendar('clientEvents', res.id));
+        if (booking && booking.$refetch) {
+          return booking.$refetch().then(function() {
+            booking.title = getBookingTitle(booking);
+            return uiCalendarConfig.calendars[$scope.calendar_name].fullCalendar('updateEvent', booking);
+          });
+        } else {
+          return uiCalendarConfig.calendars[$scope.calendar_name].fullCalendar('refetchEvents');
+        }
+      }
+    };
+    $scope.pusherSubscribe = (function(_this) {
+      return function() {
+        var pusher_channel;
+        if ($scope.company) {
+          pusher_channel = $scope.company.getPusherChannel('bookings');
+          if (pusher_channel) {
+            pusher_channel.bind('create', pusherBooking);
+            pusher_channel.bind('update', pusherBooking);
+            return pusher_channel.bind('destroy', pusherBooking);
+          }
+        }
+      };
+    })(this);
+    $scope.openDatePicker = function($event) {
+      $event.preventDefault();
+      $event.stopPropagation();
+      return $scope.datePickerOpened = true;
+    };
+    $scope.updateDate = function(date) {
+      var assembledDate;
+      if (uiCalendarConfig.calendars[$scope.calendar_name]) {
+        assembledDate = moment.utc();
+        assembledDate.set({
+          'year': parseInt(date.getFullYear()),
+          'month': parseInt(date.getMonth()),
+          'date': parseInt(date.getDate()),
+          'hour': 0,
+          'minute': 0,
+          'second': 0
+        });
+        return uiCalendarConfig.calendars[$scope.calendar_name].fullCalendar('gotoDate', assembledDate);
+      }
+    };
+    $scope.lazyUpdateDate = _.debounce($scope.updateDate, 400);
+    $scope.datePickerOptions = {
+      showButtonBar: false
+    };
+    $scope.$watch('currentDate', function(newDate, oldDate) {
+      if (newDate !== oldDate && (oldDate != null)) {
+        return $scope.lazyUpdateDate(newDate);
+      }
+    });
+    $scope.$on('refetchBookings', function() {
+      return uiCalendarConfig.calendars[$scope.calendar_name].fullCalendar('refetchEvents');
+    });
+    $scope.$on('newCheckout', function() {
+      return uiCalendarConfig.calendars[$scope.calendar_name].fullCalendar('refetchEvents');
+    });
+    return $rootScope.$on('BBLanguagePicker:languageChanged', function() {
+      $state.go($state.current, {}, {
+        reload: true
+      });
+    });
   });
 
 }).call(this);
@@ -1254,6 +1214,56 @@
             template: 'main'
           });
         };
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BBAdminDashboard.calendar.directives').directive('bbResourceCalendar', function(BBModel, ColorPalette, $timeout, $compile, $templateCache) {
+    var link;
+    link = function(scope, element, attrs) {
+      scope.getCompanyPromise().then(function(company) {
+        return company.$get('services').then(function(collection) {
+          return collection.$get('services').then(function(services) {
+            var s;
+            scope.services = (function() {
+              var i, len, results;
+              results = [];
+              for (i = 0, len = services.length; i < len; i++) {
+                s = services[i];
+                results.push(new BBModel.Admin.Service(s));
+              }
+              return results;
+            })();
+            return ColorPalette.setColors(scope.services);
+          });
+        });
+      });
+      scope.getCompanyPromise().then(function(company) {
+        return scope.pusherSubscribe();
+      });
+      return $timeout(function() {
+        var datePickerElement, toolbarElement, toolbarLeftElement, uiCalElement;
+        uiCalElement = angular.element(document.getElementById('uicalendar'));
+        toolbarElement = angular.element(uiCalElement.children()[0]);
+        toolbarLeftElement = angular.element(toolbarElement.children()[0]);
+        datePickerElement = $compile($templateCache.get('calendar_date_picker.html'))(scope);
+        return toolbarLeftElement.append(datePickerElement);
+      }, 0);
+    };
+    return {
+      controller: 'bbResourceCalendarController',
+      link: link,
+      templateUrl: 'calendar/resource-calendar.html',
+      replace: true,
+      scope: {
+        labelAssembler: '@',
+        blockLabelAssembler: '@',
+        externalLabelAssembler: '@',
+        model: '='
       }
     };
   });
@@ -1721,7 +1731,7 @@
             'STAFF': 'Staff',
             'RESOURCES': 'Resources',
             'MOVE_MODAL_TITLE': 'Move',
-            'MOVE_MODAL_BODY': 'Are you sure you want to move this booking?',
+            'MOVE_MODAL_BODY': 'Are you sure you want to move?',
             'ADD_BOOKING': 'Add Booking'
           }
         }
