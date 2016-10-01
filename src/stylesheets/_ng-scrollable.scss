@@ -1,0 +1,69 @@
+.scrollable {
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+  height: 100%;
+
+  .scrollable-content {
+    box-sizing: border-box;
+    min-height: 100%;
+
+    /* Enable the Classes below to have scrollbars not overlap the content */
+    //&.scrollable-right {
+    //  margin-right: 15px;
+    //}
+    //
+    //&.scrollable-top {
+    //  margin-top: 15px;
+    //}
+    //
+    //&.scrollable-left {
+    //  margin-left: 15px;
+    //}
+    //
+    //&.scrollable-bottom {
+    //  margin-bottom: 15px;
+    //}
+  }
+
+  .scrollable-content,
+  .scrollable-slider {
+    @include transition(background-color .2s linear, opacity .2s linear, -webkit-transform .2s ease-out);
+  }
+
+  .scrollable-bar {
+    position: absolute;
+    box-sizing: border-box;
+    opacity: 0;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+
+  &:hover .scrollable-bar {
+    opacity: 0.6;
+  }
+
+  &.active .scrollable-bar {
+    opacity: 1;
+  }
+
+  .scrollable-slider {
+    background-color: #ccc;
+    //border: 1px solid #333;
+  }
+
+  .scrollable-bar-x .scrollable-slider {
+    height: 5px;
+  }
+
+  .scrollable-bar-y .scrollable-slider {
+    width: 5px;
+  }
+}
+
+/* if any element is fixed and displayed at full window size, this rule becomes handy */
+.fullwindow .scrollable-content {
+  transform: none !important;
+}
