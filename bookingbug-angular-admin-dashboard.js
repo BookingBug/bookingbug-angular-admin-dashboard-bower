@@ -673,6 +673,7 @@
               externalLabelAssembler: $scope.externalLabelAssembler ? $scope.externalLabelAssembler : AdminCalendarOptions.external_label_assembler,
               noCache: true,
               showAll: $scope.showAll,
+              type: $scope.options.type,
               selectedResources: $scope.selectedResources.selected,
               calendarView: uiCalendarConfig.calendars[$scope.calendar_name].fullCalendar('getView').type
             };
@@ -805,7 +806,8 @@
                   };
                 })(this),
                 fail: function() {
-                  return $scope.refreshBooking(event);
+                  $scope.refreshBooking(event);
+                  return revertFunc();
                 }
               });
             });
@@ -831,21 +833,39 @@
           }
         },
         eventRender: function(event, element) {
-          var a, link, service;
+          var a, link, service, type;
+          type = uiCalendarConfig.calendars[$scope.calendar_name].fullCalendar('getView').type;
           service = _.findWhere($scope.services, {
             id: event.service_id
           });
-          if (uiCalendarConfig.calendars[$scope.calendar_name].fullCalendar('getView').type === "listDay") {
-            link = $bbug(element.children()[2]);
-            if (link) {
-              a = link.children()[0];
-              if (a) {
-                if (event.person_name) {
-                  a.innerHTML = event.person_name + " - " + a.innerHTML;
+          if (!$scope.model) {
+            if (type === "listDay") {
+              link = $bbug(element.children()[2]);
+              if (link) {
+                a = link.children()[0];
+                if (a) {
+                  if (event.person_name && (!$scope.options.type || $scope.options.type === "person")) {
+                    a.innerHTML = event.person_name + " - " + a.innerHTML;
+                  } else if (event.resource_name && $scope.options.type === "resource") {
+                    a.innerHTML = event.resource_name + " - " + a.innerHTML;
+                  }
+                }
+              }
+            } else if (type === "agendaWeek" || type === "month") {
+              link = $bbug(element.children()[0]);
+              if (link) {
+                a = link.children()[1];
+                if (a) {
+                  if (event.person_name && (!$scope.options.type || $scope.options.type === "person")) {
+                    a.innerHTML = event.person_name + "<br/>" + a.innerHTML;
+                  } else if (event.resource_name && $scope.options.type === "resource") {
+                    a.innerHTML = event.resource_name + "<br/>" + a.innerHTML;
+                  }
                 }
               }
             }
-          } else if (service) {
+          }
+          if (service && type !== "listDay") {
             element.css('background-color', service.color);
             element.css('color', service.textColor);
             element.css('border-color', service.textColor);
@@ -885,6 +905,7 @@
                 to_datetime: moment(end.toISOString()),
                 item_defaults: item_defaults,
                 first_page: "quick_pick",
+                on_conflict: "cancel()",
                 company_id: company.id
               });
             });
@@ -1211,6 +1232,7 @@
               date: moment($scope.$parent.currentDate).isValid() ? moment($scope.$parent.currentDate).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD')
             },
             company_id: $rootScope.bb.company.id,
+            on_conflict: "cancel()",
             template: 'main'
           });
         };
@@ -1406,7 +1428,9 @@
               } else if (booking.status === 3 && (options.blockLabelAssembler != null)) {
                 booking.title = TitleAssembler.getTitle(booking, options.blockLabelAssembler);
               }
-              filteredBookings.push(booking);
+              if (!options.type || (options.type === "resource" && booking.resource_id) || (options.type === "person" && booking.person_id)) {
+                filteredBookings.push(booking);
+              }
             }
           }
           return deferred.resolve(filteredBookings);
@@ -1788,6 +1812,7 @@
               merge_resources: true,
               date: moment().format('YYYY-MM-DD')
             },
+            on_conflict: "cancel()",
             company_id: $scope.bb.company.id
           });
         };
@@ -3490,6 +3515,7 @@
               return AdminBookingPopup.open({
                 size: 'lg',
                 company_id: $scope.bb.company.id,
+                on_conflict: "cancel()",
                 item_defaults: {
                   date: event.data.date,
                   time: event.data.iarray * 5,
