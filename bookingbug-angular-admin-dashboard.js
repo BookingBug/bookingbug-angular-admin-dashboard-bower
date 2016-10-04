@@ -3686,7 +3686,7 @@
         templateUrl: 'login/admin-dashboard-login.html',
         controller: [
           '$scope', '$rootScope', 'BBModel', '$q', '$localStorage', 'AdminLoginOptions', function($scope, $rootScope, BBModel, $q, $localStorage, AdminLoginOptions) {
-            var companySelection;
+            var companySelection, formErrorExists;
             $scope.template_vars = {
               show_api_field: AdminLoginOptions.show_api_field,
               show_login: true,
@@ -3702,10 +3702,22 @@
               site: $localStorage.getItem("api_url")
             };
             $scope.formErrors = [];
+            formErrorExists = function(message) {
+              var i, len, obj, ref;
+              ref = $scope.formErrors;
+              for (i = 0, len = ref.length; i < len; i++) {
+                obj = ref[i];
+                if (obj.message.match(message)) {
+                  return true;
+                }
+              }
+              return false;
+            };
             companySelection = function(user) {
+              var message;
               if (user.$has('administrators')) {
                 return user.$getAdministrators().then(function(administrators) {
-                  var params;
+                  var message, params;
                   $scope.administrators = administrators;
                   if (administrators.length > 1) {
                     $scope.template_vars.show_loading = false;
@@ -3734,9 +3746,12 @@
                     });
                   } else {
                     $scope.template_vars.show_loading = false;
-                    return $scope.formErrors.push({
-                      message: "ADMIN_DASHBOARD.LOGIN_PAGE.ERROR_INCORRECT_CREDS"
-                    });
+                    message = "ADMIN_DASHBOARD.LOGIN_PAGE.ERROR_INCORRECT_CREDS";
+                    if (!formErrorExists(message)) {
+                      return $scope.formErrors.push({
+                        message: message
+                      });
+                    }
                   }
                 });
               } else if (user.$has('company')) {
@@ -3755,16 +3770,23 @@
                     });
                   }
                 }, function(err) {
+                  var message;
                   $scope.template_vars.show_loading = false;
-                  return $scope.formErrors.push({
-                    message: "ADMIN_DASHBOARD.LOGIN_PAGE.ERROR_ISSUE_WITH_COMPANY"
-                  });
+                  message = "ADMIN_DASHBOARD.LOGIN_PAGE.ERROR_ISSUE_WITH_COMPANY";
+                  if (!formErrorExists(message)) {
+                    return $scope.formErrors.push({
+                      message: message
+                    });
+                  }
                 });
               } else {
                 $scope.template_vars.show_loading = false;
-                return $scope.formErrors.push({
-                  message: "ADMIN_DASHBOARD.LOGIN_PAGE.ERROR_ACCOUNT_ISSUES"
-                });
+                message = "ADMIN_DASHBOARD.LOGIN_PAGE.ERROR_ACCOUNT_ISSUES";
+                if (!formErrorExists(message)) {
+                  return $scope.formErrors.push({
+                    message: message
+                  });
+                }
               }
             };
             if ($scope.user) {
@@ -3791,10 +3813,14 @@
                 return BBModel.Admin.Login.$login(params).then(function(user) {
                   return companySelection(user);
                 }, function(err) {
+                  var message;
                   $scope.template_vars.show_loading = false;
-                  return $scope.formErrors.push({
-                    message: "ADMIN_DASHBOARD.LOGIN_PAGE.ERROR_INCORRECT_CREDS"
-                  });
+                  message = "ADMIN_DASHBOARD.LOGIN_PAGE.ERROR_INCORRECT_CREDS";
+                  if (!formErrorExists(message)) {
+                    return $scope.formErrors.push({
+                      message: message
+                    });
+                  }
                 });
               }
             };
