@@ -820,7 +820,7 @@
     };
     fcEventDrop = function(event, delta, revertFunc) {
       var end, item_defaults, newAssetId, orginal_resource, start;
-      if (event.person_id && event.resource_id || delta.days() > 0) {
+      if (event.status !== 3 && (event.person_id && event.resource_id || delta.days() > 0)) {
         start = event.start;
         end = event.end;
         item_defaults = {
@@ -1070,11 +1070,13 @@
     };
     updateBooking = function(booking) {
       var newAssetId;
-      newAssetId = booking.resourceId.substring(0, booking.resourceId.indexOf('_'));
-      if (booking.resourceId.indexOf('_p') > -1) {
-        booking.person_id = newAssetId;
-      } else if (booking.resourceId.indexOf('_r') > -1) {
-        booking.resource_id = newAssetId;
+      if (booking.resourceId) {
+        newAssetId = booking.resourceId.substring(0, booking.resourceId.indexOf('_'));
+        if (booking.resourceId.indexOf('_p') > -1) {
+          booking.person_id = newAssetId;
+        } else if (booking.resourceId.indexOf('_r') > -1) {
+          booking.resource_id = newAssetId;
+        }
       }
       booking.$update().then(function(response) {
         booking.resourceIds = [];
@@ -1592,28 +1594,48 @@
       }
       deferred = $q.defer();
       AdminScheduleService.getAssetsScheduleEvents(company, start, end, !options.showAll, options.selectedResources).then(function(availabilities) {
-        var overAllAvailabilities;
+        var avail, availability, i, id, j, len, len1, overAllAvailabilities, sorted, src, test, test_id;
         if (options.calendarView === 'timelineDay') {
           return deferred.resolve(availabilities);
         } else {
           overAllAvailabilities = [];
-          angular.forEach(availabilities, function(availability, index) {
-            var dayAvailability;
-            dayAvailability = _.filter(overAllAvailabilities, function(overAllAvailability) {
-              if (moment(overAllAvailability.start).dayOfYear() === moment(availability.start).dayOfYear()) {
-                return true;
-              }
-              return false;
-            });
-            if (dayAvailability.length > 0) {
-              if (moment(availability.start).unix() < moment(dayAvailability[0].start).unix()) {
-                dayAvailability[0].start = availability.start;
-              }
-              if (moment(availability.end).unix() > moment(dayAvailability[0].end).unix()) {
-                return dayAvailability[0].end = availability.end;
+          for (i = 0, len = availabilities.length; i < len; i++) {
+            avail = availabilities[i];
+            avail.unix_start = moment(avail.start).unix();
+            avail.unix_end = moment(avail.end).unix();
+            avail.delete_me = false;
+          }
+          sorted = _.sortBy(availabilities, function(x) {
+            return moment(x.start).unix();
+          });
+          id = 0;
+          test_id = 1;
+          while (test_id < sorted.length) {
+            src = sorted[id];
+            test = sorted[test_id];
+            console.log(id, test_id, src);
+            if (!src.delete_me) {
+              if (test.unix_end > src.unix_end && test.unix_start < src.unix_end) {
+                src.end = test.end;
+                src.unix_end = test.unix_end;
+                test.delete_me = true;
+                test_id += 1;
+              } else if (test.unix_end <= src.unix_end) {
+                test.delete_me = true;
+                test_id += 1;
+              } else {
+                id += 1;
+                test_id += 1;
               }
             } else {
-              return overAllAvailabilities.push({
+              id += 1;
+              test_id = id + 1;
+            }
+          }
+          for (j = 0, len1 = sorted.length; j < len1; j++) {
+            availability = sorted[j];
+            if (!availability.delete_me) {
+              overAllAvailabilities.push({
                 start: availability.start,
                 end: availability.end,
                 rendering: "background",
@@ -1621,7 +1643,8 @@
                 allDay: options.calendarView === 'month' ? true : false
               });
             }
-          });
+          }
+          console.log(overAllAvailabilities);
           return deferred.resolve(overAllAvailabilities);
         }
       }, function(err) {
@@ -1906,7 +1929,7 @@
     $scope.getAppointments = function(currentPage, filterBy, filterByFields, orderBy, orderByReverse, skipCache) {
       var defer, mobile, params;
       if (skipCache == null) {
-        skipCache = false;
+        skipCache = true;
       }
       if (filterByFields && (filterByFields.name != null)) {
         filterByFields.name = filterByFields.name.replace(/\s/g, '');
