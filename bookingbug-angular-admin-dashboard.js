@@ -8,27 +8,7 @@
 
   angular.module('BBAdminDashboard.calendar.translations', []);
 
-  angular.module('BBAdminDashboard.calendar', ['BBAdminDashboard.calendar.controllers', 'BBAdminDashboard.calendar.services', 'BBAdminDashboard.calendar.directives', 'BBAdminDashboard.calendar.translations']).run([
-    'RuntimeStates', 'AdminCalendarOptions', 'SideNavigationPartials', function(RuntimeStates, AdminCalendarOptions, SideNavigationPartials) {
-      if (AdminCalendarOptions.use_default_states) {
-        RuntimeStates.state('calendar', {
-          parent: AdminCalendarOptions.parent_state,
-          url: "calendar",
-          templateUrl: "calendar/index.html",
-          controller: 'CalendarPageCtrl'
-        }).state('calendar.people', {
-          url: "/people/:assets",
-          templateUrl: "calendar/people.html"
-        }).state('calendar.resources', {
-          url: "/resources/:assets",
-          templateUrl: "calendar/resources.html"
-        });
-      }
-      if (AdminCalendarOptions.show_in_navigation) {
-        return SideNavigationPartials.addPartialTemplate('calendar', 'calendar/nav.html');
-      }
-    }
-  ]);
+  angular.module('BBAdminDashboard.calendar', ['BBAdminDashboard.calendar.controllers', 'BBAdminDashboard.calendar.services', 'BBAdminDashboard.calendar.directives', 'BBAdminDashboard.calendar.translations']);
 
 }).call(this);
 
@@ -42,21 +22,7 @@
 
   angular.module('BBAdminDashboard.check-in.translations', []);
 
-  angular.module('BBAdminDashboard.check-in', ['BBAdminDashboard.check-in.controllers', 'BBAdminDashboard.check-in.services', 'BBAdminDashboard.check-in.directives', 'BBAdminDashboard.check-in.translations']).run([
-    'RuntimeStates', 'AdminCheckInOptions', 'SideNavigationPartials', function(RuntimeStates, AdminCheckInOptions, SideNavigationPartials) {
-      if (AdminCheckInOptions.use_default_states) {
-        RuntimeStates.state('checkin', {
-          parent: AdminCheckInOptions.parent_state,
-          url: "check-in",
-          templateUrl: "check-in/index.html",
-          controller: 'CheckInPageCtrl'
-        });
-      }
-      if (AdminCheckInOptions.show_in_navigation) {
-        return SideNavigationPartials.addPartialTemplate('check-in', 'check-in/nav.html');
-      }
-    }
-  ]);
+  angular.module('BBAdminDashboard.check-in', ['BBAdminDashboard.check-in.controllers', 'BBAdminDashboard.check-in.services', 'BBAdminDashboard.check-in.directives', 'BBAdminDashboard.check-in.translations']);
 
 }).call(this);
 
@@ -70,43 +36,7 @@
 
   angular.module('BBAdminDashboard.clients.translations', []);
 
-  angular.module('BBAdminDashboard.clients', ['BBAdminDashboard.clients.controllers', 'BBAdminDashboard.clients.services', 'BBAdminDashboard.clients.directives', 'BBAdminDashboard.clients.translations']).run([
-    'RuntimeStates', 'AdminClientsOptions', 'SideNavigationPartials', function(RuntimeStates, AdminClientsOptions, SideNavigationPartials) {
-      if (AdminClientsOptions.use_default_states) {
-        RuntimeStates.state('clients', {
-          parent: AdminClientsOptions.parent_state,
-          url: "clients",
-          templateUrl: "clients/index.html",
-          controller: 'ClientsPageCtrl'
-        }).state('clients.new', {
-          url: "/new",
-          templateUrl: "client_new.html",
-          controller: 'ClientsNewPageCtrl'
-        }).state('clients.all', {
-          url: "/all",
-          templateUrl: "clients/listing.html",
-          controller: 'ClientsAllPageCtrl'
-        }).state('clients.edit', {
-          url: "/edit/:id",
-          templateUrl: "clients/item.html",
-          resolve: {
-            client: function(company, $stateParams, BBModel) {
-              var params;
-              params = {
-                company: company,
-                id: $stateParams.id
-              };
-              return BBModel.Admin.Client.$query(params);
-            }
-          },
-          controller: 'ClientsEditPageCtrl'
-        });
-      }
-      if (AdminClientsOptions.show_in_navigation) {
-        return SideNavigationPartials.addPartialTemplate('clients', 'clients/nav.html');
-      }
-    }
-  ]);
+  angular.module('BBAdminDashboard.clients', ['BBAdminDashboard.clients.controllers', 'BBAdminDashboard.clients.services', 'BBAdminDashboard.clients.directives', 'BBAdminDashboard.clients.translations']);
 
 }).call(this);
 
@@ -120,108 +50,399 @@
 
   angular.module('BBAdminDashboard.config-iframe.translations', []);
 
-  angular.module('BBAdminDashboard.config-iframe', ['BBAdminDashboard.config-iframe.controllers', 'BBAdminDashboard.config-iframe.services', 'BBAdminDashboard.config-iframe.directives', 'BBAdminDashboard.config-iframe.translations']).run([
-    'RuntimeStates', 'AdminConfigIframeOptions', 'SideNavigationPartials', function(RuntimeStates, AdminConfigIframeOptions, SideNavigationPartials) {
-      if (AdminConfigIframeOptions.use_default_states) {
-        RuntimeStates.state('config', {
-          parent: AdminConfigIframeOptions.parent_state,
-          url: 'config',
-          templateUrl: 'config-iframe/index.html',
-          controller: 'ConfigIframePageCtrl',
-          deepStateRedirect: {
-            "default": {
-              state: 'config.business.page',
-              params: {
-                path: 'person'
-              }
-            }
-          }
-        }).state('config.business', {
-          url: '/business',
-          templateUrl: 'core/tabbed-substates-page.html',
-          controller: 'ConfigIframeBusinessPageCtrl',
-          deepStateRedirect: {
-            "default": {
-              state: 'config.business.page',
-              params: {
-                path: 'person'
-              }
-            }
-          }
-        }).state('config.business.page', {
-          url: '/page/:path',
-          templateUrl: 'core/iframe-page.html',
-          controller: 'ConfigSubIframePageCtrl'
-        }).state('config.event-settings', {
-          url: '/event-settings',
-          templateUrl: 'core/tabbed-substates-page.html',
-          controller: 'ConfigIframeEventSettingsPageCtrl',
-          deepStateRedirect: {
-            "default": {
-              state: 'config.event-settings.page',
-              params: {
-                path: 'sessions/courses'
-              }
-            }
-          }
-        }).state('config.event-settings.page', {
-          url: '/page/:path',
-          templateUrl: 'core/iframe-page.html',
-          controller: 'ConfigSubIframePageCtrl'
-        }).state('config.promotions', {
-          url: '/promotions',
-          templateUrl: 'core/tabbed-substates-page.html',
-          controller: 'ConfigIframePromotionsPageCtrl',
-          deepStateRedirect: {
-            "default": {
-              state: 'config.promotions.page',
-              params: {
-                path: 'price/deal/summary'
-              }
-            }
-          }
-        }).state('config.promotions.page', {
-          url: '/page/:path',
-          templateUrl: 'core/iframe-page.html',
-          controller: 'ConfigSubIframePageCtrl'
-        }).state('config.booking-settings', {
-          url: '/booking-settings',
-          templateUrl: 'core/tabbed-substates-page.html',
-          controller: 'ConfigIframeBookingSettingsPageCtrl',
-          deepStateRedirect: {
-            "default": {
-              state: 'config.booking-settings.page',
-              params: {
-                path: 'detail_type'
-              }
-            }
-          }
-        }).state('config.booking-settings.page', {
-          url: '/page/:path',
-          templateUrl: 'core/iframe-page.html',
-          controller: 'ConfigSubIframePageCtrl'
-        });
-      }
-      if (AdminConfigIframeOptions.show_in_navigation) {
-        return SideNavigationPartials.addPartialTemplate('config-iframe', 'config-iframe/nav.html');
-      }
-    }
-  ]);
+  angular.module('BBAdminDashboard.config-iframe', ['BBAdminDashboard.config-iframe.controllers', 'BBAdminDashboard.config-iframe.services', 'BBAdminDashboard.config-iframe.directives', 'BBAdminDashboard.config-iframe.translations']);
 
 }).call(this);
 
 (function() {
   'use strict';
-  var BBAdminDashboardDependencies, adminBookingApp;
+  angular.module('BBAdminDashboard', ['ngStorage', 'ngResource', 'ngTouch', 'ngSanitize', 'ngLocalData', 'ngCookies', 'BBAdmin', 'BBAdminServices', 'BBAdminBooking', 'BBAdmin.Directives', 'BBMember', 'ui.calendar', 'ui.bootstrap', 'ui.router', 'ct.ui.router.extras', 'trNgGrid', 'toggle-switch', 'pascalprecht.translate', 'angular-loading-bar', 'ngScrollable', 'toastr', 'BBAdminDashboard.check-in', 'BBAdminDashboard.clients', 'BBAdminDashboard.login', 'BBAdminDashboard.logout', 'BBAdminDashboard.calendar', 'BBAdminDashboard.dashboard-iframe', 'BBAdminDashboard.members-iframe', 'BBAdminDashboard.settings-iframe', 'BBAdminDashboard.config-iframe', 'BBAdminDashboard.publish-iframe']);
 
-  BBAdminDashboardDependencies = ['ngStorage', 'ngResource', 'ngTouch', 'ngSanitize', 'ngLocalData', 'ngCookies', 'BBAdmin', 'BBAdminServices', 'BBAdminBooking', 'BBAdmin.Directives', 'BBMember', 'ui.calendar', 'ui.bootstrap', 'ui.router', 'ct.ui.router.extras', 'trNgGrid', 'toggle-switch', 'pascalprecht.translate', 'angular-loading-bar', 'ngScrollable', 'toastr', 'BBAdminDashboard.check-in', 'BBAdminDashboard.clients', 'BBAdminDashboard.login', 'BBAdminDashboard.logout', 'BBAdminDashboard.calendar', 'BBAdminDashboard.dashboard-iframe', 'BBAdminDashboard.members-iframe', 'BBAdminDashboard.settings-iframe', 'BBAdminDashboard.config-iframe', 'BBAdminDashboard.publish-iframe'];
+}).call(this);
 
-  adminBookingApp = angular.module('BBAdminDashboard', BBAdminDashboardDependencies).run([
-    'RuntimeStates', 'AdminCoreOptions', 'RuntimeRoutes', 'AdminLoginService', function(RuntimeStates, AdminCoreOptions, RuntimeRoutes, AdminLoginService) {
-      RuntimeRoutes.otherwise('/');
-      return RuntimeStates.state('root', {
-        url: '/',
-        templateUrl: "core/layout.html",
+(function() {
+  'use strict';
+  angular.module('BBAdminDashboard.dashboard-iframe.controllers', []);
+
+  angular.module('BBAdminDashboard.dashboard-iframe.services', []);
+
+  angular.module('BBAdminDashboard.dashboard-iframe.directives', []);
+
+  angular.module('BBAdminDashboard.dashboard-iframe.translations', []);
+
+  angular.module('BBAdminDashboard.dashboard-iframe', ['BBAdminDashboard.dashboard-iframe.controllers', 'BBAdminDashboard.dashboard-iframe.services', 'BBAdminDashboard.dashboard-iframe.directives', 'BBAdminDashboard.dashboard-iframe.translations']);
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BBAdminDashboard.login.controllers', []);
+
+  angular.module('BBAdminDashboard.login.services', []);
+
+  angular.module('BBAdminDashboard.login.directives', []);
+
+  angular.module('BBAdminDashboard.login.translations', []);
+
+  angular.module('BBAdminDashboard.login', ['BBAdminDashboard.login.controllers', 'BBAdminDashboard.login.services', 'BBAdminDashboard.login.directives', 'BBAdminDashboard.login.translations']);
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BBAdminDashboard.logout.controllers', []);
+
+  angular.module('BBAdminDashboard.logout.services', []);
+
+  angular.module('BBAdminDashboard.logout.directives', []);
+
+  angular.module('BBAdminDashboard.logout', ['BBAdminDashboard.logout.controllers', 'BBAdminDashboard.logout.services', 'BBAdminDashboard.logout.directives']);
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BBAdminDashboard.members-iframe.controllers', []);
+
+  angular.module('BBAdminDashboard.members-iframe.services', []);
+
+  angular.module('BBAdminDashboard.members-iframe.directives', []);
+
+  angular.module('BBAdminDashboard.members-iframe.translations', []);
+
+  angular.module('BBAdminDashboard.members-iframe', ['BBAdminDashboard.members-iframe.controllers', 'BBAdminDashboard.members-iframe.services', 'BBAdminDashboard.members-iframe.directives', 'BBAdminDashboard.members-iframe.translations']);
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BBAdminDashboard.publish-iframe.controllers', []);
+
+  angular.module('BBAdminDashboard.publish-iframe.services', []);
+
+  angular.module('BBAdminDashboard.publish-iframe.directives', []);
+
+  angular.module('BBAdminDashboard.publish-iframe.translations', []);
+
+  angular.module('BBAdminDashboard.publish-iframe', ['BBAdminDashboard.publish-iframe.controllers', 'BBAdminDashboard.publish-iframe.services', 'BBAdminDashboard.publish-iframe.directives', 'BBAdminDashboard.publish-iframe.translations']);
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BBAdminDashboard.settings-iframe.controllers', []);
+
+  angular.module('BBAdminDashboard.settings-iframe.services', []);
+
+  angular.module('BBAdminDashboard.settings-iframe.directives', []);
+
+  angular.module('BBAdminDashboard.settings-iframe.translations', []);
+
+  angular.module('BBAdminDashboard.settings-iframe', ['BBAdminDashboard.settings-iframe.controllers', 'BBAdminDashboard.settings-iframe.services', 'BBAdminDashboard.settings-iframe.directives', 'BBAdminDashboard.settings-iframe.translations']);
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BBAdminDashboard.calendar').run(function(RuntimeStates, AdminCalendarOptions, SideNavigationPartials) {
+    'ngInject';
+    if (AdminCalendarOptions.use_default_states) {
+      RuntimeStates.state('calendar', {
+        parent: AdminCalendarOptions.parent_state,
+        url: "calendar",
+        templateUrl: "calendar/index.html",
+        controller: 'CalendarPageCtrl'
+      }).state('calendar.people', {
+        url: "/people/:assets",
+        templateUrl: "calendar/people.html"
+      }).state('calendar.resources', {
+        url: "/resources/:assets",
+        templateUrl: "calendar/resources.html"
+      });
+    }
+    if (AdminCalendarOptions.show_in_navigation) {
+      SideNavigationPartials.addPartialTemplate('calendar', 'calendar/nav.html');
+    }
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BBAdminDashboard.check-in').run(function(RuntimeStates, AdminCheckInOptions, SideNavigationPartials) {
+    'ngInject';
+    if (AdminCheckInOptions.use_default_states) {
+      RuntimeStates.state('checkin', {
+        parent: AdminCheckInOptions.parent_state,
+        url: "check-in",
+        templateUrl: "check-in/index.html",
+        controller: 'CheckInPageCtrl'
+      });
+    }
+    if (AdminCheckInOptions.show_in_navigation) {
+      SideNavigationPartials.addPartialTemplate('check-in', 'check-in/nav.html');
+    }
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BBAdminDashboard.clients').run(function(RuntimeStates, AdminClientsOptions, SideNavigationPartials) {
+    'ngInject';
+    if (AdminClientsOptions.use_default_states) {
+      RuntimeStates.state('clients', {
+        parent: AdminClientsOptions.parent_state,
+        url: "clients",
+        templateUrl: "clients/index.html",
+        controller: 'ClientsPageCtrl'
+      }).state('clients.new', {
+        url: "/new",
+        templateUrl: "client_new.html",
+        controller: 'ClientsNewPageCtrl'
+      }).state('clients.all', {
+        url: "/all",
+        templateUrl: "clients/listing.html",
+        controller: 'ClientsAllPageCtrl'
+      }).state('clients.edit', {
+        url: "/edit/:id",
+        templateUrl: "clients/item.html",
+        resolve: {
+          client: function(company, $stateParams, BBModel) {
+            var params;
+            params = {
+              company: company,
+              id: $stateParams.id
+            };
+            return BBModel.Admin.Client.$query(params);
+          }
+        },
+        controller: 'ClientsEditPageCtrl'
+      });
+    }
+    if (AdminClientsOptions.show_in_navigation) {
+      SideNavigationPartials.addPartialTemplate('clients', 'clients/nav.html');
+    }
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BBAdminDashboard.config-iframe').run(function(RuntimeStates, AdminConfigIframeOptions, SideNavigationPartials) {
+    'ngInject';
+    if (AdminConfigIframeOptions.use_default_states) {
+      RuntimeStates.state('config', {
+        parent: AdminConfigIframeOptions.parent_state,
+        url: 'config',
+        templateUrl: 'config-iframe/index.html',
+        controller: 'ConfigIframePageCtrl',
+        deepStateRedirect: {
+          "default": {
+            state: 'config.business.page',
+            params: {
+              path: 'person'
+            }
+          }
+        }
+      }).state('config.business', {
+        url: '/business',
+        templateUrl: 'core/tabbed-substates-page.html',
+        controller: 'ConfigIframeBusinessPageCtrl',
+        deepStateRedirect: {
+          "default": {
+            state: 'config.business.page',
+            params: {
+              path: 'person'
+            }
+          }
+        }
+      }).state('config.business.page', {
+        url: '/page/:path',
+        templateUrl: 'core/iframe-page.html',
+        controller: 'ConfigSubIframePageCtrl'
+      }).state('config.event-settings', {
+        url: '/event-settings',
+        templateUrl: 'core/tabbed-substates-page.html',
+        controller: 'ConfigIframeEventSettingsPageCtrl',
+        deepStateRedirect: {
+          "default": {
+            state: 'config.event-settings.page',
+            params: {
+              path: 'sessions/courses'
+            }
+          }
+        }
+      }).state('config.event-settings.page', {
+        url: '/page/:path',
+        templateUrl: 'core/iframe-page.html',
+        controller: 'ConfigSubIframePageCtrl'
+      }).state('config.promotions', {
+        url: '/promotions',
+        templateUrl: 'core/tabbed-substates-page.html',
+        controller: 'ConfigIframePromotionsPageCtrl',
+        deepStateRedirect: {
+          "default": {
+            state: 'config.promotions.page',
+            params: {
+              path: 'price/deal/summary'
+            }
+          }
+        }
+      }).state('config.promotions.page', {
+        url: '/page/:path',
+        templateUrl: 'core/iframe-page.html',
+        controller: 'ConfigSubIframePageCtrl'
+      }).state('config.booking-settings', {
+        url: '/booking-settings',
+        templateUrl: 'core/tabbed-substates-page.html',
+        controller: 'ConfigIframeBookingSettingsPageCtrl',
+        deepStateRedirect: {
+          "default": {
+            state: 'config.booking-settings.page',
+            params: {
+              path: 'detail_type'
+            }
+          }
+        }
+      }).state('config.booking-settings.page', {
+        url: '/page/:path',
+        templateUrl: 'core/iframe-page.html',
+        controller: 'ConfigSubIframePageCtrl'
+      });
+    }
+    if (AdminConfigIframeOptions.show_in_navigation) {
+      SideNavigationPartials.addPartialTemplate('config-iframe', 'config-iframe/nav.html');
+    }
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BBAdminDashboard').config(function($logProvider, $httpProvider) {
+    'ngInject';
+    $logProvider.debugEnabled(true);
+    $httpProvider.defaults.withCredentials = true;
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BBAdminDashboard').run(function(RuntimeStates, AdminCoreOptions, RuntimeRoutes, AdminLoginService) {
+    'ngInject';
+    RuntimeRoutes.otherwise('/');
+    RuntimeStates.state('root', {
+      url: '/',
+      templateUrl: "core/layout.html",
+      resolve: {
+        user: function($q, BBModel, AdminSsoLogin) {
+          var defer;
+          defer = $q.defer();
+          BBModel.Admin.Login.$user().then(function(user) {
+            if (user) {
+              return defer.resolve(user);
+            } else {
+              return AdminSsoLogin.ssoLoginPromise().then(function(admin) {
+                BBModel.Admin.Login.$setLogin(admin);
+                return BBModel.Admin.Login.$user().then(function(user) {
+                  return defer.resolve(user);
+                }, function(err) {
+                  return defer.reject({
+                    reason: 'GET_USER_ERROR',
+                    error: err
+                  });
+                });
+              }, function(err) {
+                return defer.reject({
+                  reason: 'NOT_LOGGABLE_ERROR'
+                });
+              });
+            }
+          }, function(err) {
+            return defer.reject({
+              reason: 'LOGIN_SERVICE_ERROR',
+              error: err
+            });
+          });
+          return defer.promise;
+        },
+        company: function(user, $q, BBModel) {
+          var defer;
+          defer = $q.defer();
+          user.$getCompany().then(function(company) {
+            if (company.companies && company.companies.length > 0) {
+              return defer.reject({
+                reason: 'COMPANY_IS_PARENT'
+              });
+            } else {
+              return defer.resolve(company);
+            }
+          }, function(err) {
+            return BBModel.Admin.Login.$logout().then(function() {
+              return defer.reject({
+                reason: 'GET_COMPANY_ERROR'
+              });
+            }, function(err) {
+              return defer.reject({
+                reason: 'LOGOUT_ERROR'
+              });
+            });
+          });
+          return defer.promise;
+        }
+      },
+      controller: 'CorePageController',
+      deepStateRedirect: {
+        "default": {
+          state: AdminCoreOptions.default_state
+        }
+      }
+    });
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BBAdminDashboard.dashboard-iframe').run(function(RuntimeStates, AdminDashboardIframeOptions, SideNavigationPartials) {
+    'ngInject';
+    if (AdminDashboardIframeOptions.use_default_states) {
+      RuntimeStates.state('dashboard', {
+        parent: AdminDashboardIframeOptions.parent_state,
+        url: "dashboard",
+        controller: "DashboardIframePageCtrl",
+        templateUrl: "dashboard-iframe/index.html",
+        deepStateRedirect: {
+          "default": {
+            state: 'dashboard.page',
+            params: {
+              path: 'view/dashboard/index',
+              fixed: true
+            }
+          }
+        }
+      }).state('dashboard.page', {
+        url: "/page/:path",
+        controller: 'DashboardSubIframePageCtrl',
+        templateUrl: "core/iframe-page.html"
+      });
+    }
+    if (AdminDashboardIframeOptions.show_in_navigation) {
+      SideNavigationPartials.addPartialTemplate('dashboard-iframe', 'dashboard-iframe/nav.html');
+    }
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BBAdminDashboard.login').run(function(RuntimeStates, AdminLoginOptions) {
+    'ngInject';
+    if (AdminLoginOptions.use_default_states) {
+      RuntimeStates.state('login', {
+        url: "/login",
         resolve: {
           user: function($q, BBModel, AdminSsoLogin) {
             var defer;
@@ -241,9 +462,7 @@
                     });
                   });
                 }, function(err) {
-                  return defer.reject({
-                    reason: 'NOT_LOGGABLE_ERROR'
-                  });
+                  return defer.resolve();
                 });
               }
             }, function(err) {
@@ -253,343 +472,182 @@
               });
             });
             return defer.promise;
-          },
-          company: function(user, $q, BBModel) {
-            var defer;
-            defer = $q.defer();
-            user.$getCompany().then(function(company) {
-              if (company.companies && company.companies.length > 0) {
-                return defer.reject({
-                  reason: 'COMPANY_IS_PARENT'
-                });
-              } else {
-                return defer.resolve(company);
-              }
-            }, function(err) {
-              return BBModel.Admin.Login.$logout().then(function() {
-                return defer.reject({
-                  reason: 'GET_COMPANY_ERROR'
-                });
-              }, function(err) {
-                return defer.reject({
-                  reason: 'LOGOUT_ERROR'
-                });
-              });
-            });
-            return defer.promise;
           }
         },
-        controller: 'CorePageController',
-        deepStateRedirect: {
-          "default": {
-            state: AdminCoreOptions.default_state
-          }
-        }
+        controller: "LoginPageCtrl",
+        templateUrl: "login/index.html"
       });
     }
-  ]).config(function($logProvider, $httpProvider) {
-    $logProvider.debugEnabled(true);
-    return $httpProvider.defaults.withCredentials = true;
   });
 
 }).call(this);
 
 (function() {
   'use strict';
-  angular.module('BBAdminDashboard.dashboard-iframe.controllers', []);
+  angular.module('BBAdminDashboard.logout').config(function($stateProvider, $urlRouterProvider) {
+    'ngInject';
+    $stateProvider.state('logout', {
+      url: '/logout',
+      controller: 'LogoutPageCtrl'
+    });
+  });
 
-  angular.module('BBAdminDashboard.dashboard-iframe.services', []);
+}).call(this);
 
-  angular.module('BBAdminDashboard.dashboard-iframe.directives', []);
-
-  angular.module('BBAdminDashboard.dashboard-iframe.translations', []);
-
-  angular.module('BBAdminDashboard.dashboard-iframe', ['BBAdminDashboard.dashboard-iframe.controllers', 'BBAdminDashboard.dashboard-iframe.services', 'BBAdminDashboard.dashboard-iframe.directives', 'BBAdminDashboard.dashboard-iframe.translations']).run([
-    'RuntimeStates', 'AdminDashboardIframeOptions', 'SideNavigationPartials', function(RuntimeStates, AdminDashboardIframeOptions, SideNavigationPartials) {
-      if (AdminDashboardIframeOptions.use_default_states) {
-        RuntimeStates.state('dashboard', {
-          parent: AdminDashboardIframeOptions.parent_state,
-          url: "dashboard",
-          controller: "DashboardIframePageCtrl",
-          templateUrl: "dashboard-iframe/index.html",
-          deepStateRedirect: {
-            "default": {
-              state: 'dashboard.page',
-              params: {
-                path: 'view/dashboard/index',
-                fixed: true
-              }
+(function() {
+  'use strict';
+  angular.module('BBAdminDashboard.members-iframe').run(function(RuntimeStates, AdminMembersIframeOptions, SideNavigationPartials) {
+    'ngInject';
+    if (AdminMembersIframeOptions.use_default_states) {
+      RuntimeStates.state('members', {
+        parent: AdminMembersIframeOptions.parent_state,
+        url: 'members',
+        templateUrl: 'members-iframe/index.html',
+        controller: 'MembersIframePageCtrl',
+        deepStateRedirect: {
+          "default": {
+            state: 'members.page',
+            params: {
+              path: 'client'
             }
           }
-        }).state('dashboard.page', {
-          url: "/page/:path",
-          controller: 'DashboardSubIframePageCtrl',
-          templateUrl: "core/iframe-page.html"
-        });
-      }
-      if (AdminDashboardIframeOptions.show_in_navigation) {
-        return SideNavigationPartials.addPartialTemplate('dashboard-iframe', 'dashboard-iframe/nav.html');
-      }
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BBAdminDashboard.login.controllers', []);
-
-  angular.module('BBAdminDashboard.login.services', []);
-
-  angular.module('BBAdminDashboard.login.directives', []);
-
-  angular.module('BBAdminDashboard.login.translations', []);
-
-  angular.module('BBAdminDashboard.login', ['BBAdminDashboard.login.controllers', 'BBAdminDashboard.login.services', 'BBAdminDashboard.login.directives', 'BBAdminDashboard.login.translations']).run([
-    'RuntimeStates', 'AdminLoginOptions', function(RuntimeStates, AdminLoginOptions) {
-      if (AdminLoginOptions.use_default_states) {
-        return RuntimeStates.state('login', {
-          url: "/login",
-          resolve: {
-            user: function($q, BBModel, AdminSsoLogin) {
-              var defer;
-              defer = $q.defer();
-              BBModel.Admin.Login.$user().then(function(user) {
-                if (user) {
-                  return defer.resolve(user);
-                } else {
-                  return AdminSsoLogin.ssoLoginPromise().then(function(admin) {
-                    BBModel.Admin.Login.$setLogin(admin);
-                    return BBModel.Admin.Login.$user().then(function(user) {
-                      return defer.resolve(user);
-                    }, function(err) {
-                      return defer.reject({
-                        reason: 'GET_USER_ERROR',
-                        error: err
-                      });
-                    });
-                  }, function(err) {
-                    return defer.resolve();
-                  });
-                }
-              }, function(err) {
-                return defer.reject({
-                  reason: 'LOGIN_SERVICE_ERROR',
-                  error: err
-                });
-              });
-              return defer.promise;
-            }
-          },
-          controller: "LoginPageCtrl",
-          templateUrl: "login/index.html"
-        });
-      }
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BBAdminDashboard.logout.controllers', []);
-
-  angular.module('BBAdminDashboard.logout.services', []);
-
-  angular.module('BBAdminDashboard.logout.directives', []);
-
-  angular.module('BBAdminDashboard.logout', ['BBAdminDashboard.logout.controllers', 'BBAdminDashboard.logout.services', 'BBAdminDashboard.logout.directives']).config([
-    '$stateProvider', '$urlRouterProvider', function($stateProvider, $urlRouterProvider) {
-      return $stateProvider.state('logout', {
-        url: '/logout',
-        controller: 'LogoutPageCtrl'
+        }
+      }).state('members.page', {
+        url: '/page/:path/:id',
+        templateUrl: 'core/boxed-iframe-page.html',
+        controller: 'MembersSubIframePageCtrl'
       });
     }
-  ]);
+    if (AdminMembersIframeOptions.show_in_navigation) {
+      SideNavigationPartials.addPartialTemplate('members-iframe', 'members-iframe/nav.html');
+    }
+  });
 
 }).call(this);
 
 (function() {
   'use strict';
-  angular.module('BBAdminDashboard.members-iframe.controllers', []);
-
-  angular.module('BBAdminDashboard.members-iframe.services', []);
-
-  angular.module('BBAdminDashboard.members-iframe.directives', []);
-
-  angular.module('BBAdminDashboard.members-iframe.translations', []);
-
-  angular.module('BBAdminDashboard.members-iframe', ['BBAdminDashboard.members-iframe.controllers', 'BBAdminDashboard.members-iframe.services', 'BBAdminDashboard.members-iframe.directives', 'BBAdminDashboard.members-iframe.translations']).run([
-    'RuntimeStates', 'AdminMembersIframeOptions', 'SideNavigationPartials', function(RuntimeStates, AdminMembersIframeOptions, SideNavigationPartials) {
-      if (AdminMembersIframeOptions.use_default_states) {
-        RuntimeStates.state('members', {
-          parent: AdminMembersIframeOptions.parent_state,
-          url: 'members',
-          templateUrl: 'members-iframe/index.html',
-          controller: 'MembersIframePageCtrl',
-          deepStateRedirect: {
-            "default": {
-              state: 'members.page',
-              params: {
-                path: 'client'
-              }
+  angular.module('BBAdminDashboard.publish-iframe').run(function(RuntimeStates, AdminPublishIframeOptions, SideNavigationPartials) {
+    'ngInject';
+    if (AdminPublishIframeOptions.use_default_states) {
+      RuntimeStates.state('publish', {
+        parent: AdminPublishIframeOptions.parent_state,
+        url: 'publish',
+        templateUrl: 'publish-iframe/index.html',
+        controller: 'PublishIframePageCtrl',
+        deepStateRedirect: {
+          "default": {
+            state: 'publish.page',
+            params: {
+              path: 'conf/inset/intro'
             }
           }
-        }).state('members.page', {
-          url: '/page/:path/:id',
-          templateUrl: 'core/boxed-iframe-page.html',
-          controller: 'MembersSubIframePageCtrl'
-        });
-      }
-      if (AdminMembersIframeOptions.show_in_navigation) {
-        return SideNavigationPartials.addPartialTemplate('members-iframe', 'members-iframe/nav.html');
-      }
+        }
+      }).state('publish.page', {
+        url: '/page/:path',
+        templateUrl: 'core/boxed-iframe-page.html',
+        controller: 'PublishSubIframePageCtrl'
+      });
     }
-  ]);
+    if (AdminPublishIframeOptions.show_in_navigation) {
+      SideNavigationPartials.addPartialTemplate('publish-iframe', 'publish-iframe/nav.html');
+    }
+  });
 
 }).call(this);
 
 (function() {
   'use strict';
-  angular.module('BBAdminDashboard.publish-iframe.controllers', []);
-
-  angular.module('BBAdminDashboard.publish-iframe.services', []);
-
-  angular.module('BBAdminDashboard.publish-iframe.directives', []);
-
-  angular.module('BBAdminDashboard.publish-iframe.translations', []);
-
-  angular.module('BBAdminDashboard.publish-iframe', ['BBAdminDashboard.publish-iframe.controllers', 'BBAdminDashboard.publish-iframe.services', 'BBAdminDashboard.publish-iframe.directives', 'BBAdminDashboard.publish-iframe.translations']).run([
-    'RuntimeStates', 'AdminPublishIframeOptions', 'SideNavigationPartials', function(RuntimeStates, AdminPublishIframeOptions, SideNavigationPartials) {
-      if (AdminPublishIframeOptions.use_default_states) {
-        RuntimeStates.state('publish', {
-          parent: AdminPublishIframeOptions.parent_state,
-          url: 'publish',
-          templateUrl: 'publish-iframe/index.html',
-          controller: 'PublishIframePageCtrl',
-          deepStateRedirect: {
-            "default": {
-              state: 'publish.page',
-              params: {
-                path: 'conf/inset/intro'
-              }
+  angular.module('BBAdminDashboard.settings-iframe').run(function(RuntimeStates, AdminSettingsIframeOptions, SideNavigationPartials) {
+    'ngInject';
+    if (AdminSettingsIframeOptions.use_default_states) {
+      RuntimeStates.state('settings', {
+        parent: AdminSettingsIframeOptions.parent_state,
+        url: "settings",
+        templateUrl: "settings-iframe/index.html",
+        deepStateRedirect: {
+          "default": {
+            state: "settings.page",
+            params: {
+              path: "company/mycompany"
+            }
+          },
+          params: true
+        }
+      }).state('settings.page', {
+        url: "/page/:path",
+        templateUrl: "core/boxed-iframe-page.html",
+        controller: 'SettingsSubIframePageCtrl'
+      }).state('settings.basic-settings', {
+        url: '/basic-settings',
+        templateUrl: 'core/tabbed-substates-page.html',
+        controller: 'SettingsIframeBasicSettingsPageCtrl',
+        deepStateRedirect: {
+          "default": {
+            state: 'settings.basic-settings.page',
+            params: {
+              path: 'conf/setting/user_edit'
             }
           }
-        }).state('publish.page', {
-          url: '/page/:path',
-          templateUrl: 'core/boxed-iframe-page.html',
-          controller: 'PublishSubIframePageCtrl'
-        });
-      }
-      if (AdminPublishIframeOptions.show_in_navigation) {
-        return SideNavigationPartials.addPartialTemplate('publish-iframe', 'publish-iframe/nav.html');
-      }
+        }
+      }).state('settings.basic-settings.page', {
+        url: '/page/:path',
+        templateUrl: 'core/iframe-page.html',
+        controller: 'SettingsSubIframePageCtrl'
+      }).state('settings.advanced-settings', {
+        url: '/advanced-settings',
+        templateUrl: 'core/tabbed-substates-page.html',
+        controller: 'SettingsIframeAdvancedSettingsPageCtrl',
+        deepStateRedirect: {
+          "default": {
+            state: 'settings.advanced-settings.page',
+            params: {
+              path: 'conf/payment/payment_edit'
+            }
+          }
+        }
+      }).state('settings.advanced-settings.page', {
+        url: '/page/:path',
+        templateUrl: 'core/iframe-page.html',
+        controller: 'SettingsSubIframePageCtrl'
+      }).state('settings.integrations', {
+        url: '/integrations',
+        templateUrl: 'core/tabbed-substates-page.html',
+        controller: 'SettingsIframeIntegrationsPageCtrl',
+        deepStateRedirect: {
+          "default": {
+            state: 'settings.integrations.page',
+            params: {
+              path: 'conf/addons/payment'
+            }
+          }
+        }
+      }).state('settings.integrations.page', {
+        url: '/page/:path',
+        templateUrl: 'core/iframe-page.html',
+        controller: 'SettingsSubIframePageCtrl'
+      }).state('settings.subscription', {
+        url: '/subscription',
+        templateUrl: 'core/tabbed-substates-page.html',
+        controller: 'SettingsIframeSubscriptionPageCtrl',
+        deepStateRedirect: {
+          "default": {
+            state: 'settings.subscription.page',
+            params: {
+              path: 'subscription/show'
+            }
+          }
+        }
+      }).state('settings.subscription.page', {
+        url: '/page/:path',
+        templateUrl: 'core/iframe-page.html',
+        controller: 'SettingsSubIframePageCtrl'
+      });
     }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BBAdminDashboard.settings-iframe.controllers', []);
-
-  angular.module('BBAdminDashboard.settings-iframe.services', []);
-
-  angular.module('BBAdminDashboard.settings-iframe.directives', []);
-
-  angular.module('BBAdminDashboard.settings-iframe.translations', []);
-
-  angular.module('BBAdminDashboard.settings-iframe', ['BBAdminDashboard.settings-iframe.controllers', 'BBAdminDashboard.settings-iframe.services', 'BBAdminDashboard.settings-iframe.directives', 'BBAdminDashboard.settings-iframe.translations']).run([
-    'RuntimeStates', 'AdminSettingsIframeOptions', 'SideNavigationPartials', function(RuntimeStates, AdminSettingsIframeOptions, SideNavigationPartials) {
-      if (AdminSettingsIframeOptions.use_default_states) {
-        RuntimeStates.state('settings', {
-          parent: AdminSettingsIframeOptions.parent_state,
-          url: "settings",
-          templateUrl: "settings-iframe/index.html",
-          deepStateRedirect: {
-            "default": {
-              state: "settings.page",
-              params: {
-                path: "company/mycompany"
-              }
-            },
-            params: true
-          }
-        }).state('settings.page', {
-          url: "/page/:path",
-          templateUrl: "core/boxed-iframe-page.html",
-          controller: 'SettingsSubIframePageCtrl'
-        }).state('settings.basic-settings', {
-          url: '/basic-settings',
-          templateUrl: 'core/tabbed-substates-page.html',
-          controller: 'SettingsIframeBasicSettingsPageCtrl',
-          deepStateRedirect: {
-            "default": {
-              state: 'settings.basic-settings.page',
-              params: {
-                path: 'conf/setting/user_edit'
-              }
-            }
-          }
-        }).state('settings.basic-settings.page', {
-          url: '/page/:path',
-          templateUrl: 'core/iframe-page.html',
-          controller: 'SettingsSubIframePageCtrl'
-        }).state('settings.advanced-settings', {
-          url: '/advanced-settings',
-          templateUrl: 'core/tabbed-substates-page.html',
-          controller: 'SettingsIframeAdvancedSettingsPageCtrl',
-          deepStateRedirect: {
-            "default": {
-              state: 'settings.advanced-settings.page',
-              params: {
-                path: 'conf/payment/payment_edit'
-              }
-            }
-          }
-        }).state('settings.advanced-settings.page', {
-          url: '/page/:path',
-          templateUrl: 'core/iframe-page.html',
-          controller: 'SettingsSubIframePageCtrl'
-        }).state('settings.integrations', {
-          url: '/integrations',
-          templateUrl: 'core/tabbed-substates-page.html',
-          controller: 'SettingsIframeIntegrationsPageCtrl',
-          deepStateRedirect: {
-            "default": {
-              state: 'settings.integrations.page',
-              params: {
-                path: 'conf/addons/payment'
-              }
-            }
-          }
-        }).state('settings.integrations.page', {
-          url: '/page/:path',
-          templateUrl: 'core/iframe-page.html',
-          controller: 'SettingsSubIframePageCtrl'
-        }).state('settings.subscription', {
-          url: '/subscription',
-          templateUrl: 'core/tabbed-substates-page.html',
-          controller: 'SettingsIframeSubscriptionPageCtrl',
-          deepStateRedirect: {
-            "default": {
-              state: 'settings.subscription.page',
-              params: {
-                path: 'subscription/show'
-              }
-            }
-          }
-        }).state('settings.subscription.page', {
-          url: '/page/:path',
-          templateUrl: 'core/iframe-page.html',
-          controller: 'SettingsSubIframePageCtrl'
-        });
-      }
-      if (AdminSettingsIframeOptions.show_in_navigation) {
-        return SideNavigationPartials.addPartialTemplate('settings-iframe', 'settings-iframe/nav.html');
-      }
+    if (AdminSettingsIframeOptions.show_in_navigation) {
+      SideNavigationPartials.addPartialTemplate('settings-iframe', 'settings-iframe/nav.html');
     }
-  ]);
+  });
 
 }).call(this);
 
