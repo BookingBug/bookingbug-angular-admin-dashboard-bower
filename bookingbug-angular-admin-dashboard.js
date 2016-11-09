@@ -2783,15 +2783,15 @@
    */
   var controller;
 
-  controller = function($scope, $state, company, $uibModalStack, $rootScope, SettingsService) {
+  controller = function($scope, $state, company, $uibModalStack, $rootScope, GeneralOptions, CompanyStoreService) {
     'ngInject';
     $scope.company = company;
     $scope.bb.company = company;
     $scope.user = $rootScope.user;
     moment.tz.setDefault(company.timezone);
-    SettingsService.setCountryCode(company.country_code);
-    SettingsService.setCurrency(company.currency_code);
-    SettingsService.setTimeZone(company.timezone);
+    CompanyStoreService.country_code = company.country_code;
+    CompanyStoreService.currency_code = company.currency_code;
+    CompanyStoreService.time_zone = company.timezone;
     $scope.isState = function(states) {
       return $state.includes(states);
     };
