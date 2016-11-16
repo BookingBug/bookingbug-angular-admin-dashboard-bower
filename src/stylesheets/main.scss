@@ -14,13 +14,14 @@ html,body {
   @import "ng-scrollable";
   @import "switch";
 
-	/*BB specific CSS*/
-	@import "animations";
-	@import "general";
-	@import "login";
+  /*BB specific CSS*/
+  @import "animations";
+  @import "general";
+  @import "login";
+  @import "form";
 
-	@import "default-theme";
-	@import "resource-calendar";
+  @import "default-theme";
+  @import "resource-calendar";
   @import "widget";
 }
 
