@@ -3879,7 +3879,7 @@
               show_pick_department: false,
               show_loading: false
             };
-            $scope.login = {
+            $scope.login_form = {
               email: null,
               password: null,
               selected_admin: null,
@@ -3910,21 +3910,21 @@
                     return $scope.template_vars.show_pick_company = true;
                   } else if (administrators.length === 1) {
                     params = {
-                      email: $scope.login.email,
-                      password: $scope.login.password
+                      email: $scope.login_form.email,
+                      password: $scope.login_form.password
                     };
-                    $scope.login.selected_admin = _.first(administrators);
-                    return $scope.login.selected_admin.$post('login', {}, params).then(function(login) {
-                      return $scope.login.selected_admin.$getCompany().then(function(company) {
+                    $scope.login_form.selected_admin = _.first(administrators);
+                    return $scope.login_form.selected_admin.$post('login', {}, params).then(function(login) {
+                      return $scope.login_form.selected_admin.$getCompany().then(function(company) {
                         $scope.template_vars.show_loading = false;
                         if (company.companies && company.companies.length > 0) {
                           $scope.template_vars.show_pick_department = true;
                           return $scope.departments = company.companies;
                         } else {
-                          $scope.login.selected_company = company;
-                          BBModel.Admin.Login.$setLogin($scope.login.selected_admin);
-                          return BBModel.Admin.Login.$setCompany($scope.login.selected_company.id).then(function(user) {
-                            return $scope.onSuccess($scope.login.selected_company);
+                          $scope.login_form.selected_company = company;
+                          BBModel.Admin.Login.$setLogin($scope.login_form.selected_admin);
+                          return BBModel.Admin.Login.$setCompany($scope.login_form.selected_company.id).then(function(user) {
+                            return $scope.onSuccess($scope.login_form.selected_company);
                           });
                         }
                       });
@@ -3940,7 +3940,7 @@
                   }
                 });
               } else if (user.$has('company')) {
-                $scope.login.selected_admin = user;
+                $scope.login_form.selected_admin = user;
                 return user.$getCompany().then(function(company) {
                   if (company.companies && company.companies.length > 0) {
                     $scope.template_vars.show_loading = false;
@@ -3948,10 +3948,10 @@
                     $scope.template_vars.show_login = false;
                     return $scope.departments = company.companies;
                   } else {
-                    $scope.login.selected_company = company;
-                    BBModel.Admin.Login.$setLogin($scope.login.selected_admin);
-                    return BBModel.Admin.Login.$setCompany($scope.login.selected_company.id).then(function(user) {
-                      return $scope.onSuccess($scope.login.selected_company);
+                    $scope.login_form.selected_company = company;
+                    BBModel.Admin.Login.$setLogin($scope.login_form.selected_admin);
+                    return BBModel.Admin.Login.$setCompany($scope.login_form.selected_company.id).then(function(user) {
+                      return $scope.onSuccess($scope.login_form.selected_company);
                     });
                   }
                 }, function(err) {
@@ -3984,16 +3984,16 @@
               if (isValid) {
                 $scope.template_vars.show_loading = true;
                 if (AdminLoginOptions.show_api_field) {
-                  if ($scope.login.site.indexOf("http") === -1) {
-                    $scope.login.site = "https://" + $scope.login.site;
+                  if ($scope.login_form.site.indexOf("http") === -1) {
+                    $scope.login_form.site = "https://" + $scope.login_form.site;
                   }
-                  $scope.bb.api_url = $scope.login.site;
-                  $rootScope.bb.api_url = $scope.login.site;
-                  $localStorage.setItem("api_url", $scope.login.site);
+                  $scope.bb.api_url = $scope.login_form.site;
+                  $rootScope.bb.api_url = $scope.login_form.site;
+                  $localStorage.setItem("api_url", $scope.login_form.site);
                 }
                 params = {
-                  email: $scope.login.email,
-                  password: $scope.login.password
+                  email: $scope.login_form.email,
+                  password: $scope.login_form.password
                 };
                 return BBModel.Admin.Login.$login(params).then(function(user) {
                   return companySelection(user);
@@ -4014,17 +4014,17 @@
               $scope.template_vars.show_loading = true;
               $scope.template_vars.show_pick_department = false;
               params = {
-                email: $scope.login.email,
-                password: $scope.login.password
+                email: $scope.login_form.email,
+                password: $scope.login_form.password
               };
-              return $scope.login.selected_admin.$post('login', {}, params).then(function(login) {
-                return $scope.login.selected_admin.$getCompany().then(function(company) {
+              return $scope.login_form.selected_admin.$post('login', {}, params).then(function(login) {
+                return $scope.login_form.selected_admin.$getCompany().then(function(company) {
                   $scope.template_vars.show_loading = false;
                   if (company.companies && company.companies.length > 0) {
                     $scope.template_vars.show_pick_department = true;
                     return $scope.departments = company.companies;
                   } else {
-                    return $scope.login.selected_company = company;
+                    return $scope.login_form.selected_company = company;
                   }
                 });
               });
@@ -4032,10 +4032,10 @@
             return $scope.selectCompanyDepartment = function(isValid) {
               $scope.template_vars.show_loading = true;
               if (isValid) {
-                $scope.bb.company = $scope.login.selected_company;
-                BBModel.Admin.Login.$setLogin($scope.login.selected_admin);
-                return BBModel.Admin.Login.$setCompany($scope.login.selected_company.id).then(function(user) {
-                  return $scope.onSuccess($scope.login.selected_company);
+                $scope.bb.company = $scope.login_form.selected_company;
+                BBModel.Admin.Login.$setLogin($scope.login_form.selected_admin);
+                return BBModel.Admin.Login.$setCompany($scope.login_form.selected_company.id).then(function(user) {
+                  return $scope.onSuccess($scope.login_form.selected_company);
                 });
               }
             };
