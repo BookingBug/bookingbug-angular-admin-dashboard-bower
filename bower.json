@@ -1,6 +1,6 @@
 {
   "name": "bookingbug-angular-admin-dashboard",
-  "version": "1.4.101",
+  "version": "1.4.102",
   "homepage": "https://github.com/BookingBug/bookingbug-angular-admin-dashboard-bower",
   "authors": [
     "Glenn Shoosmith <glenn@bookingbug.com>",
@@ -20,10 +20,10 @@
     "tests"
   ],
   "dependencies": {
-    "bookingbug-angular-core": "1.4.101",
-    "bookingbug-angular-admin": "1.4.101",
-    "bookingbug-angular-admin-booking": "1.4.101",
-    "bookingbug-angular-services": "1.4.101",
+    "bookingbug-angular-core": "1.4.102",
+    "bookingbug-angular-admin": "1.4.102",
+    "bookingbug-angular-admin-booking": "1.4.102",
+    "bookingbug-angular-services": "1.4.102",
     "fullcalendar": "2.7.2",
     "fullcalendar-scheduler": "1.3.1",
     "jqueryui-touch-punch": "*",
@@ -45,8 +45,8 @@
     "moment": "~2.13.0",
     "jquery": "~1.11.2",
     "fullcalendar": "2.7.2",
-    "bookingbug-angular-core": "1.4.101",
+    "bookingbug-angular-core": "1.4.102",
     "components-font-awesome": "~4.5",
-    "bookingbug-angular-admin": "1.4.101"
+    "bookingbug-angular-admin": "1.4.102"
   }
 }
