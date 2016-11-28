@@ -56,7 +56,7 @@
 
 (function() {
   'use strict';
-  angular.module('BBAdminDashboard', ['ngStorage', 'ngResource', 'ngTouch', 'ngSanitize', 'ngLocalData', 'ngCookies', 'BBAdmin', 'BBAdminServices', 'BBAdminBooking', 'BBAdmin.Directives', 'BBMember', 'ui.calendar', 'ui.bootstrap', 'ui.router', 'ct.ui.router.extras', 'trNgGrid', 'toggle-switch', 'pascalprecht.translate', 'angular-loading-bar', 'ngScrollable', 'toastr', 'BBAdminDashboard.check-in', 'BBAdminDashboard.clients', 'BBAdminDashboard.login', 'BBAdminDashboard.logout', 'BBAdminDashboard.calendar', 'BBAdminDashboard.dashboard-iframe', 'BBAdminDashboard.members-iframe', 'BBAdminDashboard.settings-iframe', 'BBAdminDashboard.config-iframe', 'BBAdminDashboard.publish-iframe']);
+  angular.module('BBAdminDashboard', ['ngStorage', 'ngResource', 'ngTouch', 'ngSanitize', 'ngLocalData', 'ngCookies', 'ngMessages', 'BBAdmin', 'BBAdminServices', 'BBAdminBooking', 'BBAdmin.Directives', 'BBMember', 'ui.calendar', 'ui.bootstrap', 'ui.router', 'ct.ui.router.extras', 'trNgGrid', 'toggle-switch', 'pascalprecht.translate', 'angular-loading-bar', 'ngScrollable', 'toastr', 'BBAdminDashboard.check-in', 'BBAdminDashboard.clients', 'BBAdminDashboard.login', 'BBAdminDashboard.logout', 'BBAdminDashboard.reset-password', 'BBAdminDashboard.calendar', 'BBAdminDashboard.dashboard-iframe', 'BBAdminDashboard.members-iframe', 'BBAdminDashboard.settings-iframe', 'BBAdminDashboard.config-iframe', 'BBAdminDashboard.publish-iframe']);
 
 }).call(this);
 
@@ -125,6 +125,12 @@
   angular.module('BBAdminDashboard.publish-iframe.translations', []);
 
   angular.module('BBAdminDashboard.publish-iframe', ['BBAdminDashboard.publish-iframe.controllers', 'BBAdminDashboard.publish-iframe.services', 'BBAdminDashboard.publish-iframe.directives', 'BBAdminDashboard.publish-iframe.translations']);
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BBAdminDashboard.reset-password', []);
 
 }).call(this);
 
@@ -552,6 +558,19 @@
     if (AdminPublishIframeOptions.show_in_navigation) {
       SideNavigationPartials.addPartialTemplate('publish-iframe', 'publish-iframe/nav.html');
     }
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BBAdminDashboard.reset-password').config(function($stateProvider, $urlRouterProvider) {
+    'ngInject';
+    $stateProvider.state('reset-password', {
+      url: '/reset-password',
+      controller: 'ResetPasswordPageCtrl',
+      templateUrl: "reset-password/index.html"
+    });
   });
 
 }).call(this);
@@ -3402,7 +3421,11 @@
           $log.warn(err, error_string);
           this.setLoaded(scope);
           if (err.status === 409) {
-            return AlertService.danger(ErrorService.getError('ITEM_NO_LONGER_AVAILABLE'));
+            if (err.data.error === 'Rule checking failed') {
+              return AlertService.danger(ErrorService.createCustomError(err.data.message));
+            } else {
+              return AlertService.danger(ErrorService.getError('ITEM_NO_LONGER_AVAILABLE'));
+            }
           } else if (err.data && err.data.error === "Number of Bookings exceeds the maximum") {
             return AlertService.danger(ErrorService.getError('MAXIMUM_TICKETS'));
           } else {
@@ -3869,136 +3892,67 @@
           user: '=?'
         },
         templateUrl: 'login/admin-dashboard-login.html',
-        controller: [
-          '$scope', '$rootScope', 'BBModel', '$q', '$localStorage', 'AdminLoginOptions', function($scope, $rootScope, BBModel, $q, $localStorage, AdminLoginOptions) {
-            var companySelection, formErrorExists;
-            $scope.template_vars = {
-              show_api_field: AdminLoginOptions.show_api_field,
-              show_login: true,
-              show_pick_company: false,
-              show_pick_department: false,
-              show_loading: false
-            };
-            $scope.login_form = {
-              email: null,
-              password: null,
-              selected_admin: null,
-              selected_company: null,
-              site: $localStorage.getItem("api_url")
-            };
-            $scope.formErrors = [];
-            formErrorExists = function(message) {
-              var i, len, obj, ref;
-              ref = $scope.formErrors;
-              for (i = 0, len = ref.length; i < len; i++) {
-                obj = ref[i];
-                if (obj.message.match(message)) {
-                  return true;
-                }
+        controller: function($scope, $rootScope, BBModel, $q, $localStorage, $state, AdminLoginOptions) {
+          'ngInject';
+          var companySelection, formErrorExists;
+          $scope.template_vars = {
+            show_api_field: AdminLoginOptions.show_api_field,
+            show_login: true,
+            show_pick_company: false,
+            show_pick_department: false,
+            show_loading: false
+          };
+          $scope.login_form = {
+            email: null,
+            password: null,
+            selected_admin: null,
+            selected_company: null,
+            site: $localStorage.getItem("api_url")
+          };
+          $scope.formErrors = [];
+          formErrorExists = function(message) {
+            var i, len, obj, ref;
+            ref = $scope.formErrors;
+            for (i = 0, len = ref.length; i < len; i++) {
+              obj = ref[i];
+              if (obj.message.match(message)) {
+                return true;
               }
-              return false;
-            };
-            companySelection = function(user) {
-              var message;
-              if (user.$has('administrators')) {
-                return user.$getAdministrators().then(function(administrators) {
-                  var message, params;
-                  $scope.administrators = administrators;
-                  if (administrators.length > 1) {
-                    $scope.template_vars.show_loading = false;
-                    $scope.template_vars.show_login = false;
-                    return $scope.template_vars.show_pick_company = true;
-                  } else if (administrators.length === 1) {
-                    params = {
-                      email: $scope.login_form.email,
-                      password: $scope.login_form.password
-                    };
-                    $scope.login_form.selected_admin = _.first(administrators);
-                    return $scope.login_form.selected_admin.$post('login', {}, params).then(function(login) {
-                      return $scope.login_form.selected_admin.$getCompany().then(function(company) {
-                        $scope.template_vars.show_loading = false;
-                        if (company.companies && company.companies.length > 0) {
-                          $scope.template_vars.show_pick_department = true;
-                          return $scope.departments = company.companies;
-                        } else {
-                          $scope.login_form.selected_company = company;
-                          BBModel.Admin.Login.$setLogin($scope.login_form.selected_admin);
-                          return BBModel.Admin.Login.$setCompany($scope.login_form.selected_company.id).then(function(user) {
-                            return $scope.onSuccess($scope.login_form.selected_company);
-                          });
-                        }
-                      });
-                    });
-                  } else {
-                    $scope.template_vars.show_loading = false;
-                    message = "ADMIN_DASHBOARD.LOGIN_PAGE.ERROR_INCORRECT_CREDS";
-                    if (!formErrorExists(message)) {
-                      return $scope.formErrors.push({
-                        message: message
-                      });
-                    }
-                  }
-                });
-              } else if (user.$has('company')) {
-                $scope.login_form.selected_admin = user;
-                return user.$getCompany().then(function(company) {
-                  if (company.companies && company.companies.length > 0) {
-                    $scope.template_vars.show_loading = false;
-                    $scope.template_vars.show_pick_department = true;
-                    $scope.template_vars.show_login = false;
-                    return $scope.departments = company.companies;
-                  } else {
-                    $scope.login_form.selected_company = company;
-                    BBModel.Admin.Login.$setLogin($scope.login_form.selected_admin);
-                    return BBModel.Admin.Login.$setCompany($scope.login_form.selected_company.id).then(function(user) {
-                      return $scope.onSuccess($scope.login_form.selected_company);
-                    });
-                  }
-                }, function(err) {
-                  var message;
-                  $scope.template_vars.show_loading = false;
-                  message = "ADMIN_DASHBOARD.LOGIN_PAGE.ERROR_ISSUE_WITH_COMPANY";
-                  if (!formErrorExists(message)) {
-                    return $scope.formErrors.push({
-                      message: message
-                    });
-                  }
-                });
-              } else {
-                $scope.template_vars.show_loading = false;
-                message = "ADMIN_DASHBOARD.LOGIN_PAGE.ERROR_ACCOUNT_ISSUES";
-                if (!formErrorExists(message)) {
-                  return $scope.formErrors.push({
-                    message: message
-                  });
-                }
-              }
-            };
-            if ($scope.user) {
-              $scope.template_vars.show_pick_department = true;
-              $scope.template_vars.show_login = false;
-              companySelection($scope.user);
             }
-            $scope.login = function(isValid) {
-              var params;
-              if (isValid) {
-                $scope.template_vars.show_loading = true;
-                if (AdminLoginOptions.show_api_field) {
-                  if ($scope.login_form.site.indexOf("http") === -1) {
-                    $scope.login_form.site = "https://" + $scope.login_form.site;
-                  }
-                  $scope.bb.api_url = $scope.login_form.site;
-                  $rootScope.bb.api_url = $scope.login_form.site;
-                  $localStorage.setItem("api_url", $scope.login_form.site);
-                }
-                params = {
-                  email: $scope.login_form.email,
-                  password: $scope.login_form.password
-                };
-                return BBModel.Admin.Login.$login(params).then(function(user) {
-                  return companySelection(user);
-                }, function(err) {
-                  var message;
+            return false;
+          };
+          companySelection = function(user) {
+            var message;
+            if (user.$has('administrators')) {
+              return user.$getAdministrators().then(function(administrators) {
+                var message, params;
+                $scope.administrators = administrators;
+                if (administrators.length > 1) {
+                  $scope.template_vars.show_loading = false;
+                  $scope.template_vars.show_login = false;
+                  return $scope.template_vars.show_pick_company = true;
+                } else if (administrators.length === 1) {
+                  params = {
+                    email: $scope.login_form.email,
+                    password: $scope.login_form.password
+                  };
+                  $scope.login_form.selected_admin = _.first(administrators);
+                  return $scope.login_form.selected_admin.$post('login', {}, params).then(function(login) {
+                    return $scope.login_form.selected_admin.$getCompany().then(function(company) {
+                      $scope.template_vars.show_loading = false;
+                      if (company.companies && company.companies.length > 0) {
+                        $scope.template_vars.show_pick_department = true;
+                        return $scope.departments = company.companies;
+                      } else {
+                        $scope.login_form.selected_company = company;
+                        BBModel.Admin.Login.$setLogin($scope.login_form.selected_admin);
+                        return BBModel.Admin.Login.$setCompany($scope.login_form.selected_company.id).then(function(user) {
+                          return $scope.onSuccess($scope.login_form.selected_company);
+                        });
+                      }
+                    });
+                  });
+                } else {
                   $scope.template_vars.show_loading = false;
                   message = "ADMIN_DASHBOARD.LOGIN_PAGE.ERROR_INCORRECT_CREDS";
                   if (!formErrorExists(message)) {
@@ -4006,41 +3960,113 @@
                       message: message
                     });
                   }
+                }
+              });
+            } else if (user.$has('company')) {
+              $scope.login_form.selected_admin = user;
+              return user.$getCompany().then(function(company) {
+                if (company.companies && company.companies.length > 0) {
+                  $scope.template_vars.show_loading = false;
+                  $scope.template_vars.show_pick_department = true;
+                  $scope.template_vars.show_login = false;
+                  return $scope.departments = company.companies;
+                } else {
+                  $scope.login_form.selected_company = company;
+                  BBModel.Admin.Login.$setLogin($scope.login_form.selected_admin);
+                  return BBModel.Admin.Login.$setCompany($scope.login_form.selected_company.id).then(function(user) {
+                    return $scope.onSuccess($scope.login_form.selected_company);
+                  });
+                }
+              }, function(err) {
+                var message;
+                $scope.template_vars.show_loading = false;
+                message = "ADMIN_DASHBOARD.LOGIN_PAGE.ERROR_ISSUE_WITH_COMPANY";
+                if (!formErrorExists(message)) {
+                  return $scope.formErrors.push({
+                    message: message
+                  });
+                }
+              });
+            } else {
+              $scope.template_vars.show_loading = false;
+              message = "ADMIN_DASHBOARD.LOGIN_PAGE.ERROR_ACCOUNT_ISSUES";
+              if (!formErrorExists(message)) {
+                return $scope.formErrors.push({
+                  message: message
                 });
               }
-            };
-            $scope.pickCompany = function() {
-              var params;
+            }
+          };
+          if ($scope.user) {
+            $scope.template_vars.show_pick_department = true;
+            $scope.template_vars.show_login = false;
+            companySelection($scope.user);
+          }
+          $scope.login = function(isValid) {
+            var params;
+            if (isValid) {
               $scope.template_vars.show_loading = true;
-              $scope.template_vars.show_pick_department = false;
+              if (AdminLoginOptions.show_api_field) {
+                $scope.login_form.site = $scope.login_form.site.replace(/\/+$/, '');
+                if ($scope.login_form.site.indexOf("http") === -1) {
+                  $scope.login_form.site = "https://" + $scope.login_form.site;
+                }
+                $scope.bb.api_url = $scope.login_form.site;
+                $rootScope.bb.api_url = $scope.login_form.site;
+                $localStorage.setItem("api_url", $scope.login_form.site);
+              }
               params = {
                 email: $scope.login_form.email,
                 password: $scope.login_form.password
               };
-              return $scope.login_form.selected_admin.$post('login', {}, params).then(function(login) {
-                return $scope.login_form.selected_admin.$getCompany().then(function(company) {
-                  $scope.template_vars.show_loading = false;
-                  if (company.companies && company.companies.length > 0) {
-                    $scope.template_vars.show_pick_department = true;
-                    return $scope.departments = company.companies;
-                  } else {
-                    return $scope.login_form.selected_company = company;
-                  }
-                });
+              return BBModel.Admin.Login.$login(params).then(function(user) {
+                return companySelection(user);
+              }, function(err) {
+                var message;
+                $scope.template_vars.show_loading = false;
+                message = "ADMIN_DASHBOARD.LOGIN_PAGE.ERROR_INCORRECT_CREDS";
+                if (!formErrorExists(message)) {
+                  return $scope.formErrors.push({
+                    message: message
+                  });
+                }
               });
+            }
+          };
+          $scope.goToResetPassword = function() {
+            return $state.go('reset-password');
+          };
+          $scope.pickCompany = function() {
+            var params;
+            $scope.template_vars.show_loading = true;
+            $scope.template_vars.show_pick_department = false;
+            params = {
+              email: $scope.login_form.email,
+              password: $scope.login_form.password
             };
-            return $scope.selectCompanyDepartment = function(isValid) {
-              $scope.template_vars.show_loading = true;
-              if (isValid) {
-                $scope.bb.company = $scope.login_form.selected_company;
-                BBModel.Admin.Login.$setLogin($scope.login_form.selected_admin);
-                return BBModel.Admin.Login.$setCompany($scope.login_form.selected_company.id).then(function(user) {
-                  return $scope.onSuccess($scope.login_form.selected_company);
-                });
-              }
-            };
-          }
-        ]
+            return $scope.login_form.selected_admin.$post('login', {}, params).then(function(login) {
+              return $scope.login_form.selected_admin.$getCompany().then(function(company) {
+                $scope.template_vars.show_loading = false;
+                if (company.companies && company.companies.length > 0) {
+                  $scope.template_vars.show_pick_department = true;
+                  return $scope.departments = company.companies;
+                } else {
+                  return $scope.login_form.selected_company = company;
+                }
+              });
+            });
+          };
+          return $scope.selectCompanyDepartment = function(isValid) {
+            $scope.template_vars.show_loading = true;
+            if (isValid) {
+              $scope.bb.company = $scope.login_form.selected_company;
+              BBModel.Admin.Login.$setLogin($scope.login_form.selected_admin);
+              return BBModel.Admin.Login.$setCompany($scope.login_form.selected_company.id).then(function(user) {
+                return $scope.onSuccess($scope.login_form.selected_company);
+              });
+            }
+          };
+        }
       };
     }
   ]);
@@ -4236,7 +4262,8 @@
             'USERNAME': 'Username',
             'ERROR_ISSUE_WITH_COMPANY': 'Sorry, there seems to be a problem with the company associated with this account',
             'ERROR_INCORRECT_CREDS': 'Sorry, either your email or password was incorrect',
-            'ERROR_ACCOUNT_ISSUES': 'Sorry, there seems to be a problem with this account'
+            'ERROR_ACCOUNT_ISSUES': 'Sorry, there seems to be a problem with this account',
+            'ERROR_REQUIRED': 'This field is required.'
           }
         }
       });
@@ -4554,6 +4581,329 @@
               'BOOK_NOW_BUTTONS': '\'Book Now\' buttons',
               'OTHER_TOOLS': 'Other tools'
             }
+          }
+        }
+      });
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.reset-password.controller:ResetPasswordCtrl
+   *
+  * @description
+  * Controller for the reset password functionality
+   */
+  var ResetPasswordCtrl;
+
+  ResetPasswordCtrl = function($scope, $state, AdminLoginOptions, AdminLoginService, QueryStringService, ValidatorService, ResetPasswordService, ResetPasswordSchemaFormService) {
+    'ngInject';
+    var $resetPasswordCtrl, fetchSchemaForm, formErrorExists, init;
+    $resetPasswordCtrl = this;
+    init = function() {
+      if ($scope.baseUrl == null) {
+        $scope.baseUrl = $resetPasswordCtrl.resetPasswordSite;
+      }
+      $resetPasswordCtrl.showApiField = AdminLoginOptions.show_api_field;
+      $resetPasswordCtrl.resetPasswordSuccess = false;
+      $resetPasswordCtrl.showLoading = false;
+      if ($resetPasswordCtrl.showApiField) {
+        $resetPasswordCtrl.resetPasswordSite = angular.copy($scope.bb.api_url);
+      }
+      $resetPasswordCtrl.validator = ValidatorService;
+      $resetPasswordCtrl.formErrors = [];
+      if ((QueryStringService('reset_password_token') != null) && QueryStringService('reset_password_token') !== 'undefined' && QueryStringService('reset_password_token') !== '') {
+        $resetPasswordCtrl.resetPasswordTemplate = 'reset-password/reset-password-by-token.html';
+        fetchSchemaForm();
+      } else {
+        $resetPasswordCtrl.resetPasswordTemplate = 'reset-password/reset-password.html';
+      }
+    };
+    formErrorExists = function(message) {
+      var i, len, obj, ref;
+      ref = $resetPasswordCtrl.formErrors;
+      for (i = 0, len = ref.length; i < len; i++) {
+        obj = ref[i];
+        if (obj.message.match(message)) {
+          return true;
+        }
+      }
+      return false;
+    };
+    fetchSchemaForm = function() {
+      ResetPasswordSchemaFormService.getSchemaForm($scope.baseUrl).then(function(response) {
+        $resetPasswordCtrl.resetPasswordSchema = angular.copy(response.data.schema);
+        ResetPasswordSchemaFormService.setPasswordPattern($resetPasswordCtrl.resetPasswordSchema.properties.password.pattern);
+        return $resetPasswordCtrl.reset_password_pattern = ResetPasswordSchemaFormService.getPasswordPattern();
+      }, function(err) {
+        ResetPasswordSchemaFormService.setPasswordPattern('^(?=[^\\s]*[^a-zA-Z])(?=[^\\s]*[a-zA-Z])[^\\s]{7,25}$');
+        return $resetPasswordCtrl.reset_password_pattern = ResetPasswordSchemaFormService.getPasswordPattern();
+      });
+    };
+    $resetPasswordCtrl.goBackToLogin = function() {
+      $state.go('login');
+    };
+    $resetPasswordCtrl.sendResetPassword = function(email, resetPasswordSite) {
+      $resetPasswordCtrl.showLoading = true;
+      if ($resetPasswordCtrl.showApiField && resetPasswordSite !== '') {
+        $resetPasswordCtrl.resetPasswordSite = resetPasswordSite.replace(/\/+$/, '');
+        if ($resetPasswordCtrl.resetPasswordSite.indexOf("http") === -1) {
+          $resetPasswordCtrl.resetPasswordSite = "https://" + $resetPasswordCtrl.resetPasswordSite;
+        }
+        $scope.baseUrl = $resetPasswordCtrl.resetPasswordSite;
+      }
+      ResetPasswordService.postRequest(email, $scope.baseUrl).then(function(response) {
+        $resetPasswordCtrl.resetPasswordSuccess = true;
+        return $resetPasswordCtrl.showLoading = false;
+      }, function(err) {
+        var message;
+        $resetPasswordCtrl.resetPasswordSuccess = false;
+        $resetPasswordCtrl.showLoading = false;
+        message = "ADMIN_DASHBOARD.RESET_PASSWORD_PAGE.FORM_SUBMIT_FAIL_MSG";
+        if (!formErrorExists(message)) {
+          return $resetPasswordCtrl.formErrors.push({
+            message: message
+          });
+        }
+      });
+    };
+    $resetPasswordCtrl.submitSchemaForm = function(password) {
+      $resetPasswordCtrl.showLoading = true;
+      ResetPasswordSchemaFormService.postSchemaForm(password, $scope.baseUrl).then(function(response) {
+        var loginForm;
+        $resetPasswordCtrl.resetPasswordSuccess = true;
+        loginForm = {
+          "email": response.data.email,
+          "password": password
+        };
+        return AdminLoginService.login(loginForm).then(function(response) {
+          return $state.go('login');
+        }, function(err) {
+          $resetPasswordCtrl.showLoading = false;
+          return $resetPasswordCtrl.formErrors.push({
+            message: "ADMIN_DASHBOARD.LOGIN_PAGE.ERROR_ISSUE_WITH_COMPANY"
+          });
+        });
+      }, function(err) {
+        var message;
+        $resetPasswordCtrl.resetPasswordSuccess = false;
+        $resetPasswordCtrl.showLoading = false;
+        message = "ADMIN_DASHBOARD.RESET_PASSWORD_PAGE.FORM_SUBMIT_FAIL_MSG";
+        if (!formErrorExists(message)) {
+          return $resetPasswordCtrl.formErrors.push({
+            message: message
+          });
+        }
+      });
+    };
+    init();
+  };
+
+  angular.module('BBAdminDashboard.reset-password').controller('ResetPasswordCtrl', ResetPasswordCtrl);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.reset-password.controller:ResetPasswordPageCtrl
+   *
+  * @description
+  * Controller for the reset password page
+   */
+  var ResetPasswordPageCtrl;
+
+  ResetPasswordPageCtrl = function($scope) {
+    'ngInject';
+    var init;
+    init = function() {
+      if (($scope.bb.api_url != null) && $scope.bb.api_url !== '') {
+        $scope.baseUrl = angular.copy($scope.bb.api_url);
+      }
+    };
+    init();
+  };
+
+  angular.module('BBAdminDashboard.reset-password').controller('ResetPasswordPageCtrl', ResetPasswordPageCtrl);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+   * @ngdoc directive
+   * @name BBAdminDashboard.reset-password.directive:adminDashboardResetPassword
+   * @scope
+   * @restrict A
+   *
+   * @description
+   * Admin Dashboard ResetPassword journey directive
+   */
+  var adminDashboardResetPassword;
+
+  adminDashboardResetPassword = function() {
+    var directive;
+    directive = {
+      restrict: 'AE',
+      replace: true,
+      scope: true,
+      template: '<div ng-include="$resetPasswordCtrl.resetPasswordTemplate"></div>',
+      controller: 'ResetPasswordCtrl',
+      controllerAs: '$resetPasswordCtrl'
+    };
+    return directive;
+  };
+
+  angular.module('BBAdminDashboard.reset-password').directive('adminDashboardResetPassword', adminDashboardResetPassword);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc service
+  * @name BBAdminDashboard.reset-password.service:ResetPasswordSchemaFormService
+  *
+  * @description
+  * This service enables the user to fetch/submit a schema form from/to the server and also post the new password.
+   */
+  var ResetPasswordSchemaFormService;
+
+  ResetPasswordSchemaFormService = function($q, $http, QueryStringService) {
+    'ngInject';
+    var getPasswordPattern, getSchemaForm, passwordPattern, postSchemaForm, setPasswordPattern;
+    passwordPattern = '';
+    setPasswordPattern = function(pattern) {
+      var password_pattern;
+      return password_pattern = pattern;
+    };
+    getPasswordPattern = function() {
+      return passwordPattern;
+    };
+    getSchemaForm = function(baseUrl) {
+      var deferred, src;
+      deferred = $q.defer();
+      src = baseUrl + "/api/v1/login/admin/reset_password_schema";
+      $http.get(src, {}).then(function(response) {
+        return deferred.resolve(response);
+      }, function(err) {
+        return deferred.reject(err);
+      });
+      return deferred.promise;
+    };
+    postSchemaForm = function(password, baseUrl) {
+      var body, deferred, resetPasswordToken, src;
+      deferred = $q.defer();
+      src = baseUrl + "/api/v1/login/admin/reset_password";
+      resetPasswordToken = QueryStringService('reset_password_token');
+      body = {
+        "password": password,
+        "reset_password_token": resetPasswordToken
+      };
+      $http.put(src, body).then(function(response) {
+        return deferred.resolve(response);
+      }, function(err) {
+        return deferred.reject(err);
+      });
+      return deferred.promise;
+    };
+    return {
+      setPasswordPattern: setPasswordPattern,
+      getPasswordPattern: getPasswordPattern,
+      getSchemaForm: getSchemaForm,
+      postSchemaForm: postSchemaForm
+    };
+  };
+
+  angular.module('BBAdminDashboard.reset-password').factory('ResetPasswordSchemaFormService', ResetPasswordSchemaFormService);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc service
+  * @name BBAdminDashboard.reset-password.service:ResetPasswordService
+  *
+  * @description
+  * This service enables the user to send a request to reset he's password
+   */
+  var ResetPasswordService;
+
+  ResetPasswordService = function($q, $window, $http) {
+    'ngInject';
+    var postRequest;
+    postRequest = function(email, baseUrl) {
+      var body, deferred, path, url;
+      deferred = $q.defer();
+      url = baseUrl + "/api/v1/login/admin/reset_password_email";
+      path = $window.location.pathname + '#/reset-password';
+      body = {
+        "email": email,
+        "path": path
+      };
+      $http.post(url, body).then(function(response) {
+        return deferred.resolve(response);
+      }, function(err) {
+        return deferred.reject(err);
+      });
+      return deferred.promise;
+    };
+    return {
+      postRequest: postRequest
+    };
+  };
+
+  angular.module('BBAdminDashboard.reset-password').factory('ResetPasswordService', ResetPasswordService);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc overview
+  * @name BBAdminDashboard.reset-password.translations
+   *
+  * @description
+  * Translations for the admin reset-password module
+   */
+  angular.module('BBAdminDashboard.reset-password').config([
+    '$translateProvider', function($translateProvider) {
+      return $translateProvider.translations('en', {
+        'ADMIN_DASHBOARD': {
+          'RESET_PASSWORD_PAGE': {
+            'BACK_BTN': 'Back',
+            'CONFIRM_NEW_PASSWORD_LABEL': 'Confirm New Password',
+            'EMAIL_LABEL': 'Email',
+            'ENTER_NEW_PASSWORD': 'Enter your new password',
+            'ENTER_EMAIL': 'Enter your email address',
+            'ERROR_API_MISSING': 'API url has not been set correctly.',
+            'ERROR_EMAIL_PATTERN': 'Please enter a valid email.',
+            'ERROR_PASSWORD_MATCH': 'This needs to be the same as the new password.',
+            'ERROR_PASSWORD_PATTERN': 'Password must be between 7 and 25 characters and contain at least one letter and one number.',
+            'ERROR_REQUIRED': 'This field is required.',
+            'FORGOT_PASSWORD': 'Forgot your password?',
+            'FORM_SUBMIT_FAIL': 'Password Reset request failed',
+            'FORM_SUBMIT_SUCCESS': 'Password Reset request submitted',
+            'FORM_SUBMIT_FAIL_MSG': "Sorry we couldn't update your password successfully. Please try again or contact our support team.",
+            'FORM_SUBMIT_SUCCESS_MSG': 'Thank you for resetting your password. You will receive an email shortly with instructions to complete this process.',
+            'NEW_PASSWORD_LABEL': 'New Password',
+            'PASSWORD': 'Password',
+            'PASSWORD_RESET_SUCCESS': 'Password Reset complete',
+            'PASSWORD_RESET_SUCCESS_MSG': 'Your password has now been successfully updated.',
+            'RESET_PASSWORD_BTN': 'Reset Password',
+            'SITE_LABEL': 'Site'
           }
         }
       });
