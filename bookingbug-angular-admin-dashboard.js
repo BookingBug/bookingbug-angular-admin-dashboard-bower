@@ -2248,268 +2248,6 @@
   'use strict';
 
   /*
-  * @ngdoc service
-  * @name BBAdminDashboard.services.service:AdminCoreOptions
-  *
-  * @description
-  * Returns a set of General configuration options
-   */
-
-  /*
-  * @ngdoc service
-  * @name BBAdminDashboard.services.service:AdminCoreOptionsProvider
-  *
-  * @description
-  * Provider
-  *
-  * @example
-    <example>
-    angular.module('ExampleModule').config ['AdminCoreOptionsProvider', (AdminCoreOptionsProvider) ->
-      AdminCoreOptionsProvider.setOption('option', 'value')
-    ]
-    </example>
-   */
-  angular.module('BBAdminDashboard.services').provider('AdminCoreOptions', [
-    function() {
-      var options;
-      options = {
-        default_language: 'en',
-        use_browser_language: true,
-        available_languages: ['en', 'es'],
-        available_language_associations: {
-          'en_*': 'en'
-        }
-      };
-      this.setOption = function(option, value) {
-        if (options.hasOwnProperty(option)) {
-          options[option] = value;
-        }
-      };
-      this.getOption = function(option) {
-        if (options.hasOwnProperty(option)) {
-          return options[option];
-        }
-      };
-      this.$get = function() {
-        return options;
-      };
-    }
-  ]);
-
-}).call(this);
-
-
-/***
-* @ngdoc service
-* @name BBAdminDashboard.services.service:AdminSsoLogin
-*
-* @description
-* Responsible for loging in the admin user via the sso token
-*
-* @property {string} sso_token The sso_token to be used
-* @property {function} callback (optional) funtion to be called after the successfull login, receives UserAdmin (BaseResource) obj as input
- */
-
-(function() {
-  angular.module('BBAdminDashboard.services').factory('AdminSsoLogin', [
-    'halClient', 'AdminSsoLoginUrl', function(halClient, AdminSsoLoginUrl) {
-      return function(sso_token, callback) {
-        var data;
-        data = {
-          token: sso_token
-        };
-        return halClient.$post(AdminSsoLoginUrl, {}, data).then(function(login) {
-          var params;
-          params = {
-            auth_token: login.auth_token
-          };
-          return login.$get('administrator', params).then(function(admin) {
-            if (typeof callback === 'function') {
-              return callback(admin);
-            }
-          });
-        });
-      };
-    }
-  ]);
-
-}).call(this);
-
-
-/***
-* @ngdoc service
-* @name BBAdminDashboard.services.service:AdminSsoLoginUrl
-*
-* @description
-* Returns the complete url for admin sso login
- */
-
-(function() {
-  angular.module('BBAdminDashboard.services').factory('AdminSsoLoginUrl', [
-    '$rootScope', 'company_id', '$exceptionHandler', function($rootScope, company_id, $exceptionHandler) {
-      if ($rootScope.bb.companyId == null) {
-        $rootScope.bb.companyId |= company_id;
-      }
-      if (!$rootScope.bb.companyId) {
-        $exceptionHandler(new Error('Angular value "company_id" is undefined! '), '', true);
-      }
-      return $rootScope.bb.api_url + "/api/v1/login/admin_sso/" + $rootScope.bb.companyId;
-    }
-  ]);
-
-}).call(this);
-
-
-/***
-* @ngdoc service
-* @name BBAdminDashboard.services.service:BusyService
-*
-* @description
-* 
-*
- */
-
-(function() {
-  angular.module('BBAdminDashboard.services').factory("BusyService", [
-    '$q', '$log', '$rootScope', 'AlertService', 'ErrorService', function($q, $log, $rootScope, AlertService, ErrorService) {
-      return {
-        notLoaded: function(cscope) {
-          cscope.$emit('show:loader', cscope);
-          cscope.isLoaded = false;
-          while (cscope) {
-            if (cscope.hasOwnProperty('scopeLoaded')) {
-              cscope.scopeLoaded = false;
-            }
-            cscope = cscope.$parent;
-          }
-        },
-        setLoaded: function(cscope) {
-          var loadingFinished;
-          cscope.$emit('hide:loader', cscope);
-          cscope.isLoaded = true;
-          loadingFinished = true;
-          while (cscope) {
-            if (cscope.hasOwnProperty('scopeLoaded')) {
-              if ($scope.areScopesLoaded(cscope)) {
-                cscope.scopeLoaded = true;
-              } else {
-                loadingFinished = false;
-              }
-            }
-            cscope = cscope.$parent;
-          }
-          if (loadingFinished) {
-            return $rootScope.$broadcast('loading:finished');
-          }
-        },
-        setPageLoaded: function(scope) {
-          return null;
-        },
-        setLoadedAndShowError: function(scope, err, error_string) {
-          $log.warn(err, error_string);
-          this.setLoaded(scope);
-          if (err.status === 409) {
-            return AlertService.danger(ErrorService.getError('ITEM_NO_LONGER_AVAILABLE'));
-          } else if (err.data && err.data.error === "Number of Bookings exceeds the maximum") {
-            return AlertService.danger(ErrorService.getError('MAXIMUM_TICKETS'));
-          } else {
-            return AlertService.danger(ErrorService.getError('GENERIC'));
-          }
-        },
-        areScopesLoaded: function(cscope) {
-          var child;
-          if (cscope.hasOwnProperty('isLoaded') && !cscope.isLoaded) {
-            return false;
-          } else {
-            child = cscope.$$childHead;
-            while (child) {
-              if (!$scope.areScopesLoaded(child)) {
-                return false;
-              }
-              child = child.$$nextSibling;
-            }
-            return true;
-          }
-        }
-      };
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc service
-  * @name BBAdminDashboard.services.service:RuntimeStates
-  *
-  * @description
-  * Returns an instance of $stateProvider that allows late state binding (on runtime)
-   */
-
-  /*
-  * @ngdoc service
-  * @name BBAdminDashboard.services.service:RuntimeStatesProvider
-  *
-  * @description
-  * Provider
-  *
-  * @example
-    <example>
-    angular.module('ExampleModule').config ['RuntimeStatesProvider', '$stateProvider', (RuntimeStatesProvider, $stateProvider) ->
-      RuntimeStatesProvider.setProvider($stateProvider)
-    ]
-    </example>
-   */
-  angular.module('BBAdminDashboard.services').provider('RuntimeStates', [
-    '$stateProvider', function($stateProvider) {
-      var stateProvider;
-      stateProvider = $stateProvider;
-      this.setProvider = function(provider) {
-        return stateProvider = provider;
-      };
-      this.$get = function() {
-        return stateProvider;
-      };
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc service
-  * @name BBAdminDashboard.services.service:TemplateService
-  *
-  * @description
-  * Checks if a custom version of the requested template exists in the templateCache,
-  * otherwise returns the default version (which should be compiled with the module)
-   */
-  angular.module('BBAdminDashboard.services').factory('TemplateService', [
-    '$templateCache', '$exceptionHandler', function($templateCache, $exceptionHandler) {
-      return {
-        get: function(template) {
-          if ($templateCache.get(template) != null) {
-            return $templateCache.get(template);
-          } else if ($templateCache.get('/default' + template) != null) {
-            return $templateCache.get('/default' + template);
-          } else {
-            return $exceptionHandler(new Error('Template "' + template + '" not found'), '', true);
-          }
-        }
-      };
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
   * @ngdoc overview
   * @name BBAdminDashboard.translations
    *
@@ -3271,6 +3009,268 @@
       return $translateProvider.translations('en', {
         'TEXT_1': 'Hello here!'
       });
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc service
+  * @name BBAdminDashboard.services.service:AdminCoreOptions
+  *
+  * @description
+  * Returns a set of General configuration options
+   */
+
+  /*
+  * @ngdoc service
+  * @name BBAdminDashboard.services.service:AdminCoreOptionsProvider
+  *
+  * @description
+  * Provider
+  *
+  * @example
+    <example>
+    angular.module('ExampleModule').config ['AdminCoreOptionsProvider', (AdminCoreOptionsProvider) ->
+      AdminCoreOptionsProvider.setOption('option', 'value')
+    ]
+    </example>
+   */
+  angular.module('BBAdminDashboard.services').provider('AdminCoreOptions', [
+    function() {
+      var options;
+      options = {
+        default_language: 'en',
+        use_browser_language: true,
+        available_languages: ['en', 'es'],
+        available_language_associations: {
+          'en_*': 'en'
+        }
+      };
+      this.setOption = function(option, value) {
+        if (options.hasOwnProperty(option)) {
+          options[option] = value;
+        }
+      };
+      this.getOption = function(option) {
+        if (options.hasOwnProperty(option)) {
+          return options[option];
+        }
+      };
+      this.$get = function() {
+        return options;
+      };
+    }
+  ]);
+
+}).call(this);
+
+
+/***
+* @ngdoc service
+* @name BBAdminDashboard.services.service:AdminSsoLogin
+*
+* @description
+* Responsible for loging in the admin user via the sso token
+*
+* @property {string} sso_token The sso_token to be used
+* @property {function} callback (optional) funtion to be called after the successfull login, receives UserAdmin (BaseResource) obj as input
+ */
+
+(function() {
+  angular.module('BBAdminDashboard.services').factory('AdminSsoLogin', [
+    'halClient', 'AdminSsoLoginUrl', function(halClient, AdminSsoLoginUrl) {
+      return function(sso_token, callback) {
+        var data;
+        data = {
+          token: sso_token
+        };
+        return halClient.$post(AdminSsoLoginUrl, {}, data).then(function(login) {
+          var params;
+          params = {
+            auth_token: login.auth_token
+          };
+          return login.$get('administrator', params).then(function(admin) {
+            if (typeof callback === 'function') {
+              return callback(admin);
+            }
+          });
+        });
+      };
+    }
+  ]);
+
+}).call(this);
+
+
+/***
+* @ngdoc service
+* @name BBAdminDashboard.services.service:AdminSsoLoginUrl
+*
+* @description
+* Returns the complete url for admin sso login
+ */
+
+(function() {
+  angular.module('BBAdminDashboard.services').factory('AdminSsoLoginUrl', [
+    '$rootScope', 'company_id', '$exceptionHandler', function($rootScope, company_id, $exceptionHandler) {
+      if ($rootScope.bb.companyId == null) {
+        $rootScope.bb.companyId |= company_id;
+      }
+      if (!$rootScope.bb.companyId) {
+        $exceptionHandler(new Error('Angular value "company_id" is undefined! '), '', true);
+      }
+      return $rootScope.bb.api_url + "/api/v1/login/admin_sso/" + $rootScope.bb.companyId;
+    }
+  ]);
+
+}).call(this);
+
+
+/***
+* @ngdoc service
+* @name BBAdminDashboard.services.service:BusyService
+*
+* @description
+* 
+*
+ */
+
+(function() {
+  angular.module('BBAdminDashboard.services').factory("BusyService", [
+    '$q', '$log', '$rootScope', 'AlertService', 'ErrorService', function($q, $log, $rootScope, AlertService, ErrorService) {
+      return {
+        notLoaded: function(cscope) {
+          cscope.$emit('show:loader', cscope);
+          cscope.isLoaded = false;
+          while (cscope) {
+            if (cscope.hasOwnProperty('scopeLoaded')) {
+              cscope.scopeLoaded = false;
+            }
+            cscope = cscope.$parent;
+          }
+        },
+        setLoaded: function(cscope) {
+          var loadingFinished;
+          cscope.$emit('hide:loader', cscope);
+          cscope.isLoaded = true;
+          loadingFinished = true;
+          while (cscope) {
+            if (cscope.hasOwnProperty('scopeLoaded')) {
+              if ($scope.areScopesLoaded(cscope)) {
+                cscope.scopeLoaded = true;
+              } else {
+                loadingFinished = false;
+              }
+            }
+            cscope = cscope.$parent;
+          }
+          if (loadingFinished) {
+            return $rootScope.$broadcast('loading:finished');
+          }
+        },
+        setPageLoaded: function(scope) {
+          return null;
+        },
+        setLoadedAndShowError: function(scope, err, error_string) {
+          $log.warn(err, error_string);
+          this.setLoaded(scope);
+          if (err.status === 409) {
+            return AlertService.danger(ErrorService.getError('ITEM_NO_LONGER_AVAILABLE'));
+          } else if (err.data && err.data.error === "Number of Bookings exceeds the maximum") {
+            return AlertService.danger(ErrorService.getError('MAXIMUM_TICKETS'));
+          } else {
+            return AlertService.danger(ErrorService.getError('GENERIC'));
+          }
+        },
+        areScopesLoaded: function(cscope) {
+          var child;
+          if (cscope.hasOwnProperty('isLoaded') && !cscope.isLoaded) {
+            return false;
+          } else {
+            child = cscope.$$childHead;
+            while (child) {
+              if (!$scope.areScopesLoaded(child)) {
+                return false;
+              }
+              child = child.$$nextSibling;
+            }
+            return true;
+          }
+        }
+      };
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc service
+  * @name BBAdminDashboard.services.service:RuntimeStates
+  *
+  * @description
+  * Returns an instance of $stateProvider that allows late state binding (on runtime)
+   */
+
+  /*
+  * @ngdoc service
+  * @name BBAdminDashboard.services.service:RuntimeStatesProvider
+  *
+  * @description
+  * Provider
+  *
+  * @example
+    <example>
+    angular.module('ExampleModule').config ['RuntimeStatesProvider', '$stateProvider', (RuntimeStatesProvider, $stateProvider) ->
+      RuntimeStatesProvider.setProvider($stateProvider)
+    ]
+    </example>
+   */
+  angular.module('BBAdminDashboard.services').provider('RuntimeStates', [
+    '$stateProvider', function($stateProvider) {
+      var stateProvider;
+      stateProvider = $stateProvider;
+      this.setProvider = function(provider) {
+        return stateProvider = provider;
+      };
+      this.$get = function() {
+        return stateProvider;
+      };
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc service
+  * @name BBAdminDashboard.services.service:TemplateService
+  *
+  * @description
+  * Checks if a custom version of the requested template exists in the templateCache,
+  * otherwise returns the default version (which should be compiled with the module)
+   */
+  angular.module('BBAdminDashboard.services').factory('TemplateService', [
+    '$templateCache', '$exceptionHandler', function($templateCache, $exceptionHandler) {
+      return {
+        get: function(template) {
+          if ($templateCache.get(template) != null) {
+            return $templateCache.get(template);
+          } else if ($templateCache.get('/default' + template) != null) {
+            return $templateCache.get('/default' + template);
+          } else {
+            return $exceptionHandler(new Error('Template "' + template + '" not found'), '', true);
+          }
+        }
+      };
     }
   ]);
 
