@@ -937,7 +937,7 @@
         return;
       }
       return Dialog.confirm({
-        title: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MOVE_MODAL_TITLE'),
+        title: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MOVE_MODAL_HEADING'),
         model: event,
         body: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MOVE_MODAL_BODY'),
         success: (function(_this) {
@@ -1423,7 +1423,7 @@
         labelAssembler: '@',
         blockLabelAssembler: '@',
         externalLabelAssembler: '@',
-        model: '='
+        model: '=?'
       }
     };
   });
@@ -1690,7 +1690,6 @@
           while (test_id < sorted.length) {
             src = sorted[id];
             test = sorted[test_id];
-            console.log(id, test_id, src);
             if (!src.delete_me) {
               if (test.unix_end > src.unix_end && test.unix_start < src.unix_end) {
                 src.end = test.end;
@@ -1721,7 +1720,6 @@
               });
             }
           }
-          console.log(overAllAvailabilities);
           return deferred.resolve(overAllAvailabilities);
         }
       }, function(err) {
@@ -1918,7 +1916,7 @@
             'AGENDA': 'Agenda',
             'STAFF': 'Staff',
             'RESOURCES': 'Resources',
-            'MOVE_MODAL_TITLE': 'Move',
+            'MOVE_MODAL_HEADING': 'Move',
             'MOVE_MODAL_BODY': 'Are you sure you want to move?',
             'ADD_BOOKING': 'Add Booking'
           }
@@ -3902,7 +3900,7 @@
             show_pick_department: false,
             show_loading: false
           };
-          $scope.login_form = {
+          $scope.login_data = {
             email: null,
             password: null,
             selected_admin: null,
@@ -3933,21 +3931,21 @@
                   return $scope.template_vars.show_pick_company = true;
                 } else if (administrators.length === 1) {
                   params = {
-                    email: $scope.login_form.email,
-                    password: $scope.login_form.password
+                    email: $scope.login_data.email,
+                    password: $scope.login_data.password
                   };
-                  $scope.login_form.selected_admin = _.first(administrators);
-                  return $scope.login_form.selected_admin.$post('login', {}, params).then(function(login) {
-                    return $scope.login_form.selected_admin.$getCompany().then(function(company) {
+                  $scope.login_data.selected_admin = _.first(administrators);
+                  return $scope.login_data.selected_admin.$post('login', {}, params).then(function(login) {
+                    return $scope.login_data.selected_admin.$getCompany().then(function(company) {
                       $scope.template_vars.show_loading = false;
                       if (company.companies && company.companies.length > 0) {
                         $scope.template_vars.show_pick_department = true;
                         return $scope.departments = company.companies;
                       } else {
-                        $scope.login_form.selected_company = company;
-                        BBModel.Admin.Login.$setLogin($scope.login_form.selected_admin);
-                        return BBModel.Admin.Login.$setCompany($scope.login_form.selected_company.id).then(function(user) {
-                          return $scope.onSuccess($scope.login_form.selected_company);
+                        $scope.login_data.selected_company = company;
+                        BBModel.Admin.Login.$setLogin($scope.login_data.selected_admin);
+                        return BBModel.Admin.Login.$setCompany($scope.login_data.selected_company.id).then(function(user) {
+                          return $scope.onSuccess($scope.login_data.selected_company);
                         });
                       }
                     });
@@ -3963,7 +3961,7 @@
                 }
               });
             } else if (user.$has('company')) {
-              $scope.login_form.selected_admin = user;
+              $scope.login_data.selected_admin = user;
               return user.$getCompany().then(function(company) {
                 if (company.companies && company.companies.length > 0) {
                   $scope.template_vars.show_loading = false;
@@ -3971,10 +3969,10 @@
                   $scope.template_vars.show_login = false;
                   return $scope.departments = company.companies;
                 } else {
-                  $scope.login_form.selected_company = company;
-                  BBModel.Admin.Login.$setLogin($scope.login_form.selected_admin);
-                  return BBModel.Admin.Login.$setCompany($scope.login_form.selected_company.id).then(function(user) {
-                    return $scope.onSuccess($scope.login_form.selected_company);
+                  $scope.login_data.selected_company = company;
+                  BBModel.Admin.Login.$setLogin($scope.login_data.selected_admin);
+                  return BBModel.Admin.Login.$setCompany($scope.login_data.selected_company.id).then(function(user) {
+                    return $scope.onSuccess($scope.login_data.selected_company);
                   });
                 }
               }, function(err) {
@@ -4007,17 +4005,17 @@
             if (isValid) {
               $scope.template_vars.show_loading = true;
               if (AdminLoginOptions.show_api_field) {
-                $scope.login_form.site = $scope.login_form.site.replace(/\/+$/, '');
-                if ($scope.login_form.site.indexOf("http") === -1) {
-                  $scope.login_form.site = "https://" + $scope.login_form.site;
+                $scope.login_data.site = $scope.login_data.site.replace(/\/+$/, '');
+                if ($scope.login_data.site.indexOf("http") === -1) {
+                  $scope.login_data.site = "https://" + $scope.login_data.site;
                 }
-                $scope.bb.api_url = $scope.login_form.site;
-                $rootScope.bb.api_url = $scope.login_form.site;
-                $localStorage.setItem("api_url", $scope.login_form.site);
+                $scope.bb.api_url = $scope.login_data.site;
+                $rootScope.bb.api_url = $scope.login_data.site;
+                $localStorage.setItem("api_url", $scope.login_data.site);
               }
               params = {
-                email: $scope.login_form.email,
-                password: $scope.login_form.password
+                email: $scope.login_data.email,
+                password: $scope.login_data.password
               };
               return BBModel.Admin.Login.$login(params).then(function(user) {
                 return companySelection(user);
@@ -4041,17 +4039,17 @@
             $scope.template_vars.show_loading = true;
             $scope.template_vars.show_pick_department = false;
             params = {
-              email: $scope.login_form.email,
-              password: $scope.login_form.password
+              email: $scope.login_data.email,
+              password: $scope.login_data.password
             };
-            return $scope.login_form.selected_admin.$post('login', {}, params).then(function(login) {
-              return $scope.login_form.selected_admin.$getCompany().then(function(company) {
+            return $scope.login_data.selected_admin.$post('login', {}, params).then(function(login) {
+              return $scope.login_data.selected_admin.$getCompany().then(function(company) {
                 $scope.template_vars.show_loading = false;
                 if (company.companies && company.companies.length > 0) {
                   $scope.template_vars.show_pick_department = true;
                   return $scope.departments = company.companies;
                 } else {
-                  return $scope.login_form.selected_company = company;
+                  return $scope.login_data.selected_company = company;
                 }
               });
             });
@@ -4059,10 +4057,10 @@
           return $scope.selectCompanyDepartment = function(isValid) {
             $scope.template_vars.show_loading = true;
             if (isValid) {
-              $scope.bb.company = $scope.login_form.selected_company;
-              BBModel.Admin.Login.$setLogin($scope.login_form.selected_admin);
-              return BBModel.Admin.Login.$setCompany($scope.login_form.selected_company.id).then(function(user) {
-                return $scope.onSuccess($scope.login_form.selected_company);
+              $scope.bb.company = $scope.login_data.selected_company;
+              BBModel.Admin.Login.$setLogin($scope.login_data.selected_admin);
+              return BBModel.Admin.Login.$setCompany($scope.login_data.selected_company.id).then(function(user) {
+                return $scope.onSuccess($scope.login_data.selected_company);
               });
             }
           };
@@ -4884,12 +4882,12 @@
         'ADMIN_DASHBOARD': {
           'RESET_PASSWORD_PAGE': {
             'BACK_BTN': 'Back',
-            'CONFIRM_NEW_PASSWORD_LABEL': 'Confirm New Password',
-            'EMAIL_LABEL': 'Email',
+            'CONFIRM_NEW_PASSWORD_LBL': 'Confirm New Password',
+            'EMAIL_LBL': 'Email',
             'ENTER_NEW_PASSWORD': 'Enter your new password',
             'ENTER_EMAIL': 'Enter your email address',
             'ERROR_API_MISSING': 'API url has not been set correctly.',
-            'ERROR_EMAIL_PATTERN': 'Please enter a valid email.',
+            'ERROR_EMAIL_INVALID': 'Please enter a valid email.',
             'ERROR_PASSWORD_MATCH': 'This needs to be the same as the new password.',
             'ERROR_PASSWORD_PATTERN': 'Password must be between 7 and 25 characters and contain at least one letter and one number.',
             'ERROR_REQUIRED': 'This field is required.',
@@ -4898,12 +4896,12 @@
             'FORM_SUBMIT_SUCCESS': 'Password Reset request submitted',
             'FORM_SUBMIT_FAIL_MSG': "Sorry we couldn't update your password successfully. Please try again or contact our support team.",
             'FORM_SUBMIT_SUCCESS_MSG': 'Thank you for resetting your password. You will receive an email shortly with instructions to complete this process.',
-            'NEW_PASSWORD_LABEL': 'New Password',
+            'NEW_PASSWORD_LBL': 'New Password',
             'PASSWORD': 'Password',
             'PASSWORD_RESET_SUCCESS': 'Password Reset complete',
             'PASSWORD_RESET_SUCCESS_MSG': 'Your password has now been successfully updated.',
             'RESET_PASSWORD_BTN': 'Reset Password',
-            'SITE_LABEL': 'Site'
+            'SITE_LBL': 'Site'
           }
         }
       });
