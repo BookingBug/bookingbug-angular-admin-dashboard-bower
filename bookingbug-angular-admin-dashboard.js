@@ -1099,7 +1099,7 @@
       vm.loading = true;
       getCompanyPromise().then(function(company) {
         if (vm.showAll) {
-          BBAssets(company).then(function(assets) {
+          BBAssets.getAssets(company).then(function(assets) {
             var asset, i, len;
             if (calOptions.type) {
               assets = _.filter(assets, function(a) {
@@ -1109,7 +1109,6 @@
             for (i = 0, len = assets.length; i < len; i++) {
               asset = assets[i];
               asset.id = asset.identifier;
-              asset.group = $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.' + asset.group.toUpperCase());
             }
             vm.loading = false;
             return callback(assets);
@@ -1331,7 +1330,7 @@
      */
     companyListener = function(company) {
       vm.loading = true;
-      BBAssets(company).then(assetsListener);
+      BBAssets.getAssets(company).then(assetsListener);
       company.$get('services').then(collectionListener);
       pusherSubscribe();
     };
@@ -2872,6 +2871,7 @@
           element.find('iframe')[0].onload = function() {
             scope.$emit('iframeLoaded', {});
             if (typeof scope.onLoad === 'function') {
+              this.style.display = 'block';
               return scope.onLoad();
             }
           };
