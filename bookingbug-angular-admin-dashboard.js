@@ -130,12 +130,6 @@
 
 (function() {
   'use strict';
-  angular.module('BBAdminDashboard.reset-password', []);
-
-}).call(this);
-
-(function() {
-  'use strict';
   angular.module('BBAdminDashboard.settings-iframe.controllers', []);
 
   angular.module('BBAdminDashboard.settings-iframe.services', []);
@@ -145,6 +139,12 @@
   angular.module('BBAdminDashboard.settings-iframe.translations', []);
 
   angular.module('BBAdminDashboard.settings-iframe', ['BBAdminDashboard.settings-iframe.controllers', 'BBAdminDashboard.settings-iframe.services', 'BBAdminDashboard.settings-iframe.directives', 'BBAdminDashboard.settings-iframe.translations']);
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BBAdminDashboard.reset-password', []);
 
 }).call(this);
 
@@ -564,19 +564,6 @@
 
 (function() {
   'use strict';
-  angular.module('BBAdminDashboard.reset-password').config(function($stateProvider, $urlRouterProvider) {
-    'ngInject';
-    $stateProvider.state('reset-password', {
-      url: '/reset-password',
-      controller: 'ResetPasswordPageCtrl',
-      templateUrl: "reset-password/index.html"
-    });
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
   angular.module('BBAdminDashboard.settings-iframe').run(function(RuntimeStates, AdminSettingsIframeOptions, SideNavigationPartials) {
     'ngInject';
     if (AdminSettingsIframeOptions.use_default_states) {
@@ -666,6 +653,19 @@
     if (AdminSettingsIframeOptions.show_in_navigation) {
       SideNavigationPartials.addPartialTemplate('settings-iframe', 'settings-iframe/nav.html');
     }
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+  angular.module('BBAdminDashboard.reset-password').config(function($stateProvider, $urlRouterProvider) {
+    'ngInject';
+    $stateProvider.state('reset-password', {
+      url: '/reset-password',
+      controller: 'ResetPasswordPageCtrl',
+      templateUrl: "reset-password/index.html"
+    });
   });
 
 }).call(this);
@@ -4592,329 +4592,6 @@
 
   /*
   * @ngdoc controller
-  * @name BBAdminDashboard.reset-password.controller:ResetPasswordCtrl
-   *
-  * @description
-  * Controller for the reset password functionality
-   */
-  var ResetPasswordCtrl;
-
-  ResetPasswordCtrl = function($scope, $state, AdminLoginOptions, AdminLoginService, QueryStringService, ValidatorService, ResetPasswordService, ResetPasswordSchemaFormService) {
-    'ngInject';
-    var $resetPasswordCtrl, fetchSchemaForm, formErrorExists, init;
-    $resetPasswordCtrl = this;
-    init = function() {
-      if ($scope.baseUrl == null) {
-        $scope.baseUrl = $resetPasswordCtrl.resetPasswordSite;
-      }
-      $resetPasswordCtrl.showApiField = AdminLoginOptions.show_api_field;
-      $resetPasswordCtrl.resetPasswordSuccess = false;
-      $resetPasswordCtrl.showLoading = false;
-      if ($resetPasswordCtrl.showApiField) {
-        $resetPasswordCtrl.resetPasswordSite = angular.copy($scope.bb.api_url);
-      }
-      $resetPasswordCtrl.validator = ValidatorService;
-      $resetPasswordCtrl.formErrors = [];
-      if ((QueryStringService('reset_password_token') != null) && QueryStringService('reset_password_token') !== 'undefined' && QueryStringService('reset_password_token') !== '') {
-        $resetPasswordCtrl.resetPasswordTemplate = 'reset-password/reset-password-by-token.html';
-        fetchSchemaForm();
-      } else {
-        $resetPasswordCtrl.resetPasswordTemplate = 'reset-password/reset-password.html';
-      }
-    };
-    formErrorExists = function(message) {
-      var i, len, obj, ref;
-      ref = $resetPasswordCtrl.formErrors;
-      for (i = 0, len = ref.length; i < len; i++) {
-        obj = ref[i];
-        if (obj.message.match(message)) {
-          return true;
-        }
-      }
-      return false;
-    };
-    fetchSchemaForm = function() {
-      ResetPasswordSchemaFormService.getSchemaForm($scope.baseUrl).then(function(response) {
-        $resetPasswordCtrl.resetPasswordSchema = angular.copy(response.data.schema);
-        ResetPasswordSchemaFormService.setPasswordPattern($resetPasswordCtrl.resetPasswordSchema.properties.password.pattern);
-        return $resetPasswordCtrl.reset_password_pattern = ResetPasswordSchemaFormService.getPasswordPattern();
-      }, function(err) {
-        ResetPasswordSchemaFormService.setPasswordPattern('^(?=[^\\s]*[^a-zA-Z])(?=[^\\s]*[a-zA-Z])[^\\s]{7,25}$');
-        return $resetPasswordCtrl.reset_password_pattern = ResetPasswordSchemaFormService.getPasswordPattern();
-      });
-    };
-    $resetPasswordCtrl.goBackToLogin = function() {
-      $state.go('login');
-    };
-    $resetPasswordCtrl.sendResetPassword = function(email, resetPasswordSite) {
-      $resetPasswordCtrl.showLoading = true;
-      if ($resetPasswordCtrl.showApiField && resetPasswordSite !== '') {
-        $resetPasswordCtrl.resetPasswordSite = resetPasswordSite.replace(/\/+$/, '');
-        if ($resetPasswordCtrl.resetPasswordSite.indexOf("http") === -1) {
-          $resetPasswordCtrl.resetPasswordSite = "https://" + $resetPasswordCtrl.resetPasswordSite;
-        }
-        $scope.baseUrl = $resetPasswordCtrl.resetPasswordSite;
-      }
-      ResetPasswordService.postRequest(email, $scope.baseUrl).then(function(response) {
-        $resetPasswordCtrl.resetPasswordSuccess = true;
-        return $resetPasswordCtrl.showLoading = false;
-      }, function(err) {
-        var message;
-        $resetPasswordCtrl.resetPasswordSuccess = false;
-        $resetPasswordCtrl.showLoading = false;
-        message = "ADMIN_DASHBOARD.RESET_PASSWORD_PAGE.FORM_SUBMIT_FAIL_MSG";
-        if (!formErrorExists(message)) {
-          return $resetPasswordCtrl.formErrors.push({
-            message: message
-          });
-        }
-      });
-    };
-    $resetPasswordCtrl.submitSchemaForm = function(password) {
-      $resetPasswordCtrl.showLoading = true;
-      ResetPasswordSchemaFormService.postSchemaForm(password, $scope.baseUrl).then(function(response) {
-        var loginForm;
-        $resetPasswordCtrl.resetPasswordSuccess = true;
-        loginForm = {
-          "email": response.data.email,
-          "password": password
-        };
-        return AdminLoginService.login(loginForm).then(function(response) {
-          return $state.go('login');
-        }, function(err) {
-          $resetPasswordCtrl.showLoading = false;
-          return $resetPasswordCtrl.formErrors.push({
-            message: "ADMIN_DASHBOARD.LOGIN_PAGE.ERROR_ISSUE_WITH_COMPANY"
-          });
-        });
-      }, function(err) {
-        var message;
-        $resetPasswordCtrl.resetPasswordSuccess = false;
-        $resetPasswordCtrl.showLoading = false;
-        message = "ADMIN_DASHBOARD.RESET_PASSWORD_PAGE.FORM_SUBMIT_FAIL_MSG";
-        if (!formErrorExists(message)) {
-          return $resetPasswordCtrl.formErrors.push({
-            message: message
-          });
-        }
-      });
-    };
-    init();
-  };
-
-  angular.module('BBAdminDashboard.reset-password').controller('ResetPasswordCtrl', ResetPasswordCtrl);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.reset-password.controller:ResetPasswordPageCtrl
-   *
-  * @description
-  * Controller for the reset password page
-   */
-  var ResetPasswordPageCtrl;
-
-  ResetPasswordPageCtrl = function($scope) {
-    'ngInject';
-    var init;
-    init = function() {
-      if (($scope.bb.api_url != null) && $scope.bb.api_url !== '') {
-        $scope.baseUrl = angular.copy($scope.bb.api_url);
-      }
-    };
-    init();
-  };
-
-  angular.module('BBAdminDashboard.reset-password').controller('ResetPasswordPageCtrl', ResetPasswordPageCtrl);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-   * @ngdoc directive
-   * @name BBAdminDashboard.reset-password.directive:adminDashboardResetPassword
-   * @scope
-   * @restrict A
-   *
-   * @description
-   * Admin Dashboard ResetPassword journey directive
-   */
-  var adminDashboardResetPassword;
-
-  adminDashboardResetPassword = function() {
-    var directive;
-    directive = {
-      restrict: 'AE',
-      replace: true,
-      scope: true,
-      template: '<div ng-include="$resetPasswordCtrl.resetPasswordTemplate"></div>',
-      controller: 'ResetPasswordCtrl',
-      controllerAs: '$resetPasswordCtrl'
-    };
-    return directive;
-  };
-
-  angular.module('BBAdminDashboard.reset-password').directive('adminDashboardResetPassword', adminDashboardResetPassword);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc service
-  * @name BBAdminDashboard.reset-password.service:ResetPasswordSchemaFormService
-  *
-  * @description
-  * This service enables the user to fetch/submit a schema form from/to the server and also post the new password.
-   */
-  var ResetPasswordSchemaFormService;
-
-  ResetPasswordSchemaFormService = function($q, $http, QueryStringService) {
-    'ngInject';
-    var getPasswordPattern, getSchemaForm, passwordPattern, postSchemaForm, setPasswordPattern;
-    passwordPattern = '';
-    setPasswordPattern = function(pattern) {
-      var password_pattern;
-      return password_pattern = pattern;
-    };
-    getPasswordPattern = function() {
-      return passwordPattern;
-    };
-    getSchemaForm = function(baseUrl) {
-      var deferred, src;
-      deferred = $q.defer();
-      src = baseUrl + "/api/v1/login/admin/reset_password_schema";
-      $http.get(src, {}).then(function(response) {
-        return deferred.resolve(response);
-      }, function(err) {
-        return deferred.reject(err);
-      });
-      return deferred.promise;
-    };
-    postSchemaForm = function(password, baseUrl) {
-      var body, deferred, resetPasswordToken, src;
-      deferred = $q.defer();
-      src = baseUrl + "/api/v1/login/admin/reset_password";
-      resetPasswordToken = QueryStringService('reset_password_token');
-      body = {
-        "password": password,
-        "reset_password_token": resetPasswordToken
-      };
-      $http.put(src, body).then(function(response) {
-        return deferred.resolve(response);
-      }, function(err) {
-        return deferred.reject(err);
-      });
-      return deferred.promise;
-    };
-    return {
-      setPasswordPattern: setPasswordPattern,
-      getPasswordPattern: getPasswordPattern,
-      getSchemaForm: getSchemaForm,
-      postSchemaForm: postSchemaForm
-    };
-  };
-
-  angular.module('BBAdminDashboard.reset-password').factory('ResetPasswordSchemaFormService', ResetPasswordSchemaFormService);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc service
-  * @name BBAdminDashboard.reset-password.service:ResetPasswordService
-  *
-  * @description
-  * This service enables the user to send a request to reset he's password
-   */
-  var ResetPasswordService;
-
-  ResetPasswordService = function($q, $window, $http) {
-    'ngInject';
-    var postRequest;
-    postRequest = function(email, baseUrl) {
-      var body, deferred, path, url;
-      deferred = $q.defer();
-      url = baseUrl + "/api/v1/login/admin/reset_password_email";
-      path = $window.location.pathname + '#/reset-password';
-      body = {
-        "email": email,
-        "path": path
-      };
-      $http.post(url, body).then(function(response) {
-        return deferred.resolve(response);
-      }, function(err) {
-        return deferred.reject(err);
-      });
-      return deferred.promise;
-    };
-    return {
-      postRequest: postRequest
-    };
-  };
-
-  angular.module('BBAdminDashboard.reset-password').factory('ResetPasswordService', ResetPasswordService);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc overview
-  * @name BBAdminDashboard.reset-password.translations
-   *
-  * @description
-  * Translations for the admin reset-password module
-   */
-  angular.module('BBAdminDashboard.reset-password').config([
-    '$translateProvider', function($translateProvider) {
-      return $translateProvider.translations('en', {
-        'ADMIN_DASHBOARD': {
-          'RESET_PASSWORD_PAGE': {
-            'BACK_BTN': 'Back',
-            'CONFIRM_NEW_PASSWORD_LABEL': 'Confirm New Password',
-            'EMAIL_LABEL': 'Email',
-            'ENTER_NEW_PASSWORD': 'Enter your new password',
-            'ENTER_EMAIL': 'Enter your email address',
-            'ERROR_API_MISSING': 'API url has not been set correctly.',
-            'ERROR_EMAIL_PATTERN': 'Please enter a valid email.',
-            'ERROR_PASSWORD_MATCH': 'This needs to be the same as the new password.',
-            'ERROR_PASSWORD_PATTERN': 'Password must be between 7 and 25 characters and contain at least one letter and one number.',
-            'ERROR_REQUIRED': 'This field is required.',
-            'FORGOT_PASSWORD': 'Forgot your password?',
-            'FORM_SUBMIT_FAIL': 'Password Reset request failed',
-            'FORM_SUBMIT_SUCCESS': 'Password Reset request submitted',
-            'FORM_SUBMIT_FAIL_MSG': "Sorry we couldn't update your password successfully. Please try again or contact our support team.",
-            'FORM_SUBMIT_SUCCESS_MSG': 'Thank you for resetting your password. You will receive an email shortly with instructions to complete this process.',
-            'NEW_PASSWORD_LABEL': 'New Password',
-            'PASSWORD': 'Password',
-            'PASSWORD_RESET_SUCCESS': 'Password Reset complete',
-            'PASSWORD_RESET_SUCCESS_MSG': 'Your password has now been successfully updated.',
-            'RESET_PASSWORD_BTN': 'Reset Password',
-            'SITE_LABEL': 'Site'
-          }
-        }
-      });
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
   * @name BBAdminDashboard.settings-iframe.controllers.controller:SettingsIframeAdvancedSettingsPageCtrl
    *
   * @description
@@ -5281,6 +4958,329 @@
               'TAB_PAYMENT_HISTORY': 'Payment history',
               'TAB_INVOICES': 'Invoices'
             }
+          }
+        }
+      });
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.reset-password.controller:ResetPasswordCtrl
+   *
+  * @description
+  * Controller for the reset password functionality
+   */
+  var ResetPasswordCtrl;
+
+  ResetPasswordCtrl = function($scope, $state, AdminLoginOptions, AdminLoginService, QueryStringService, ValidatorService, ResetPasswordService, ResetPasswordSchemaFormService) {
+    'ngInject';
+    var $resetPasswordCtrl, fetchSchemaForm, formErrorExists, init;
+    $resetPasswordCtrl = this;
+    init = function() {
+      if ($scope.baseUrl == null) {
+        $scope.baseUrl = $resetPasswordCtrl.resetPasswordSite;
+      }
+      $resetPasswordCtrl.showApiField = AdminLoginOptions.show_api_field;
+      $resetPasswordCtrl.resetPasswordSuccess = false;
+      $resetPasswordCtrl.showLoading = false;
+      if ($resetPasswordCtrl.showApiField) {
+        $resetPasswordCtrl.resetPasswordSite = angular.copy($scope.bb.api_url);
+      }
+      $resetPasswordCtrl.validator = ValidatorService;
+      $resetPasswordCtrl.formErrors = [];
+      if ((QueryStringService('reset_password_token') != null) && QueryStringService('reset_password_token') !== 'undefined' && QueryStringService('reset_password_token') !== '') {
+        $resetPasswordCtrl.resetPasswordTemplate = 'reset-password/reset-password-by-token.html';
+        fetchSchemaForm();
+      } else {
+        $resetPasswordCtrl.resetPasswordTemplate = 'reset-password/reset-password.html';
+      }
+    };
+    formErrorExists = function(message) {
+      var i, len, obj, ref;
+      ref = $resetPasswordCtrl.formErrors;
+      for (i = 0, len = ref.length; i < len; i++) {
+        obj = ref[i];
+        if (obj.message.match(message)) {
+          return true;
+        }
+      }
+      return false;
+    };
+    fetchSchemaForm = function() {
+      ResetPasswordSchemaFormService.getSchemaForm($scope.baseUrl).then(function(response) {
+        $resetPasswordCtrl.resetPasswordSchema = angular.copy(response.data.schema);
+        ResetPasswordSchemaFormService.setPasswordPattern($resetPasswordCtrl.resetPasswordSchema.properties.password.pattern);
+        return $resetPasswordCtrl.reset_password_pattern = ResetPasswordSchemaFormService.getPasswordPattern();
+      }, function(err) {
+        ResetPasswordSchemaFormService.setPasswordPattern('^(?=[^\\s]*[^a-zA-Z])(?=[^\\s]*[a-zA-Z])[^\\s]{7,25}$');
+        return $resetPasswordCtrl.reset_password_pattern = ResetPasswordSchemaFormService.getPasswordPattern();
+      });
+    };
+    $resetPasswordCtrl.goBackToLogin = function() {
+      $state.go('login');
+    };
+    $resetPasswordCtrl.sendResetPassword = function(email, resetPasswordSite) {
+      $resetPasswordCtrl.showLoading = true;
+      if ($resetPasswordCtrl.showApiField && resetPasswordSite !== '') {
+        $resetPasswordCtrl.resetPasswordSite = resetPasswordSite.replace(/\/+$/, '');
+        if ($resetPasswordCtrl.resetPasswordSite.indexOf("http") === -1) {
+          $resetPasswordCtrl.resetPasswordSite = "https://" + $resetPasswordCtrl.resetPasswordSite;
+        }
+        $scope.baseUrl = $resetPasswordCtrl.resetPasswordSite;
+      }
+      ResetPasswordService.postRequest(email, $scope.baseUrl).then(function(response) {
+        $resetPasswordCtrl.resetPasswordSuccess = true;
+        return $resetPasswordCtrl.showLoading = false;
+      }, function(err) {
+        var message;
+        $resetPasswordCtrl.resetPasswordSuccess = false;
+        $resetPasswordCtrl.showLoading = false;
+        message = "ADMIN_DASHBOARD.RESET_PASSWORD_PAGE.FORM_SUBMIT_FAIL_MSG";
+        if (!formErrorExists(message)) {
+          return $resetPasswordCtrl.formErrors.push({
+            message: message
+          });
+        }
+      });
+    };
+    $resetPasswordCtrl.submitSchemaForm = function(password) {
+      $resetPasswordCtrl.showLoading = true;
+      ResetPasswordSchemaFormService.postSchemaForm(password, $scope.baseUrl).then(function(response) {
+        var loginForm;
+        $resetPasswordCtrl.resetPasswordSuccess = true;
+        loginForm = {
+          "email": response.data.email,
+          "password": password
+        };
+        return AdminLoginService.login(loginForm).then(function(response) {
+          return $state.go('login');
+        }, function(err) {
+          $resetPasswordCtrl.showLoading = false;
+          return $resetPasswordCtrl.formErrors.push({
+            message: "ADMIN_DASHBOARD.LOGIN_PAGE.ERROR_ISSUE_WITH_COMPANY"
+          });
+        });
+      }, function(err) {
+        var message;
+        $resetPasswordCtrl.resetPasswordSuccess = false;
+        $resetPasswordCtrl.showLoading = false;
+        message = "ADMIN_DASHBOARD.RESET_PASSWORD_PAGE.FORM_SUBMIT_FAIL_MSG";
+        if (!formErrorExists(message)) {
+          return $resetPasswordCtrl.formErrors.push({
+            message: message
+          });
+        }
+      });
+    };
+    init();
+  };
+
+  angular.module('BBAdminDashboard.reset-password').controller('ResetPasswordCtrl', ResetPasswordCtrl);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.reset-password.controller:ResetPasswordPageCtrl
+   *
+  * @description
+  * Controller for the reset password page
+   */
+  var ResetPasswordPageCtrl;
+
+  ResetPasswordPageCtrl = function($scope) {
+    'ngInject';
+    var init;
+    init = function() {
+      if (($scope.bb.api_url != null) && $scope.bb.api_url !== '') {
+        $scope.baseUrl = angular.copy($scope.bb.api_url);
+      }
+    };
+    init();
+  };
+
+  angular.module('BBAdminDashboard.reset-password').controller('ResetPasswordPageCtrl', ResetPasswordPageCtrl);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+   * @ngdoc directive
+   * @name BBAdminDashboard.reset-password.directive:adminDashboardResetPassword
+   * @scope
+   * @restrict A
+   *
+   * @description
+   * Admin Dashboard ResetPassword journey directive
+   */
+  var adminDashboardResetPassword;
+
+  adminDashboardResetPassword = function() {
+    var directive;
+    directive = {
+      restrict: 'AE',
+      replace: true,
+      scope: true,
+      template: '<div ng-include="$resetPasswordCtrl.resetPasswordTemplate"></div>',
+      controller: 'ResetPasswordCtrl',
+      controllerAs: '$resetPasswordCtrl'
+    };
+    return directive;
+  };
+
+  angular.module('BBAdminDashboard.reset-password').directive('adminDashboardResetPassword', adminDashboardResetPassword);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc service
+  * @name BBAdminDashboard.reset-password.service:ResetPasswordSchemaFormService
+  *
+  * @description
+  * This service enables the user to fetch/submit a schema form from/to the server and also post the new password.
+   */
+  var ResetPasswordSchemaFormService;
+
+  ResetPasswordSchemaFormService = function($q, $http, QueryStringService) {
+    'ngInject';
+    var getPasswordPattern, getSchemaForm, passwordPattern, postSchemaForm, setPasswordPattern;
+    passwordPattern = '';
+    setPasswordPattern = function(pattern) {
+      var password_pattern;
+      return password_pattern = pattern;
+    };
+    getPasswordPattern = function() {
+      return passwordPattern;
+    };
+    getSchemaForm = function(baseUrl) {
+      var deferred, src;
+      deferred = $q.defer();
+      src = baseUrl + "/api/v1/login/admin/reset_password_schema";
+      $http.get(src, {}).then(function(response) {
+        return deferred.resolve(response);
+      }, function(err) {
+        return deferred.reject(err);
+      });
+      return deferred.promise;
+    };
+    postSchemaForm = function(password, baseUrl) {
+      var body, deferred, resetPasswordToken, src;
+      deferred = $q.defer();
+      src = baseUrl + "/api/v1/login/admin/reset_password";
+      resetPasswordToken = QueryStringService('reset_password_token');
+      body = {
+        "password": password,
+        "reset_password_token": resetPasswordToken
+      };
+      $http.put(src, body).then(function(response) {
+        return deferred.resolve(response);
+      }, function(err) {
+        return deferred.reject(err);
+      });
+      return deferred.promise;
+    };
+    return {
+      setPasswordPattern: setPasswordPattern,
+      getPasswordPattern: getPasswordPattern,
+      getSchemaForm: getSchemaForm,
+      postSchemaForm: postSchemaForm
+    };
+  };
+
+  angular.module('BBAdminDashboard.reset-password').factory('ResetPasswordSchemaFormService', ResetPasswordSchemaFormService);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc service
+  * @name BBAdminDashboard.reset-password.service:ResetPasswordService
+  *
+  * @description
+  * This service enables the user to send a request to reset he's password
+   */
+  var ResetPasswordService;
+
+  ResetPasswordService = function($q, $window, $http) {
+    'ngInject';
+    var postRequest;
+    postRequest = function(email, baseUrl) {
+      var body, deferred, path, url;
+      deferred = $q.defer();
+      url = baseUrl + "/api/v1/login/admin/reset_password_email";
+      path = $window.location.pathname + '#/reset-password';
+      body = {
+        "email": email,
+        "path": path
+      };
+      $http.post(url, body).then(function(response) {
+        return deferred.resolve(response);
+      }, function(err) {
+        return deferred.reject(err);
+      });
+      return deferred.promise;
+    };
+    return {
+      postRequest: postRequest
+    };
+  };
+
+  angular.module('BBAdminDashboard.reset-password').factory('ResetPasswordService', ResetPasswordService);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc overview
+  * @name BBAdminDashboard.reset-password.translations
+   *
+  * @description
+  * Translations for the admin reset-password module
+   */
+  angular.module('BBAdminDashboard.reset-password').config([
+    '$translateProvider', function($translateProvider) {
+      return $translateProvider.translations('en', {
+        'ADMIN_DASHBOARD': {
+          'RESET_PASSWORD_PAGE': {
+            'BACK_BTN': 'Back',
+            'CONFIRM_NEW_PASSWORD_LABEL': 'Confirm New Password',
+            'EMAIL_LABEL': 'Email',
+            'ENTER_NEW_PASSWORD': 'Enter your new password',
+            'ENTER_EMAIL': 'Enter your email address',
+            'ERROR_API_MISSING': 'API url has not been set correctly.',
+            'ERROR_EMAIL_PATTERN': 'Please enter a valid email.',
+            'ERROR_PASSWORD_MATCH': 'This needs to be the same as the new password.',
+            'ERROR_PASSWORD_PATTERN': 'Password must be between 7 and 25 characters and contain at least one letter and one number.',
+            'ERROR_REQUIRED': 'This field is required.',
+            'FORGOT_PASSWORD': 'Forgot your password?',
+            'FORM_SUBMIT_FAIL': 'Password Reset request failed',
+            'FORM_SUBMIT_SUCCESS': 'Password Reset request submitted',
+            'FORM_SUBMIT_FAIL_MSG': "Sorry we couldn't update your password successfully. Please try again or contact our support team.",
+            'FORM_SUBMIT_SUCCESS_MSG': 'Thank you for resetting your password. You will receive an email shortly with instructions to complete this process.',
+            'NEW_PASSWORD_LABEL': 'New Password',
+            'PASSWORD': 'Password',
+            'PASSWORD_RESET_SUCCESS': 'Password Reset complete',
+            'PASSWORD_RESET_SUCCESS_MSG': 'Your password has now been successfully updated.',
+            'RESET_PASSWORD_BTN': 'Reset Password',
+            'SITE_LABEL': 'Site'
           }
         }
       });
