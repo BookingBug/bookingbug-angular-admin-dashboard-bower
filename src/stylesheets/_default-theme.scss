@@ -3,11 +3,6 @@ $theme-color                       : #81bc00;
 $screen-header-collapse            : $screen-xs-max;
 
 &.skin-default {
-  .bb-display-mode {
-    position: absolute;
-    bottom: 0;
-    z-index: -1;
-  }
 
   .ui-select-bootstrap .ui-select-choices-row.active>a {
     color: $btn-primary-color;
