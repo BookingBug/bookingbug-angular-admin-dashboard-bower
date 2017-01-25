@@ -2,6 +2,8 @@
   background: url("images/bg-gray.png");
 }
 
+.sidebar a {cursor:pointer;}
+
 //Animation for the content
 .content-wrapper {
   overflow-y: scroll;
@@ -194,4 +196,10 @@
     padding-left: 0;
     padding-right: 0;
   }
+}
+
+
+.content-header h3 i.fa-chevron-right {
+    font-size: 0.6em;
+    color: #AAA;
 }
