@@ -682,7 +682,7 @@
           },
           select: function(start, end, jsEvent, view, resource) {
             var item_defaults;
-            if (jsEvent.target.className === 'fc-scroller') {
+            if (jsEvent && jsEvent.target.className === 'fc-scroller') {
               return;
             }
             view.calendar.unselect();
