@@ -18,6 +18,25 @@
 }
 
 .form-group {
+  label{
+    font-weight: normal;
+  }
+  &.has-success {
+    label {
+      color: $gray-dark;
+    }
+    .form-control {
+      border-color: $gray;
+      &:focus {
+        border-color: $light-blue;
+        box-shadow: none;
+      }
+    }
+    .help-block {
+      color: $gray-dark;
+    }
+
+  }
   &.has-error {
     label {
       color: $state-danger-text;
