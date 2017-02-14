@@ -670,6 +670,45 @@
 
 }).call(this);
 
+(function () {
+
+    'use strict';
+
+    angular
+        .module('BBAdminDashboard.calendar.directives')
+        .component('bbCalendarDatePicker', {
+            templateUrl: 'calendar/bb_calendar_date_picker.html',
+            bindings: {
+                onChangeDate: '&',
+                currentDate: '<'
+            },
+            controller: CalendarDatePickerCtrl,
+            controllerAs: '$bbCalendarDatePickerCtrl'
+        });
+
+    function CalendarDatePickerCtrl() {
+        'ngInject';
+
+        var ctrl = this;
+
+        ctrl.openDatePicker = function ($event) {
+            $event.preventDefault();
+            ctrl.datePickerOpened = true;
+        };
+
+        ctrl.datePickerUpdated = function () {
+            if (_.isDate(ctrl.currentDate)) {
+                ctrl.onChangeDate({
+                    $event: {
+                        date: ctrl.currentDate
+                    }
+                });
+            }
+        };
+    }
+
+})();
+
 (function() {
   'use strict';
 
@@ -722,7 +761,7 @@
     'ngInject';
 
     /*jshint validthis: true */
-    var applyFilters, assetsListener, calOptions, changeSelectedResources, collectionListener, company, companyListener, companyServices, currentDateListener, dayHasAvailability, editBooking, fcEventAfterRender, fcEventClick, fcEventDragStop, fcEventDrop, fcEventRender, fcEventResize, fcLoading, fcResources, fcSelect, fcViewRender, filters, getBookingTitle, getCalendarAssets, getCompanyPromise, getEvents, init, isTimeRangeAvailable, languageChangedHandler, lazyUpdateDate, newCheckoutHandler, prepareCalOptions, prepareEventSources, prepareUiCalOptions, pusherBooking, pusherSubscribe, refetchBookingsHandler, refreshBooking, selectedResourcesListener, servicesListener, setTimeToMoment, updateBooking, updateDate, vm;
+    var applyFilters, assetsListener, calOptions, changeSelectedResources, collectionListener, company, companyListener, companyServices, dayHasAvailability, editBooking, fcEventAfterAllRender, fcEventAfterRender, fcEventClick, fcEventDragStop, fcEventDrop, fcEventRender, fcEventResize, fcLoading, fcResources, fcSelect, fcViewRender, filters, getBookingTitle, getCalendarAssets, getCompanyPromise, getEvents, init, isTimeRangeAvailable, languageChangedHandler, newCheckoutHandler, prepareCalOptions, prepareEventSources, prepareUiCalOptions, pusherBooking, pusherSubscribe, refetchBookingsHandler, refreshBooking, selectedResourcesListener, servicesListener, setTimeToMoment, timeRangeChangedHandler, updateBooking, updateCalendarLanguage, updateCalendarTimeRange, updateDateHandler, vm;
     vm = this;
     filters = null;
     company = null;
@@ -738,12 +777,13 @@
       prepareEventSources();
       prepareUiCalOptions();
       $scope.$watch('selectedResources.selected', selectedResourcesListener);
-      $scope.$watch('currentDate', currentDateListener);
       $scope.$on('refetchBookings', refetchBookingsHandler);
       $scope.$on('newCheckout', newCheckoutHandler);
-      $rootScope.$on('BBLanguagePicker:languageChanged', languageChangedHandler);
+      $scope.$on('BBLanguagePicker:languageChanged', languageChangedHandler);
+      $scope.$on('CalendarEventSources:timeRangeChanged', timeRangeChangedHandler);
       getCompanyPromise().then(companyListener);
       vm.changeSelectedResources = changeSelectedResources;
+      vm.updateDateHandler = updateDateHandler;
     };
     applyFilters = function() {
       filters = {
@@ -818,12 +858,6 @@
       } else {
         vm.calendar_name = "resourceCalendar";
       }
-      if (calOptions.min_time == null) {
-        calOptions.min_time = GeneralOptions.calendar_min_time;
-      }
-      if (calOptions.max_time == null) {
-        calOptions.max_time = GeneralOptions.calendar_max_time;
-      }
       if (calOptions.cal_slot_duration == null) {
         calOptions.cal_slot_duration = GeneralOptions.calendar_slot_duration;
       }
@@ -831,16 +865,11 @@
     prepareUiCalOptions = function() {
       vm.uiCalOptions = {
         calendar: {
-          locale: $translate.use(),
           schedulerLicenseKey: '0598149132-fcs-1443104297',
           eventStartEditable: false,
           eventDurationEditable: false,
-          minTime: calOptions.min_time,
-          maxTime: calOptions.max_time,
           height: 'auto',
-          buttonText: {
-            today: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.TODAY')
-          },
+          buttonText: {},
           header: {
             left: 'today,prev,next',
             center: 'title',
@@ -848,25 +877,18 @@
           },
           defaultView: calOptions.defaultView,
           views: {
-            listDay: {
-              buttonText: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.AGENDA')
-            },
+            listDay: {},
             agendaWeek: {
               slotDuration: $filter('minutesToString')(calOptions.cal_slot_duration),
-              buttonText: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.WEEK'),
               groupByDateAndResource: false
             },
             month: {
-              eventLimit: 5,
-              buttonText: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MONTH')
+              eventLimit: 5
             },
             timelineDay: {
               slotDuration: $filter('minutesToString')(calOptions.cal_slot_duration),
               eventOverlap: false,
               slotWidth: 25,
-              buttonText: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.DAY', {
-                minutes: calOptions.cal_slot_duration
-              }),
               resourceAreaWidth: '18%'
             }
           },
@@ -882,12 +904,29 @@
           eventClick: fcEventClick,
           eventRender: fcEventRender,
           eventAfterRender: fcEventAfterRender,
+          eventAfterAllRender: fcEventAfterAllRender,
           select: fcSelect,
           viewRender: fcViewRender,
           eventResize: fcEventResize,
           loading: fcLoading
         }
       };
+      updateCalendarLanguage();
+      updateCalendarTimeRange();
+    };
+    updateCalendarLanguage = function() {
+      vm.uiCalOptions.calendar.locale = $translate.use();
+      vm.uiCalOptions.calendar.buttonText.today = $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.TODAY');
+      vm.uiCalOptions.calendar.views.listDay.buttonText = $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.TODAY');
+      vm.uiCalOptions.calendar.views.agendaWeek.buttonText = $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.WEEK');
+      vm.uiCalOptions.calendar.views.month.buttonText = $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MONTH');
+      vm.uiCalOptions.calendar.views.timelineDay.buttonText = $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.DAY', {
+        minutes: calOptions.cal_slot_duration
+      });
+    };
+    updateCalendarTimeRange = function() {
+      vm.uiCalOptions.calendar.minTime = AdminCalendarOptions.minTime;
+      vm.uiCalOptions.calendar.maxTime = AdminCalendarOptions.maxTime;
     };
     fcResources = function(callback) {
       return getCalendarAssets(callback);
@@ -916,8 +955,8 @@
         }
         getCompanyPromise().then(function(company) {
           return AdminMoveBookingPopup.open({
-            min_date: setTimeToMoment(start, calOptions.min_time),
-            max_date: setTimeToMoment(end, calOptions.max_time),
+            min_date: setTimeToMoment(start, AdminCalendarOptions.minTime),
+            max_date: setTimeToMoment(end, AdminCalendarOptions.maxTime),
             from_datetime: moment(start.toISOString()),
             to_datetime: moment(end.toISOString()),
             item_defaults: item_defaults,
@@ -1000,6 +1039,9 @@
         return PrePostTime.apply(event, elements, view, $scope);
       }
     };
+    fcEventAfterAllRender = function() {
+      return $scope.$emit('UICalendar:EventAfterAllRender');
+    };
     fcSelect = function(start, end, jsEvent, view, resource) {
       var item_defaults;
       if (jsEvent && jsEvent.target.className === 'fc-scroller') {
@@ -1009,7 +1051,7 @@
       if (!calOptions.enforce_schedules || (isTimeRangeAvailable(start, end, resource) || (Math.abs(start.diff(end, 'days')) === 1 && dayHasAvailability(start)))) {
         if (Math.abs(start.diff(end, 'days')) > 0) {
           end.subtract(1, 'days');
-          end = setTimeToMoment(end, calOptions.max_time);
+          end = setTimeToMoment(end, AdminCalendarOptions.maxTime);
         }
         item_defaults = {
           date: start.format('YYYY-MM-DD'),
@@ -1022,8 +1064,8 @@
         }
         return getCompanyPromise().then(function(company) {
           return AdminBookingPopup.open({
-            min_date: setTimeToMoment(start, calOptions.min_time),
-            max_date: setTimeToMoment(end, calOptions.max_time),
+            min_date: setTimeToMoment(start, AdminCalendarOptions.minTime),
+            max_date: setTimeToMoment(end, AdminCalendarOptions.maxTime),
             from_datetime: moment(start.toISOString()),
             to_datetime: moment(end.toISOString()),
             item_defaults: item_defaults,
@@ -1044,9 +1086,10 @@
         'date': parseInt(date.get('date')),
         'hour': 0,
         'minute': 0,
+        'minute': 0,
         'second': 0
       });
-      return $scope.currentDate = newDate.toDate();
+      return vm.currentDate = newDate.toDate();
     };
     fcEventResize = function(event, delta, revertFunc, jsEvent, ui, view) {
       event.duration = event.end.diff(event.start, 'minutes');
@@ -1054,11 +1097,6 @@
     };
     fcLoading = function(isLoading, view) {
       return vm.calendarLoading = isLoading;
-    };
-    $scope.openDatePicker = function($event) {
-      $event.preventDefault();
-      $event.stopPropagation();
-      return $scope.datePickerOpened = true;
     };
     isTimeRangeAvailable = function(start, end, resource) {
       var en, events, st;
@@ -1246,25 +1284,19 @@
         }
       };
     })(this);
-    updateDate = function(date) {
+    updateDateHandler = function(data) {
       var assembledDate;
       if (uiCalendarConfig.calendars[vm.calendar_name]) {
         assembledDate = moment.utc();
         assembledDate.set({
-          'year': parseInt(date.getFullYear()),
-          'month': parseInt(date.getMonth()),
-          'date': parseInt(date.getDate()),
+          'year': parseInt(data.date.getFullYear()),
+          'month': parseInt(data.date.getMonth()),
+          'date': parseInt(data.date.getDate()),
           'hour': 0,
           'minute': 0,
           'second': 0
         });
         uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('gotoDate', assembledDate);
-      }
-    };
-    lazyUpdateDate = _.debounce(updateDate, 400);
-    currentDateListener = function(newDate, oldDate) {
-      if (newDate !== oldDate && (oldDate != null)) {
-        lazyUpdateDate(newDate);
       }
     };
     refetchBookingsHandler = function() {
@@ -1274,9 +1306,10 @@
       uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('refetchEvents');
     };
     languageChangedHandler = function() {
-      $state.go($state.current, {}, {
-        reload: true
-      });
+      updateCalendarLanguage();
+    };
+    timeRangeChangedHandler = function() {
+      updateCalendarTimeRange();
     };
     getCompanyPromise = function() {
       var defer;
@@ -1391,24 +1424,25 @@
 
 (function() {
   'use strict';
-  angular.module('BBAdminDashboard.calendar.directives').directive('bbResourceCalendar', function($compile, $templateCache, $timeout) {
+  angular.module('BBAdminDashboard.calendar.directives').directive('bbResourceCalendar', function($compile) {
     'ngInject';
     var link;
     link = function(scope, element, attrs) {
-      var addDatePickerToFCToolbar, documentReadyListener, init;
+      var addDatePickerToFCToolbar, init;
       init = function() {
-        $timeout(documentReadyListener, 0);
-      };
-      documentReadyListener = function() {
-        addDatePickerToFCToolbar();
+        scope.$on('UICalendar:EventAfterAllRender', addDatePickerToFCToolbar);
       };
       addDatePickerToFCToolbar = function() {
-        var datePickerElement, toolbarElement, toolbarLeftElement, uiCalElement;
+        var datePicker, datePickerComponent, datePickerElement, toolbarElement, toolbarLeftElement, uiCalElement;
         uiCalElement = angular.element(document.getElementById('uicalendar'));
-        toolbarElement = angular.element(uiCalElement.children()[0]);
-        toolbarLeftElement = angular.element(toolbarElement.children()[0]);
-        datePickerElement = $compile($templateCache.get('calendar_date_picker.html'))(scope);
-        toolbarLeftElement.append(datePickerElement);
+        datePicker = uiCalElement.find('bb-calendar-date-picker');
+        if (!datePicker.length) {
+          toolbarElement = angular.element(uiCalElement.children()[0]);
+          toolbarLeftElement = angular.element(toolbarElement.children()[0]);
+          datePickerComponent = '<bb-calendar-date-picker on-change-date="vm.updateDateHandler($event)" current-date="vm.currentDate"></bb-calendar-date-picker>';
+          datePickerElement = $compile(datePickerComponent)(scope);
+          toolbarLeftElement.append(datePickerElement);
+        }
       };
       init();
     };
@@ -1464,7 +1498,9 @@
         column_format: null,
         bookings_label_assembler: '{service_name} - {client_name}',
         block_label_assembler: 'Blocked',
-        external_label_assembler: '{title}'
+        external_label_assembler: '{title}',
+        minTime: null,
+        maxTime: null
       };
       this.setOption = function(option, value) {
         if (options.hasOwnProperty(option)) {
@@ -1494,9 +1530,9 @@
   * @description
   * This services exposes methods to get all event-type information to be shown in the calendar
    */
-  angular.module('BBAdminDashboard.calendar.services').service('CalendarEventSources', function(AdminScheduleService, BBModel, $exceptionHandler, $q, TitleAssembler, $translate) {
+  angular.module('BBAdminDashboard.calendar.services').service('CalendarEventSources', function(AdminScheduleService, BBModel, $exceptionHandler, $q, TitleAssembler, $translate, AdminCalendarOptions, $rootScope) {
     'ngInject';
-    var bookingBelongsToSelectedResources, getAllCalendarEntries, getAvailabilityBackground, getBookingsAndBlocks, getExternalBookings;
+    var bookingBelongsToSelectedResources, getAllCalendarEntries, getAvailabilityBackground, getBookingsAndBlocks, getExternalBookings, guardMidnightFormat, setCalendarAvailabilityRange;
     bookingBelongsToSelectedResources = function(resources, booking) {
       var belongs;
       belongs = false;
@@ -1671,6 +1707,9 @@
       deferred = $q.defer();
       AdminScheduleService.getAssetsScheduleEvents(company, start, end, !options.showAll, options.selectedResources).then(function(availabilities) {
         var avail, availability, i, id, j, len, len1, overAllAvailabilities, sorted, src, test, test_id;
+        if ((AdminCalendarOptions.minTime == null) || (AdminCalendarOptions.maxTime == null)) {
+          setCalendarAvailabilityRange(availabilities);
+        }
         if (options.calendarView === 'timelineDay') {
           return deferred.resolve(availabilities);
         } else {
@@ -1727,7 +1766,52 @@
       return deferred.promise;
     };
 
-    /*
+    /**
+    * @ngdoc method
+    * @name setCalendarAvailabilityRange
+    * @methodOf BBAdminDashboard.calendar.services.service:CalendarEventSources
+    * @description
+    * Sets AdminCalendarOptions availability range to the minTime and maxTime from all schedules
+    *
+    * @param {array} availabilities  The availabilities to get the min/max time from
+     */
+    setCalendarAvailabilityRange = function(availabilities) {
+      var availability, i, index, len, maxTime, minTime;
+      if (availabilities.length === 0) {
+        return;
+      }
+      for (index = i = 0, len = availabilities.length; i < len; index = ++i) {
+        availability = availabilities[index];
+        if (availability.start.isBefore(minTime) || index === 0) {
+          minTime = availability.start;
+        }
+        if (availability.end.isAfter(maxTime) || index === 0) {
+          maxTime = availability.end;
+        }
+      }
+      AdminCalendarOptions.minTime = minTime.format('HH:mm');
+      AdminCalendarOptions.maxTime = maxTime.format('HH:mm');
+      guardMidnightFormat(minTime, maxTime);
+      $rootScope.$broadcast('CalendarEventSources:timeRangeChanged');
+    };
+
+    /**
+    * @ngdoc method
+    * @name guardMidnightFormat
+    * @methodOf BBAdminDashboard.calendar.services.service:CalendarEventSources
+    * @description
+    * Formats maxTime from 00:00 to 24:00 when using 24 hour availability 
+    *
+    * @param {Moment} minTime Moment object containing minimum availability time
+    * @param {Moment} maxTime Moment object containing maximum availability time
+     */
+    guardMidnightFormat = function(minTime, maxTime) {
+      if (!minTime.isSame(maxTime, 'day') && AdminCalendarOptions.maxTime === '00:00') {
+        AdminCalendarOptions.maxTime = '24:00';
+      }
+    };
+
+    /**
     * @ngdoc method
     * @name getAllCalendarEntries
     * @methodOf BBAdminDashboard.calendar.services.service:CalendarEventSources
@@ -4599,7 +4683,7 @@
    */
   var ResetPasswordCtrl;
 
-  ResetPasswordCtrl = function($scope, $state, AdminLoginOptions, AdminLoginService, QueryStringService, ValidatorService, ResetPasswordService, ResetPasswordSchemaFormService) {
+  ResetPasswordCtrl = function($scope, $state, AdminLoginOptions, AdminLoginService, QueryStringService, ResetPasswordService, ResetPasswordSchemaFormService) {
     'ngInject';
     var $resetPasswordCtrl, fetchSchemaForm, formErrorExists, init;
     $resetPasswordCtrl = this;
@@ -4613,7 +4697,6 @@
       if ($resetPasswordCtrl.showApiField) {
         $resetPasswordCtrl.resetPasswordSite = angular.copy($scope.bb.api_url);
       }
-      $resetPasswordCtrl.validator = ValidatorService;
       $resetPasswordCtrl.formErrors = [];
       if ((QueryStringService('reset_password_token') != null) && QueryStringService('reset_password_token') !== 'undefined' && QueryStringService('reset_password_token') !== '') {
         $resetPasswordCtrl.resetPasswordTemplate = 'reset-password/reset-password-by-token.html';
