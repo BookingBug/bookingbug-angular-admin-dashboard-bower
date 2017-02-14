@@ -38,3 +38,21 @@ html,body {
     }
   }
 }
+
+//Module overwrite
+[bb-admin-dashboard] {
+
+  .uib-separator {
+    padding: 0px 1px 0px 1px;
+  }
+
+  .form-group {
+    &.schema-form-duration {
+      position: relative;
+    }
+    &.schema-form-duration > .form-control-feedback {
+      top: 23px;
+    }
+  }
+
+}
