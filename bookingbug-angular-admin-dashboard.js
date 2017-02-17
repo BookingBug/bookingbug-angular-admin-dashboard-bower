@@ -501,10 +501,21 @@
 }).call(this);
 
 (function() {
-  angular.module('BBAdminDashboard.calendar.directives').directive('bbResourceCalendar', function(uiCalendarConfig, AdminCompanyService, $q, ModalForm, BBModel, AdminBookingPopup, $window, $bbug, ColorPalette, Dialog, $timeout, $compile, $templateCache, PrePostTime, $filter) {
+  angular.module('BBAdminDashboard.calendar.directives').directive('bbResourceCalendar', function(uiCalendarConfig, AdminCompanyService, $q, ModalForm, BBModel, AdminBookingPopup, AdminMoveBookingPopup, $window, $bbug, ColorPalette, Dialog, $timeout, $compile, $templateCache, PrePostTime, $filter) {
     var controller, link;
-    controller = function($scope, $attrs, BBAssets, ProcessAssetsFilter, $state, GeneralOptions, AdminCalendarOptions, CalendarEventSources) {
-      var dayHasAvailability, filters, getCalendarAssets, height, isTimeRangeAvailable, pusherBooking;
+    controller = function($scope, $attrs, BBAssets, ProcessAssetsFilter, $state, GeneralOptions, AdminCalendarOptions, CalendarEventSources, TitleAssembler) {
+      var dayHasAvailability, filters, getBookingTitle, getCalendarAssets, height, isTimeRangeAvailable, pusherBooking, setTimeToMoment;
+      setTimeToMoment = function(date, time) {
+        var newDate;
+        newDate = moment(time, 'HH:mm');
+        newDate.set({
+          'year': parseInt(date.get('year')),
+          'month': parseInt(date.get('month')),
+          'date': parseInt(date.get('date')),
+          'second': 0
+        });
+        return newDate;
+      };
       filters = {
         requestedAssets: ProcessAssetsFilter($state.params.assets)
       };
@@ -591,6 +602,45 @@
             return event.oldResourceIds = event.resourceIds;
           },
           eventDrop: function(event, delta, revertFunc) {
+            var end, item_defaults, newAssetId, orginal_resource, start;
+            if (event.person_id && event.resource_id || delta.days() > 0) {
+              start = event.start;
+              end = event.end;
+              item_defaults = {
+                date: start.format('YYYY-MM-DD'),
+                time: start.hour() * 60 + start.minute()
+              };
+              if (event.resourceId) {
+                newAssetId = event.resourceId.substring(0, event.resourceId.indexOf('_'));
+                if (event.resourceId.indexOf('_p') > -1) {
+                  item_defaults.person = newAssetId;
+                  orginal_resource = "" + event.person_id + "_p";
+                } else if (event.resourceId.indexOf('_r') > -1) {
+                  item_defaults.resource = newAssetId;
+                  orginal_resource = "" + event.resource_id + "_r";
+                }
+              }
+              $scope.getCompanyPromise().then(function(company) {
+                return AdminMoveBookingPopup.open({
+                  min_date: setTimeToMoment(start, $scope.options.min_time),
+                  max_date: setTimeToMoment(end, $scope.options.max_time),
+                  from_datetime: moment(start.toISOString()),
+                  to_datetime: moment(end.toISOString()),
+                  item_defaults: item_defaults,
+                  company_id: company.id,
+                  booking_id: event.id,
+                  success: (function(_this) {
+                    return function(model) {
+                      return $scope.refreshBooking(event);
+                    };
+                  })(this),
+                  fail: function() {
+                    return $scope.refreshBooking(event);
+                  }
+                });
+              });
+              return;
+            }
             return Dialog.confirm({
               model: event,
               body: "Are you sure you want to move this booking?",
@@ -631,23 +681,12 @@
             }
           },
           select: function(start, end, jsEvent, view, resource) {
-            var item_defaults, setTimeToMoment;
-            if (jsEvent.target.className === 'fc-scroller') {
+            var item_defaults;
+            if (jsEvent && jsEvent.target.className === 'fc-scroller') {
               return;
             }
             view.calendar.unselect();
             if (isTimeRangeAvailable(start, end, resource) || (Math.abs(start.diff(end, 'days')) === 1 && dayHasAvailability(start))) {
-              setTimeToMoment = function(date, time) {
-                var newDate;
-                newDate = moment(time, 'HH:mm');
-                newDate.set({
-                  'year': parseInt(date.get('year')),
-                  'month': parseInt(date.get('month')),
-                  'date': parseInt(date.get('date')),
-                  'second': 0
-                });
-                return newDate;
-              };
               if (Math.abs(start.diff(end, 'days')) > 0) {
                 end.subtract(1, 'days');
                 end = setTimeToMoment(end, $scope.options.max_time);
@@ -665,8 +704,8 @@
                 return AdminBookingPopup.open({
                   min_date: setTimeToMoment(start, $scope.options.min_time),
                   max_date: setTimeToMoment(end, $scope.options.max_time),
-                  from_datetime: start,
-                  to_datetime: end,
+                  from_datetime: moment(start.toISOString()),
+                  to_datetime: moment(end.toISOString()),
                   item_defaults: item_defaults,
                   first_page: "quick_pick",
                   company_id: company.id
@@ -784,6 +823,31 @@
           }
         });
       };
+      getBookingTitle = function(booking) {
+        var blockLabelAssembler, labelAssembler;
+        labelAssembler = $scope.labelAssembler ? $scope.labelAssembler : AdminCalendarOptions.bookings_label_assembler;
+        blockLabelAssembler = $scope.blockLabelAssembler ? $scope.blockLabelAssembler : AdminCalendarOptions.block_label_assembler;
+        if (booking.status !== 3 && labelAssembler) {
+          return TitleAssembler.getTitle(booking, labelAssembler);
+        } else if (booking.status === 3 && blockLabelAssembler) {
+          return TitleAssembler.getTitle(booking, blockLabelAssembler);
+        }
+        return booking.title;
+      };
+      $scope.refreshBooking = function(booking) {
+        return booking.$refetch().then(function(response) {
+          booking.resourceIds = [];
+          booking.resourceId = null;
+          if (booking.person_id != null) {
+            booking.resourceIds.push(booking.person_id + '_p');
+          }
+          if (booking.resource_id != null) {
+            booking.resourceIds.push(booking.resource_id + '_r');
+          }
+          booking.title = getBookingTitle(booking);
+          return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('updateEvent', booking);
+        });
+      };
       $scope.updateBooking = function(booking) {
         var newAssetId;
         newAssetId = booking.resourceId.substring(0, booking.resourceId.indexOf('_'));
@@ -801,6 +865,7 @@
           if (booking.resource_id != null) {
             booking.resourceIds.push(booking.resource_id + '_r');
           }
+          booking.title = getBookingTitle(booking);
           return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('updateEvent', booking);
         });
       };
@@ -819,9 +884,34 @@
           title: title,
           success: (function(_this) {
             return function(response) {
+              var item_defaults;
+              if (typeof response === 'string') {
+                if (response === "move") {
+                  item_defaults = {
+                    person: booking.person_id,
+                    resource: booking.resource_id
+                  };
+                  $scope.getCompanyPromise().then(function(company) {
+                    return AdminMoveBookingPopup.open({
+                      item_defaults: item_defaults,
+                      company_id: company.id,
+                      booking_id: booking.id,
+                      success: (function(_this) {
+                        return function(model) {
+                          return $scope.refreshBooking(booking);
+                        };
+                      })(this),
+                      fail: function() {
+                        return $scope.refreshBooking(booking);
+                      }
+                    });
+                  });
+                }
+              }
               if (response.is_cancelled) {
                 return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('removeEvents', [response.id]);
               } else {
+                booking.title = getBookingTitle(booking);
                 return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('updateEvent', booking);
               }
             };
@@ -834,6 +924,7 @@
           booking = _.first(uiCalendarConfig.calendars.resourceCalendar.fullCalendar('clientEvents', res.id));
           if (booking && booking.$refetch) {
             return booking.$refetch().then(function() {
+              booking.title = getBookingTitle(booking);
               return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('updateEvent', booking);
             });
           } else {
@@ -1855,10 +1946,13 @@
   * Controller for the layout (root state)
    */
   angular.module('BBAdminDashboard.controllers').controller('CorePageController', [
-    '$scope', '$state', 'company', function($scope, $state, company) {
+    '$scope', '$state', 'company', '$modalStack', '$rootScope', function($scope, $state, company, $modalStack, $rootScope) {
       $scope.company = company;
       $scope.bb.company = company;
-      return moment.tz.setDefault(company.timezone);
+      moment.tz.setDefault(company.timezone);
+      return $rootScope.$on('$stateChangeStart', function() {
+        return $modalStack.dismissAll();
+      });
     }
   ]);
 
