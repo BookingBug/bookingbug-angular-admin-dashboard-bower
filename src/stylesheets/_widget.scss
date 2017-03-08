@@ -1,0 +1,32 @@
+
+// adjustments to the widget to stop admin css breaking things
+
+
+.bb-calendar h4.panel-title,
+[bb-time-ranges] h4.panel-title,
+.bb-time-ranges h4.panel-title {
+    font-size: inherit;
+    padding-bottom: 0;
+}
+
+.bb-calendar .time-slot,
+[bb-time-ranges] .time-slot,
+.bb-time-ranges .time-slot {
+  padding: 10px 20px;
+  cursor: pointer;
+  text-align: center;
+}
+
+// hide the print button in popups
+.print-row {display:none;}
+
+
+.bb-calendar .panel-heading,
+[bb-time-ranges] .panel-heading,
+.bb-time-ranges .panel-heading {
+    background: none;
+    padding: 10px 4px 10px 4px;
+    position: relative;
+    cursor: pointer;
+    color: inherit;
+}
