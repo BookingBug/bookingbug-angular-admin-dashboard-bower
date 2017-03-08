@@ -672,8 +672,6 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
 });
 'use strict';
 
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
 angular.module('BBAdminDashboard.calendar.controllers').controller('bbResourceCalendarController', function (AdminBookingPopup, AdminCalendarOptions, AdminCompanyService, AdminMoveBookingPopup, $attrs, BBAssets, BBModel, $bbug, CalendarEventSources, ColorPalette, Dialog, $filter, GeneralOptions, ModalForm, PrePostTime, ProcessAssetsFilter, $q, $rootScope, $scope, $state, TitleAssembler, $translate, $window, uiCalendarConfig) {
     'ngInject';
 
@@ -893,14 +891,14 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('bbResourceCa
             };
 
             if (event.resourceId) {
-                var orginal_resource = void 0;
+                //let orginal_resource;
                 var newAssetId = event.resourceId.substring(0, event.resourceId.indexOf('_'));
                 if (event.resourceId.indexOf('_p') > -1) {
                     item_defaults.person = newAssetId;
-                    orginal_resource = event.person_id + '_p';
+                    //orginal_resource = `${event.person_id}_p`;
                 } else if (event.resourceId.indexOf('_r') > -1) {
                     item_defaults.resource = newAssetId;
-                    orginal_resource = event.resource_id + '_r';
+                    //orginal_resource = `${event.resource_id}_r`;
                 }
             }
 
@@ -1042,17 +1040,16 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('bbResourceCa
     };
 
     var fcViewRender = function fcViewRender(view, element) {
-        var _newDate$set;
-
         var date = uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('getDate');
         var newDate = moment().tz(moment.tz.guess());
-        newDate.set((_newDate$set = {
+        newDate.set({
             'year': parseInt(date.get('year')),
             'month': parseInt(date.get('month')),
             'date': parseInt(date.get('date')),
             'hour': 0,
-            'minute': 0
-        }, _defineProperty(_newDate$set, 'minute', 0), _defineProperty(_newDate$set, 'second', 0), _newDate$set));
+            'minute': 0,
+            'second': 0
+        });
         return vm.currentDate = newDate.toDate();
     };
 
@@ -1995,32 +1992,40 @@ angular.module('BBAdminDashboard.calendar.services').factory("PrePostTime", func
                             switch (view.name) {
                                 case "agendaWeek":
                                 case "agendaDay":
-                                    var preHeight = event.pre_time * (element.height() + 2) / totalDuration;
-                                    var pre = $compile("<div class='pre' style='height:" + preHeight + "px'></div>")(scope);
-                                    element.prepend(pre);
-                                    break;
+                                    {
+                                        var preHeight = event.pre_time * (element.height() + 2) / totalDuration;
+                                        var pre = $compile("<div class='pre' style='height:" + preHeight + "px'></div>")(scope);
+                                        element.prepend(pre);
+                                        break;
+                                    }
                                 case "timelineDay":
-                                    var contentDiv = element.children()[0];
-                                    var preWidth = event.pre_time * (element.width() + 2) / totalDuration;
-                                    pre = $compile("<div class='pre' style='width:" + preWidth + "px'></div>")(scope);
-                                    element.prepend(pre);
-                                    angular.element(contentDiv).css("padding-left", preWidth + "px");
-                                    break;
+                                    {
+                                        var contentDiv = element.children()[0];
+                                        var preWidth = event.pre_time * (element.width() + 2) / totalDuration;
+                                        var _pre = $compile("<div class='pre' style='width:" + preWidth + "px'></div>")(scope);
+                                        element.prepend(_pre);
+                                        angular.element(contentDiv).css("padding-left", preWidth + "px");
+                                        break;
+                                    }
                             }
                         }
                         if (event.post_time) {
                             switch (view.name) {
                                 case "agendaWeek":
                                 case "agendaDay":
-                                    var postHeight = event.post_time * (element.height() + 2) / totalDuration;
-                                    var post = $compile("<div class='post' style='height:" + postHeight + "px'></div>")(scope);
-                                    item = element.append(post);
-                                    break;
+                                    {
+                                        var postHeight = event.post_time * (element.height() + 2) / totalDuration;
+                                        var post = $compile("<div class='post' style='height:" + postHeight + "px'></div>")(scope);
+                                        item = element.append(post);
+                                        break;
+                                    }
                                 case "timelineDay":
-                                    var postWidth = event.post_time * (element.width() + 2) / totalDuration;
-                                    post = $compile("<div class='post' style='width:" + postWidth + "px'></div>")(scope);
-                                    item = element.append(post);
-                                    break;
+                                    {
+                                        var postWidth = event.post_time * (element.width() + 2) / totalDuration;
+                                        var _post = $compile("<div class='post' style='width:" + postWidth + "px'></div>")(scope);
+                                        item = element.append(_post);
+                                        break;
+                                    }
                             }
                         }
                         result.push(item);
@@ -3297,7 +3302,6 @@ angular.module('BBAdminDashboard').directive('bbIfLogin', function ($uibModal, $
         };
     };
 
-    var link = function link(scope, element, attrs) {};
     return {
         compile: compile
         //    controller: 'bbQueuers'
@@ -4912,8 +4916,7 @@ var ResetPasswordSchemaFormService = function ResetPasswordSchemaFormService($q,
     var passwordPattern = '';
 
     var setPasswordPattern = function setPasswordPattern(pattern) {
-        var password_pattern = void 0;
-        return password_pattern = pattern;
+        return pattern;
     };
 
     var getPasswordPattern = function getPasswordPattern() {
