@@ -1,4 +1,4 @@
- 
+
 @import "skin_bb";
 
 .bb-page-frame {
@@ -21,3 +21,17 @@
 }
 
 @import "resource_calendar";
+
+#bb .modal-content .bb-content, .modal-content #bb .bb-content{
+	min-height: 100px !important;
+}
+
+.modal-content .modal-body #bb {
+  &.container-fluid {
+    padding-top: 10px;
+
+    .bb-step-navigation {
+      margin-bottom: 0;
+    }
+  }
+}
