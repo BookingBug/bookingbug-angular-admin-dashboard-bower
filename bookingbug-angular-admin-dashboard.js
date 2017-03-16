@@ -2152,6 +2152,28 @@ angular.module('BBAdminDashboard.calendar.translations').config(['$translateProv
 }]);
 'use strict';
 
+/*
+ * @ngdoc controller
+ * @name BBAdminDashboard.check-in.controllers.controller:CheckInPageCtrl
+ *
+ * @description
+ * Controller for the check-in page
+ */
+angular.module('BBAdminDashboard.check-in.controllers').controller('CheckInPageCtrl', ['$scope', '$state', '$log', function ($scope, $state, $log) {
+    var pusher_channel = $scope.company.getPusherChannel('bookings');
+    var refetch = _.throttle(function (data) {
+        $log.info('== booking push received in checkin  == ', data);
+        return $scope.$broadcast('refetchCheckin', data);
+    }, 1000, { leading: false });
+
+    if (pusher_channel) {
+        pusher_channel.bind('create', refetch);
+        pusher_channel.bind('update', refetch);
+        return pusher_channel.bind('destroy', refetch);
+    }
+}]);
+'use strict';
+
 angular.module('BBAdminDashboard.check-in.directives').directive('bbAddWalkin', function () {
     return {
         restrict: 'AE',
@@ -2364,28 +2386,6 @@ angular.module('BBAdminDashboard.check-in.directives').controller('CheckinsContr
     // cache to get the latest state of appointments
     return $scope.getAppointments(null, null, null, null, null, true);
 });
-'use strict';
-
-/*
- * @ngdoc controller
- * @name BBAdminDashboard.check-in.controllers.controller:CheckInPageCtrl
- *
- * @description
- * Controller for the check-in page
- */
-angular.module('BBAdminDashboard.check-in.controllers').controller('CheckInPageCtrl', ['$scope', '$state', '$log', function ($scope, $state, $log) {
-    var pusher_channel = $scope.company.getPusherChannel('bookings');
-    var refetch = _.throttle(function (data) {
-        $log.info('== booking push received in checkin  == ', data);
-        return $scope.$broadcast('refetchCheckin', data);
-    }, 1000, { leading: false });
-
-    if (pusher_channel) {
-        pusher_channel.bind('create', refetch);
-        pusher_channel.bind('update', refetch);
-        return pusher_channel.bind('destroy', refetch);
-    }
-}]);
 'use strict';
 
 /*
