@@ -55,3 +55,17 @@
     }
   }
 }
+
+.box [bb-schema-form] {
+  margin: 10px;
+  padding-bottom: 10px;
+}
+
+.iti-flag {background-image: url("images/flags.png");}
+
+.intl-tel-input .selected-flag {z-index: 4;}
+
+.intl-tel-input .country-list {z-index: 5;}
+
+.intl-tel-input {width: 100%;}
+
