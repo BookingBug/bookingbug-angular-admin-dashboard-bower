@@ -147,7 +147,7 @@ angular.module('BBAdminDashboard.clients').run(function (RuntimeStates, AdminCli
             controller: 'ClientsPageCtrl'
         }).state('clients.new', {
             url: "/new",
-            templateUrl: "client_new.html",
+            templateUrl: "clients/new.html",
             controller: 'ClientsNewPageCtrl'
         }).state('clients.all', {
             url: "/all",
@@ -2499,21 +2499,46 @@ angular.module('BBAdminDashboard.clients.controllers').controller('ClientsAllPag
  */
 angular.module('BBAdminDashboard.clients.controllers').controller('ClientsEditPageCtrl', function ($scope, client, $state, company, BBModel) {
 
-    $scope.client = client;
-    $scope.historicalStartDate = moment().add(-1, 'years');
-    $scope.historicalEndDate = moment();
-    // Refresh Client Resource after save
-    return $scope.memberSaveCallback = function () {
-        var params = {
-            company_id: company.id,
-            id: $state.params.id,
-            flush: true
-        };
+  $scope.client = client;
+  $scope.historicalStartDate = moment().add(-1, 'years');
+  $scope.historicalEndDate = moment();
 
-        return BBModelAdmin.Client.$query(params).then(function (client) {
-            return $scope.client = client;
-        });
+  var checkNameAndEmail = function checkNameAndEmail(newVal, oldVal) {
+    if (typeof newVal === 'undefined' && oldVal === '') {
+      $scope.$broadcast('schemaForm.error.first_name', 'nameOrEmail', true);
+      $scope.$broadcast('schemaForm.error.last_name', 'nameOrEmail', true);
+      $scope.$broadcast('schemaForm.error.email', 'nameOrEmail', true);
+    }
+    var attributes = [$scope.client.first_name, $scope.client.last_name, $scope.client.email];
+    if (_.every(attributes, _.isEmpty)) {
+      $scope.$broadcast('schemaForm.error.first_name', 'nameOrEmail', 'Either a name or email address is required');
+      $scope.$broadcast('schemaForm.error.last_name', 'nameOrEmail', 'Either a name or email address is required');
+      $scope.$broadcast('schemaForm.error.email', 'nameOrEmail', 'Either a name or email address is required');
+    } else {
+      $scope.$broadcast('schemaForm.error.first_name', 'nameOrEmail', true);
+      $scope.$broadcast('schemaForm.error.last_name', 'nameOrEmail', true);
+      $scope.$broadcast('schemaForm.error.email', 'nameOrEmail', true);
+      $scope.$broadcast('schemaForm.error.email', 'default', true);
+    }
+  };
+
+  $scope.$watch('client.first_name', checkNameAndEmail);
+  $scope.$watch('client.last_name', checkNameAndEmail);
+  $scope.$watch('client.email', checkNameAndEmail);
+
+  // Refresh Client Resource after save
+  return $scope.memberSaveCallback = function () {
+    var params = {
+      company: company,
+      company_id: company.id,
+      id: $state.params.id,
+      flush: true
     };
+
+    return BBModel.Admin.Client.$query(params).then(function (client) {
+      return $scope.client = client;
+    });
+  };
 });
 'use strict';
 
@@ -2524,7 +2549,12 @@ angular.module('BBAdminDashboard.clients.controllers').controller('ClientsEditPa
  * @description
  * Controller for the clients new page
  */
-angular.module('BBAdminDashboard.clients.controllers').controller('ClientsNewPageCtrl', ['$scope', '$state', function ($scope, $state) {}]);
+angular.module('BBAdminDashboard.clients.controllers').controller('ClientsNewPageCtrl', ['$scope', '$state', function ($scope, $state) {
+
+    $scope.onSuccess = function () {
+        $state.go('clients.all');
+    };
+}]);
 'use strict';
 
 /*
@@ -2672,7 +2702,8 @@ angular.module('BBAdminDashboard.clients.translations').config(['$translateProvi
                 'ADDRESS': 'Address',
                 'UPCOMING_BOOKINGS': 'Upcoming Bookings',
                 'PAST_BOOKINGS': 'Past Bookings',
-                'CUSTOMER_DETAILS': 'Customer Details'
+                'CUSTOMER_DETAILS': 'Customer Details',
+                'NEW': 'New'
             }
         }
     });
@@ -3306,6 +3337,160 @@ angular.module('BBAdminDashboard').directive('bbIfLogin', function ($uibModal, $
 });
 'use strict';
 
+angular.module('BBAdminDashboard').directive('bbSchemaForm', function ($log, FormTransform) {
+    'ngInject';
+
+    return {
+        template: '<div uib-alert ng-class="\'alert-\' + alert.type" ng-if="alert">{{alert.msg}}</div>\n  <form name="formCtrl" sf-schema="schema" sf-form="form" sf-model="form_model"\n  ng-submit="submit(formCtrl)" ng-hide="loading" ng-if="schema && form && form_model" sf-options="options"></form>',
+        scope: {
+            base: '=',
+            formRel: '@',
+            saveRel: '@',
+            onSuccessSave: '=',
+            onFailSave: '=',
+            options: '=',
+            formModel: '=?'
+        },
+        controller: function controller($scope) {
+            $scope.loading = true;
+            if ($scope.base.$has($scope.formRel)) {
+                $scope.base.$get($scope.formRel).then(function (schema) {
+                    $scope.form = schema.form;
+                    $scope.schema = schema.schema;
+                    if ($scope.formModel) {
+                        $scope.form_model = $scope.formModel;
+                    } else {
+                        $scope.form_model = {};
+                    }
+                    return $scope.loading = false;
+                });
+            } else {
+                $log.warn('model does not have \'' + formRel + '\' rel');
+            }
+
+            return $scope.submit = function (form) {
+                $scope.alert = false;
+                $scope.$broadcast('schemaFormValidate');
+                if (form.$valid) {
+                    $scope.loading = true;
+                    return $scope.base.$post($scope.saveRel, {}, $scope.form_model).then(function (response) {
+                        $scope.loading = false;
+                        if ($scope.onSuccessSave) {
+                            return $scope.onSuccessSave(response);
+                        }
+                    }, function (err) {
+                        $scope.loading = false;
+                        if (err.data && err.data.error) {
+                            $log.error(err.data.error);
+                            $scope.alert = {
+                                type: 'danger',
+                                msg: err.data.error
+                            };
+                        } else {
+                            $log.error('Something went wrong');
+                            $scope.alert = {
+                                type: 'danger',
+                                msg: 'Something went wrong'
+                            };
+                        }
+                        if ($scope.onFailSave) {
+                            return $scope.onFailSave();
+                        }
+                    });
+                }
+            };
+        }
+    };
+});
+'use strict';
+
+angular.module('BBAdminDashboard').directive('bbSchemaFormEdit', function ($log, FormTransform) {
+    'ngInject';
+
+    return {
+        template: '<div uib-alert ng-class="\'alert-\' + alert.type" ng-if="alert">{{alert.msg}}</div>\n  <form name="formCtrl" sf-schema="schema" sf-form="form" sf-model="form_model"\n  ng-submit="submit(formCtrl)" ng-hide="loading" ng-if="schema && form && form_model" sf-options="options"></form>',
+        link: function link(scope, element, attrs) {
+            console.log('schema form link');
+            scope.$watch('model', function (n) {
+                console.log('model change ', n);
+            });
+        },
+        scope: {
+            model: '=',
+            onSuccessSave: '=',
+            onFailSave: '=',
+            options: '='
+        },
+        controller: function controller($scope) {
+            console.log('schema form');
+            $scope.$watch('model', function (n) {
+                console.log('model change ', n);
+            });
+            $scope.loading = true;
+            if ($scope.model.$has('edit')) {
+                $scope.model.$get('edit').then(function (schema) {
+                    $scope.form = schema.form;
+                    var model_type = $scope.model.constructor.name;
+                    if (FormTransform['edit'][model_type]) {
+                        $scope.form = FormTransform['edit'][model_type]($scope.form);
+                    }
+                    $scope.schema = schema.schema;
+                    $scope.form_model = $scope.model;
+                    // $scope.form_model = angular.copy($scope.model);
+                    return $scope.loading = false;
+                });
+            } else {
+                $log.warn("model does not have 'edit' rel");
+            }
+
+            return $scope.submit = function (form) {
+                $scope.$broadcast('schemaFormValidate');
+                if (form.$valid) {
+                    $scope.loading = true;
+                    if ($scope.model.$update) {
+                        return $scope.model.$update($scope.form_model).then(function () {
+                            $scope.loading = false;
+                            if ($scope.onSuccessSave) {
+                                return $scope.onSuccessSave($scope.model);
+                            }
+                        }, function (err) {
+                            $scope.loading = false;
+                            $log.error('Failed to create');
+                            if ($scope.onFailSave) {
+                                return $scope.onFailSave();
+                            }
+                        });
+                    } else {
+                        return $scope.model.$put('self', {}, $scope.form_model).then(function (model) {
+                            $scope.loading = false;
+                            if ($scope.onSuccessSave) {
+                                return $scope.onSuccessSave(model);
+                            }
+                        }, function (err) {
+                            $scope.loading = false;
+                            if (err.data && err.data.error) {
+                                $log.error(err.data.error);
+                                $scope.alert = {
+                                    type: 'danger',
+                                    msg: err.data.error
+                                };
+                            } else {
+                                $log.error('Something went wrong');
+                                $scope.alert = { type: 'danger' };
+                                ({ msg: 'Something went wrong' });
+                            }
+                            if ($scope.onFailSave) {
+                                return $scope.onFailSave();
+                            }
+                        });
+                    }
+                }
+            };
+        }
+    };
+});
+'use strict';
+
 /**
  * @ngdoc directive
  * @name BBAdminDashboard.directive:bodyResize
@@ -3744,13 +3929,17 @@ angular.module('BBAdminDashboard').factory('SideNavigationPartials', ['AdminCore
                 });
             }
         },
+        removePartialTemplate: function removePartialTemplate(identifier) {
+            var partial = _.findWhere(templatesArray, { module: identifier });
+            var index = _.indexOf(templatesArray, partial);
+            templatesArray.splice(index, 1);
+        },
         getPartialTemplates: function getPartialTemplates() {
             return templatesArray;
         },
-        getOrderedPartialTemplates: function getOrderedPartialTemplates(flat) {
-            if (flat == null) {
-                flat = false;
-            }
+        getOrderedPartialTemplates: function getOrderedPartialTemplates() {
+            var flat = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+
             var orderedList = [];
             var flatOrderedList = [];
 
@@ -3775,26 +3964,6 @@ angular.module('BBAdminDashboard').factory('SideNavigationPartials', ['AdminCore
                     return orderedList.push(newGroup);
                 }
             });
-
-            var orphanItems = [];
-
-            angular.forEach(templatesArray, function (partial, index) {
-                var existing = _.find(flatOrderedList, function (item) {
-                    return item.module === partial.module;
-                });
-
-                if (!existing) {
-                    flatOrderedList.push(partial);
-                    return orphanItems.push(partial);
-                }
-            });
-
-            if (orphanItems.length) {
-                orderedList.push({
-                    group_name: '&nbsp;',
-                    items: orphanItems
-                });
-            }
 
             if (flat) {
                 return flatOrderedList;
