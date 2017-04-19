@@ -3356,6 +3356,9 @@ angular.module('BBAdminDashboard').directive('bbSchemaForm', function ($log, For
             if ($scope.base.$has($scope.formRel)) {
                 $scope.base.$get($scope.formRel).then(function (schema) {
                     $scope.form = schema.form;
+                    if (FormTransform['new'][$scope.formRel]) {
+                        $scope.form = FormTransform['new'][$scope.formRel]($scope.form);
+                    }
                     $scope.schema = schema.schema;
                     if ($scope.formModel) {
                         $scope.form_model = $scope.formModel;
