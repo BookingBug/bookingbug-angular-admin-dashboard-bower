@@ -1,6 +1,6 @@
 {
   "name": "bookingbug-angular-admin-dashboard",
-  "version": "v2.2.14",
+  "version": "2.2.16",
   "homepage": "https://github.com/BookingBug/bookingbug-angular-admin-dashboard-bower",
   "authors": [
     "Glenn Shoosmith <glenn@bookingbug.com>",
@@ -22,12 +22,12 @@
     "tests"
   ],
   "dependencies": {
-    "bookingbug-angular-core": "master",
-    "bookingbug-angular-admin": "master",
-    "bookingbug-angular-member": "master",
-    "bookingbug-angular-admin-booking": "master",
-    "bookingbug-angular-services": "master",
-    "bookingbug-angular-events": "master",
+    "bookingbug-angular-core": "2.2.16",
+    "bookingbug-angular-admin": "2.2.16",
+    "bookingbug-angular-member": "2.2.16",
+    "bookingbug-angular-admin-booking": "2.2.16",
+    "bookingbug-angular-services": "2.2.16",
+    "bookingbug-angular-events": "2.2.16",
     "AdminLTE-angular-sass": "~0.0.1",
     "fullcalendar-scheduler": "~1.4.0",
     "jqueryui-touch-punch": "*",
