@@ -1,0 +1,23 @@
+.bb-user-preferences {
+
+  .ui-select-container {
+    width: 260px;
+  }
+
+  .form-group {
+    margin-bottom: 10px;
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  label {
+    display: block;
+    font-weight: normal;
+  }
+
+  .ats-switch {
+    min-width: 80px;
+  }
+
+}
