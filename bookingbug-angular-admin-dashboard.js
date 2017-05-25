@@ -625,7 +625,7 @@ angular.module('BBAdminDashboard.settings-iframe').run(function (RuntimeStates, 
 })();
 'use strict';
 
-/*
+/**
  * @ngdoc controller
  * @name BBAdminDashboard.calendar.controllers.controller:CalendarPageCtrl
  *
@@ -672,7 +672,8 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
 });
 'use strict';
 
-angular.module('BBAdminDashboard.calendar.controllers').controller('bbResourceCalendarController', function (AdminBookingPopup, AdminCalendarOptions, AdminCompanyService, AdminMoveBookingPopup, $attrs, BBAssets, BBModel, $bbug, CalendarEventSources, ColorPalette, Dialog, $filter, GeneralOptions, ModalForm, PrePostTime, ProcessAssetsFilter, $q, $rootScope, $scope, $state, TitleAssembler, $translate, $window, uiCalendarConfig) {
+angular.module('BBAdminDashboard.calendar.controllers').controller('bbResourceCalendarController', function (AdminBookingPopup, AdminCalendarOptions, AdminCompanyService, AdminMoveBookingPopup, $attrs, BBAssets, BBModel, $bbug, CalendarEventSources, ColorPalette, Dialog, $filter, GeneralOptions, ModalForm, PrePostTime, ProcessAssetsFilter, $q, $rootScope, $scope, $state, TitleAssembler, $translate, $window, uiCalendarConfig, CompanyStoreService, bbi18nOptions, bbTimeZone) {
+
     'ngInject';
 
     /*jshint validthis: true */
@@ -706,6 +707,8 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('bbResourceCa
         $scope.$on('BBLanguagePicker:languageChanged', languageChangedHandler);
         $scope.$on('CalendarEventSources:timeRangeChanged', timeRangeChangedHandler);
 
+        $rootScope.$on('BBTimeZoneOptions:timeZoneChanged', timeZoneChangedHandler);
+
         getCompanyPromise().then(companyListener);
 
         vm.changeSelectedResources = changeSelectedResources;
@@ -736,6 +739,10 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('bbResourceCa
     };
 
     var getEvents = function getEvents(start, end, timezone, callback) {
+
+        if (bbTimeZone.getDisplayUTCOffset() > bbTimeZone.getCompanyUTCOffset()) start = start.clone().subtract(1, 'day');
+        if (bbTimeZone.getDisplayUTCOffset() < bbTimeZone.getCompanyUTCOffset()) end = end.clone().add(1, 'day');
+
         vm.loading = true;
         getCompanyPromise().then(function (company) {
             var options = {
@@ -791,7 +798,7 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('bbResourceCa
         if (calOptions.name) {
             vm.calendar_name = calOptions.name;
         } else {
-            vm.calendar_name = "resourceCalendar";
+            vm.calendar_name = 'resourceCalendar';
         }
 
         if (calOptions.cal_slot_duration == null) {
@@ -802,6 +809,7 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('bbResourceCa
     var prepareUiCalOptions = function prepareUiCalOptions() {
         vm.uiCalOptions = { // @todo REPLACE ALL THIS WITH VARIABLES FROM THE GeneralOptions Service
             calendar: {
+                editable: true,
                 schedulerLicenseKey: '0598149132-fcs-1443104297',
                 eventStartEditable: false,
                 eventDurationEditable: false,
@@ -845,7 +853,9 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('bbResourceCa
                 select: fcSelect,
                 viewRender: fcViewRender,
                 eventResize: fcEventResize,
-                loading: fcLoading
+                loading: fcLoading,
+                ignoreTimezone: false,
+                timezone: bbTimeZone.getDisplay()
             }
         };
         updateCalendarLanguage();
@@ -877,10 +887,18 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('bbResourceCa
     var fcEventDrop = function fcEventDrop(booking, delta, revertFunc) {
         // we need a full move cal if either it has a person and resource, or they've dragged over multiple days
 
+        var calendar = uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('getCalendar');
+        booking.start = calendar.moment(bbTimeZone.convertToDisplay(booking.start.toISOString()));
+        booking.end = calendar.moment(bbTimeZone.convertToDisplay(booking.end.toISOString()));
+
         // not blocked and is a change in person/resource, or over multiple days
         if (booking.status !== 3 && (booking.person_id && booking.resource_id || delta.days() > 0)) {
             var start = booking.start;
             var end = booking.end;
+
+
+            start = bbTimeZone.convertToCompany(start);
+            end = bbTimeZone.convertToCompany(end);
 
             var item_defaults = {
                 date: start.format('YYYY-MM-DD'),
@@ -912,8 +930,7 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('bbResourceCa
                         return refreshBooking(booking);
                     },
                     fail: function fail() {
-                        refreshBooking(booking);
-                        return revertFunc();
+                        return refreshBooking(booking);
                     }
                 });
             });
@@ -926,6 +943,10 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('bbResourceCa
             model: booking,
             body: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MOVE_MODAL_BODY'),
             success: function success(model) {
+
+                booking.start = bbTimeZone.convertToCompany(booking.start);
+                booking.end = bbTimeZone.convertToCompany(booking.end);
+
                 return updateBooking(booking);
             },
             fail: function fail() {
@@ -938,7 +959,7 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('bbResourceCa
         if (booking.type === 'external') return;
 
         if (booking.$has('edit')) {
-            return editBooking(booking);
+            return editBooking(new BBModel.Admin.Booking(booking));
         }
     };
 
@@ -951,33 +972,33 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('bbResourceCa
             // if not a single item view
             var a = void 0,
                 link = void 0;
-            if (type === "listDay") {
+            if (type === 'listDay') {
                 link = $bbug(element.children()[2]);
                 if (link) {
                     a = link.children()[0];
                     if (a) {
-                        if (booking.person_name && (!calOptions.type || calOptions.type === "person")) {
-                            a.innerHTML = booking.person_name + " - " + a.innerHTML;
-                        } else if (booking.resource_name && calOptions.type === "resource") {
-                            a.innerHTML = booking.resource_name + " - " + a.innerHTML;
+                        if (booking.person_name && (!calOptions.type || calOptions.type === 'person')) {
+                            a.innerHTML = booking.person_name + ' - ' + a.innerHTML;
+                        } else if (booking.resource_name && calOptions.type === 'resource') {
+                            a.innerHTML = booking.resource_name + ' - ' + a.innerHTML;
                         }
                     }
                 }
-            } else if (type === "agendaWeek" || type === "month") {
+            } else if (type === 'agendaWeek' || type === 'month') {
                 link = $bbug(element.children()[0]);
                 if (link) {
                     a = link.children()[1];
                     if (a) {
-                        if (booking.person_name && (!calOptions.type || calOptions.type === "person")) {
-                            a.innerHTML = booking.person_name + "<br/>" + a.innerHTML;
-                        } else if (booking.resource_name && calOptions.type === "resource") {
-                            a.innerHTML = booking.resource_name + "<br/>" + a.innerHTML;
+                        if (booking.person_name && (!calOptions.type || calOptions.type === 'person')) {
+                            a.innerHTML = booking.person_name + '<br/>' + a.innerHTML;
+                        } else if (booking.resource_name && calOptions.type === 'resource') {
+                            a.innerHTML = booking.resource_name + '<br/>' + a.innerHTML;
                         }
                     }
                 }
             }
         }
-        if (service && type !== "listDay") {
+        if (service && type !== 'listDay') {
             element.css('background-color', service.color);
             element.css('color', service.textColor);
             element.css('border-color', service.textColor);
@@ -1000,6 +1021,10 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('bbResourceCa
         if (jsEvent && jsEvent.target.className === 'fc-scroller') {
             return;
         }
+
+        var calendar = uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('getCalendar');
+        start = calendar.moment(bbTimeZone.convertToCompany(moment(start.toISOString())));
+        end = calendar.moment(bbTimeZone.convertToCompany(moment(end.toISOString())));
 
         view.calendar.unselect();
 
@@ -1027,9 +1052,10 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('bbResourceCa
                     from_datetime: moment(start.toISOString()),
                     to_datetime: moment(end.toISOString()),
                     item_defaults: item_defaults,
-                    first_page: "quick_pick",
-                    on_conflict: "cancel()",
-                    company_id: company.id
+                    first_page: 'quick_pick',
+                    on_conflict: 'cancel()',
+                    company_id: company.id,
+                    title: moment(start).format('LLLL')
                 });
             });
         }
@@ -1200,12 +1226,13 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('bbResourceCa
     var editBooking = function editBooking(booking) {
         var templateUrl = void 0,
             title = void 0;
+
         if (booking.status === 3) {
             templateUrl = 'edit_block_modal_form.html';
-            title = 'Edit Block';
+            title = $translate.instant('CORE.MODAL.EDIT_BLOCK');
         } else {
             templateUrl = 'edit_booking_modal_form.html';
-            title = 'Edit Booking';
+            title = $translate.instant('COMMON.MODAL.EDIT_BOOKING');
         }
         ModalForm.edit({
             templateUrl: templateUrl,
@@ -1216,7 +1243,7 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('bbResourceCa
             },
             success: function success(response) {
                 if (typeof response === 'string') {
-                    if (response === "move") {
+                    if (response === 'move') {
                         var item_defaults = { person: booking.person_id, resource: booking.resource_id };
                         getCompanyPromise().then(function (company) {
                             return AdminMoveBookingPopup.open({
@@ -1224,7 +1251,6 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('bbResourceCa
                                 company_id: company.id,
                                 booking_id: booking.id,
                                 success: function success(model) {
-
                                     return refreshBooking(booking);
                                 },
                                 fail: function fail() {
@@ -1233,8 +1259,7 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('bbResourceCa
                             });
                         });
                     }
-                }
-                if (response.is_cancelled) {
+                } else if (response.is_cancelled) {
                     return uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('removeEvents', [response.id]);
                 } else {
                     booking.title = getBookingTitle(booking);
@@ -1290,6 +1315,10 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('bbResourceCa
 
     var newCheckoutHandler = function newCheckoutHandler() {
         uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('refetchEvents');
+    };
+
+    var timeZoneChangedHandler = function timeZoneChangedHandler(event, tz) {
+        uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('option', 'timezone', tz);
     };
 
     var languageChangedHandler = function languageChangedHandler() {
@@ -1407,31 +1436,6 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('bbResourceCa
 });
 'use strict';
 
-angular.module('BBAdminDashboard.calendar.directives').directive('bbNewBooking', function () {
-    return {
-        restrict: 'AE',
-        replace: true,
-        scope: true,
-        controller: function controller($scope, AdminBookingPopup, $uibModal, $timeout, $rootScope, AdminBookingOptions) {
-
-            return $scope.newBooking = function () {
-                return AdminBookingPopup.open({
-                    item_defaults: {
-                        day_view: AdminBookingOptions.day_view,
-                        merge_people: true,
-                        merge_resources: true,
-                        date: moment($scope.$parent.currentDate).isValid() ? moment($scope.$parent.currentDate).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD')
-                    },
-                    company_id: $rootScope.bb.company.id,
-                    on_conflict: "cancel()",
-                    template: 'main'
-                });
-            };
-        }
-    };
-});
-'use strict';
-
 angular.module('BBAdminDashboard.calendar.directives').directive('bbResourceCalendar', function ($compile) {
     'ngInject';
 
@@ -1472,7 +1476,7 @@ angular.module('BBAdminDashboard.calendar.directives').directive('bbResourceCale
 });
 'use strict';
 
-/*
+/**
  * @ngdoc service
  * @name BBAdminDashboard.calendar.services.service:AdminCalendarOptions
  *
@@ -1480,19 +1484,20 @@ angular.module('BBAdminDashboard.calendar.directives').directive('bbResourceCale
  * Returns a set of admin calendar configuration options
  */
 
-/*
+/**
  * @ngdoc service
- * @name BBAdminDashboard.calendar.services.service:AdminCalendarOptionsProvider
+ * @name BBAdminDashboard.calendar.services.service.AdminCalendarOptionsProvider
  *
  * @description
  * Provider
  *
+ *
  * @example
- <example>
- angular.module('ExampleModule').config ['AdminCalendarOptionsProvider', (AdminCalendarOptionsProvider) ->
- AdminCalendarOptionsProvider.setOption('option', 'value')
- ]
- </example>
+ <pre module='BBAdminDashboard.calendar.services.service.AdminCalendarOptionsProvider'>
+     angular.module('ExampleModule').config ['AdminCalendarOptionsProvider', (AdminCalendarOptionsProvider) ->
+        AdminCalendarOptionsProvider.setOption('option', 'value')
+     ]
+ </pre>
  */
 angular.module('BBAdminDashboard.calendar.services').provider('AdminCalendarOptions', [function () {
     // This list of options is meant to grow
@@ -1525,14 +1530,15 @@ angular.module('BBAdminDashboard.calendar.services').provider('AdminCalendarOpti
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc service
  * @name BBAdminDashboard.calendar.services.service:CalendarEventSources
  *
  * @description
  * This services exposes methods to get all event-type information to be shown in the calendar
  */
-angular.module('BBAdminDashboard.calendar.services').service('CalendarEventSources', function (AdminScheduleService, BBModel, $exceptionHandler, $q, TitleAssembler, $translate, AdminCalendarOptions, $rootScope) {
+angular.module('BBAdminDashboard.calendar.services').service('CalendarEventSources', function (AdminScheduleService, BBModel, $q, TitleAssembler, $translate, AdminCalendarOptions, $rootScope, bbTimeZone) {
+
     'ngInject';
 
     var bookingBelongsToSelectedResources = function bookingBelongsToSelectedResources(resources, booking) {
@@ -1545,7 +1551,7 @@ angular.module('BBAdminDashboard.calendar.services').service('CalendarEventSourc
         return belongs;
     };
 
-    /*
+    /**
      * @ngdoc method
      * @name getBookingsAndBlocks
      * @methodOf BBAdminDashboard.calendar.services.service:CalendarEventSources
@@ -1643,7 +1649,7 @@ angular.module('BBAdminDashboard.calendar.services').service('CalendarEventSourc
         return deferred.promise;
     };
 
-    /*
+    /**
      * @ngdoc method
      * @name getExternalBookings
      * @methodOf BBAdminDashboard.calendar.services.service:CalendarEventSources
@@ -1731,7 +1737,7 @@ angular.module('BBAdminDashboard.calendar.services').service('CalendarEventSourc
         return deferred.promise;
     };
 
-    /*
+    /**
      * @ngdoc method
      * @name getAvailabilityBackground
      * @methodOf BBAdminDashboard.calendar.services.service:CalendarEventSources
@@ -1897,6 +1903,9 @@ angular.module('BBAdminDashboard.calendar.services').service('CalendarEventSourc
             }
         }
 
+        minTime = bbTimeZone.convertToCompany(minTime);
+        maxTime = bbTimeZone.convertToCompany(maxTime);
+
         // store on AdminCalendarOptions object to read from in resourceCalendar controller prepareUiCalOptions method
         AdminCalendarOptions.minTime = minTime.format('HH:mm');
         AdminCalendarOptions.maxTime = maxTime.format('HH:mm');
@@ -2048,7 +2057,7 @@ angular.module('BBAdminDashboard.calendar.services').factory("PrePostTime", func
 });
 'use strict';
 
-/*
+/**
  * @ngdoc service
  * @name BBAdminDashboard.calendar.services.service:TitleAssembler
  *
@@ -2110,7 +2119,7 @@ angular.module('BBAdminDashboard.calendar.services').factory('TitleAssembler', [
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc overview
  * @name BBAdminDashboard.calendar.translations
  *
@@ -2145,14 +2154,14 @@ angular.module('BBAdminDashboard.calendar.translations').config(['$translateProv
                 'RESOURCES': 'Resources',
                 'MOVE_MODAL_HEADING': 'Move',
                 'MOVE_MODAL_BODY': 'Are you sure you want to move?',
-                'ADD_BOOKING': 'Add Booking'
+                'ADD_BOOKING': 'New Booking'
             }
         }
     });
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc controller
  * @name BBAdminDashboard.check-in.controllers.controller:CheckInPageCtrl
  *
@@ -2388,7 +2397,7 @@ angular.module('BBAdminDashboard.check-in.directives').controller('CheckinsContr
 });
 'use strict';
 
-/*
+/**
  * @ngdoc service
  * @name BBAdminDashboard.check-in.services.service:AdminCheckInOptions
  *
@@ -2396,19 +2405,20 @@ angular.module('BBAdminDashboard.check-in.directives').controller('CheckinsContr
  * Returns a set of admin calendar configuration options
  */
 
-/*
+/**
  * @ngdoc service
- * @name BBAdminDashboard.check-in.services.service:AdminCheckInOptionsProvider
+ * @name BBAdminDashboard.check-in.services.service.AdminCheckInOptionsProvider
  *
  * @description
  * Provider
  *
+ *
  * @example
- <example>
- angular.module('ExampleModule').config ['AdminCheckInOptionsProvider', (AdminCheckInOptionsProvider) ->
- AdminCheckInOptionsProvider.setOption('option', 'value')
- ]
- </example>
+ <pre module='BBAdminDashboard.check-in.services.service.AdminCheckInOptionsProvider'>
+     angular.module('ExampleModule').config ['AdminCheckInOptionsProvider', (AdminCheckInOptionsProvider) ->
+     AdminCheckInOptionsProvider.setOption('option', 'value')
+     ]
+ </pre>
  */
 angular.module('BBAdminDashboard.check-in.services').provider('AdminCheckInOptions', [function () {
     // This list of options is meant to grow
@@ -2435,7 +2445,7 @@ angular.module('BBAdminDashboard.check-in.services').provider('AdminCheckInOptio
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc overview
  * @name BBAdminDashboard.check-in.translations
  *
@@ -2455,6 +2465,7 @@ angular.module('BBAdminDashboard.check-in.translations').config(['$translateProv
 
             'CHECK_IN_PAGE': {
                 'CHECK_IN': 'Check in',
+                'EDIT': 'Edit',
                 'NO_SHOW': 'No Show',
                 'WALK_IN': 'Walk in',
                 'CUSTOMER': 'Customer',
@@ -2478,7 +2489,7 @@ angular.module('BBAdminDashboard.check-in.translations').config(['$translateProv
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc controller
  * @name BBAdminDashboard.clients.controllers.controller:ClientsAllPageCtrl
  *
@@ -2490,7 +2501,7 @@ angular.module('BBAdminDashboard.clients.controllers').controller('ClientsAllPag
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc controller
  * @name BBAdminDashboard.clients.controllers.controller:ClientsEditPageCtrl
  *
@@ -2542,7 +2553,7 @@ angular.module('BBAdminDashboard.clients.controllers').controller('ClientsEditPa
 });
 'use strict';
 
-/*
+/**
  * @ngdoc controller
  * @name BBAdminDashboard.clients.controllers.controller:ClientsNewPageCtrl
  *
@@ -2557,7 +2568,7 @@ angular.module('BBAdminDashboard.clients.controllers').controller('ClientsNewPag
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc controller
  * @name BBAdminDashboard.clients.controllers.controller:ClientsPageCtrl
  *
@@ -2627,7 +2638,7 @@ angular.module('BBAdminDashboard.clients.directives').controller('TabletClients'
 });
 'use strict';
 
-/*
+/**
  * @ngdoc service
  * @name BBAdminDashboard.clients.services.service:AdminClientsOptions
  *
@@ -2635,19 +2646,20 @@ angular.module('BBAdminDashboard.clients.directives').controller('TabletClients'
  * Returns a set of admin calendar configuration options
  */
 
-/*
+/**
  * @ngdoc service
- * @name BBAdminDashboard.clients.services.service:AdminClientsOptionsProvider
+ * @name BBAdminDashboard.clients.services.service.AdminClientsOptionsProvider
  *
  * @description
  * Provider
  *
+ *
  * @example
- <example>
- angular.module('ExampleModule').config ['AdminClientsOptionsProvider', (AdminClientsOptionsProvider) ->
- AdminClientsOptionsProvider.setOption('option', 'value')
- ]
- </example>
+ <pre module='BBAdminDashboard.clients.services.service.AdminClientsOptionsProvider'>
+     angular.module('ExampleModule').config ['AdminClientsOptionsProvider', (AdminClientsOptionsProvider) ->
+        AdminClientsOptionsProvider.setOption('option', 'value')
+     ]
+ </pre>
  */
 angular.module('BBAdminDashboard.clients.services').provider('AdminClientsOptions', [function () {
     // This list of options is meant to grow
@@ -2674,7 +2686,7 @@ angular.module('BBAdminDashboard.clients.services').provider('AdminClientsOption
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc overview
  * @name BBAdminDashboard.clients.translations
  *
@@ -2703,14 +2715,14 @@ angular.module('BBAdminDashboard.clients.translations').config(['$translateProvi
                 'UPCOMING_BOOKINGS': 'Upcoming Bookings',
                 'PAST_BOOKINGS': 'Past Bookings',
                 'CUSTOMER_DETAILS': 'Customer Details',
-                'NEW': 'New'
+                'NEW': 'New Customer'
             }
         }
     });
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc controller
  * @name BBAdminDashboard.config-iframe.controllers.controller:ConfigIframeBookingSettingsPageCtrl
  *
@@ -2755,7 +2767,7 @@ angular.module('BBAdminDashboard.config-iframe.controllers').controller('ConfigI
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc controller
  * @name BBAdminDashboard.config-iframe.controllers.controller:ConfigIframeBusinessPageCtrl
  *
@@ -2800,7 +2812,7 @@ angular.module('BBAdminDashboard.config-iframe.controllers').controller('ConfigI
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc controller
  * @name BBAdminDashboard.config-iframe.controllers.controller:ConfigIframeEventSettingsPageCtrl
  *
@@ -2845,7 +2857,7 @@ angular.module('BBAdminDashboard.config-iframe.controllers').controller('ConfigI
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc controller
  * @name BBAdminDashboard.config-iframe.controllers.controller:ConfigIframePageCtrl
  *
@@ -2866,7 +2878,7 @@ angular.module('BBAdminDashboard.config-iframe.controllers').controller('ConfigI
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc controller
  * @name BBAdminDashboard.config-iframe.controllers.controller:ConfigIframePromotionsPageCtrl
  *
@@ -2907,7 +2919,7 @@ angular.module('BBAdminDashboard.config-iframe.controllers').controller('ConfigI
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc controller
  * @name BBAdminDashboard.config-iframe.controllers.controller:ConfigSubIframePageCtrl
  *
@@ -2926,27 +2938,28 @@ angular.module('BBAdminDashboard.config-iframe.controllers').controller('ConfigS
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc service
- * @name BBAdminDashboard.config-iframe.services.service:AdminConfigIframeOptions
+ * @name BBAdminDashboard.config-iframe.services.service.AdminConfigIframeOptions
  *
  * @description
  * Returns a set of admin calendar configuration options
  */
 
-/*
+/**
  * @ngdoc service
  * @name BBAdminDashboard.config-iframe.services.service:AdminConfigIframeOptionsProvider
  *
  * @description
  * Provider
  *
+ *
  * @example
- <example>
- angular.module('ExampleModule').config ['AdminConfigIframeOptionsProvider', (AdminConfigIframeOptionsProvider) ->
- AdminConfigIframeOptionsProvider.setOption('option', 'value')
- ]
- </example>
+ <pre module='BBAdminDashboard.config-iframe.services.service.AdminConfigIframeOptions'>
+     angular.module('ExampleModule').config ['AdminConfigIframeOptionsProvider', (AdminConfigIframeOptionsProvider) ->
+     AdminConfigIframeOptionsProvider.setOption('option', 'value')
+     ]
+ </pre>
  */
 angular.module('BBAdminDashboard.config-iframe.services').provider('AdminConfigIframeOptions', [function () {
     // This list of options is meant to grow
@@ -2973,7 +2986,7 @@ angular.module('BBAdminDashboard.config-iframe.services').provider('AdminConfigI
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc overview
  * @name BBAdminDashboard.config-iframe.translations
  *
@@ -3030,37 +3043,71 @@ angular.module('BBAdminDashboard.config-iframe.translations').config(['$translat
 }]);
 'use strict';
 
-/**
- * @ngdoc controller
- * @name BBAdminDashboard.controller:CorePageController
- * @description
- * Controller for the layout (root state)
- */
-var controller = function controller($scope, $state, company, $uibModalStack, $rootScope, GeneralOptions, CompanyStoreService) {
-    'ngInject';
+(function () {
 
-    $scope.company = company;
-    $scope.bb.company = company;
-    $scope.user = $rootScope.user;
+    'use strict';
 
-    //Set timezone globally per company basis (company contains timezone info)
-    moment.tz.setDefault(company.timezone);
+    /**
+     * @ngdoc directive
+     * @name BBAdminDashboard.bbUserPreferences
+     *
+     * @description
+     * Preferences component in Admin user dropdown
+     *
+     *
+     * <example module='BBAdminDashboard.bbUserPreferences'>
+     *  <bb-user-preferences></bb-user-preferences>
+     * </example>
+     */
 
-    CompanyStoreService.country_code = company.country_code;
-    CompanyStoreService.currency_code = company.currency_code;
-    CompanyStoreService.time_zone = company.timezone;
-
-    // checks to see if passed in state is part of the active chain
-    $scope.isState = function (states) {
-        return $state.includes(states);
-    };
-
-    $rootScope.$on('$stateChangeStart', function () {
-        return $uibModalStack.dismissAll();
+    angular.module('BBAdminDashboard').component('bbUserPreferences', {
+        templateUrl: 'core/_bb_user_preferences.html',
+        controller: UserPreferencesCtrl,
+        controllerAs: '$bbUserPreferencesCtrl'
     });
-};
 
-angular.module('BBAdminDashboard').controller('CorePageController', controller);
+    function UserPreferencesCtrl() {
+        this.preventClose = function (event) {
+            return event.stopPropagation();
+        };
+    }
+})();
+'use strict';
+
+(function () {
+
+    /**
+     * @ngdoc controller
+     * @name BBAdminDashboard.controller:CorePageController
+     * @description
+     * Controller for the layout (root state)
+     */
+
+    angular.module('BBAdminDashboard').controller('CorePageController', corePageController);
+
+    function corePageController($scope, $state, company, $uibModalStack, $rootScope, CompanyStoreService, bbTimeZone) {
+        'ngInject';
+
+        $scope.company = company;
+        $scope.bb.company = company;
+        $scope.user = $rootScope.user;
+
+        CompanyStoreService.country_code = company.country_code;
+        CompanyStoreService.currency_code = company.currency_code;
+        CompanyStoreService.time_zone = company.timezone;
+
+        bbTimeZone.determine();
+
+        // checks to see if passed in state is part of the active chain
+        $scope.isState = function (states) {
+            return $state.includes(states);
+        };
+
+        $rootScope.$on('$stateChangeStart', function () {
+            return $uibModalStack.dismissAll();
+        });
+    }
+})();
 'use strict';
 
 /**
@@ -4003,35 +4050,42 @@ angular.module('BBAdminDashboard').factory('TemplateService', function ($templat
 });
 'use strict';
 
-/**
- * @ngdoc overview
- * @name BBAdminDashboard.translations
- * @description
- * Translations for the admin core module
- */
+(function () {
 
-angular.module('BBAdminDashboard').config(function ($translateProvider) {
-    'ngInject';
+    /**
+     * @ngdoc overview
+     * @name BBAdminDashboard.translations
+     * @description
+     * Translations for the admin core module
+     */
+    angular.module('BBAdminDashboard').config(translationsConfig);
 
-    var translations = {
-        SIDE_NAV_BOOKINGS: "BOOKINGS",
-        SIDE_NAV_CONFIG: "CONFIGURATION",
-        ADMIN_DASHBOARD: {
-            CORE: {
-                GREETING: 'Hi',
-                LOGOUT: 'Logout',
-                VERSION: 'Version',
-                COPYRIGHT: 'Copyright',
-                SWITCH_TO_CLASSIC: 'Switch to Classic'
+    function translationsConfig($translateProvider) {
+        'ngInject';
+
+        var translations = {
+            SIDE_NAV_BOOKINGS: "BOOKINGS",
+            SIDE_NAV_CONFIG: "CONFIGURATION",
+            ADMIN_DASHBOARD: {
+                CORE: {
+                    GREETING: 'Hi',
+                    LOGOUT: 'Logout',
+                    VERSION: 'Version',
+                    COPYRIGHT: 'Copyright',
+                    SWITCH_TO_CLASSIC: 'Switch to Classic',
+                    LOGO: 'Logo'
+                },
+                MODAL: {
+                    NEW_BOOKING_HEADER: 'Make Booking/Block Time'
+                }
             }
-        }
-    };
-
-    $translateProvider.translations('en', translations);
-});
+        };
+        $translateProvider.translations('en', translations);
+    }
+})();
 'use strict';
 
-/*
+/**
  * @ngdoc controller
  * @name BBAdminDashboard.dashboard-iframe.controllers.controller:DashboardIframePageCtrl
  *
@@ -4062,7 +4116,7 @@ angular.module('BBAdminDashboard.dashboard-iframe.controllers').controller('Dash
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc controller
  * @name BBAdminDashboard.dashboard-iframe.controllers.controller:DashboardSubIframePageCtrl
  *
@@ -4078,27 +4132,12 @@ angular.module('BBAdminDashboard.dashboard-iframe.controllers').controller('Dash
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc service
- * @name BBAdminDashboard.dashboard-iframe.services.service:AdminDashboardIframeOptions
+ * @name BBAdminDashboard.dashboard-iframe.services.service.AdminDashboardIframeOptions
  *
  * @description
  * Returns a set of admin calendar configuration options
- */
-
-/*
- * @ngdoc service
- * @name BBAdminDashboard.dashboard-iframe.services.service:AdminDashboardIframeOptionsProvider
- *
- * @description
- * Provider
- *
- * @example
- <example>
- angular.module('ExampleModule').config ['AdminDashboardIframeOptionsProvider', (AdminDashboardIframeOptionsProvider) ->
- AdminDashboardIframeOptionsProvider.setOption('option', 'value')
- ]
- </example>
  */
 angular.module('BBAdminDashboard.dashboard-iframe.services').provider('AdminDashboardIframeOptions', [function () {
     // This list of options is meant to grow
@@ -4125,7 +4164,7 @@ angular.module('BBAdminDashboard.dashboard-iframe.services').provider('AdminDash
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc overview
  * @name BBAdminDashboard.dashboard-iframe.translations
  *
@@ -4149,7 +4188,7 @@ angular.module('BBAdminDashboard.dashboard-iframe.translations').config(['$trans
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc controller
  * @name BBAdminDashboard.login.controllers.controller:LoginPageCtrl
  *
@@ -4167,7 +4206,7 @@ angular.module('BBAdminDashboard.login.controllers').controller('LoginPageCtrl',
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc directive
  * @name BBAdminDashboard.login.directives.directive:adminDashboardLogin
  * @scope
@@ -4406,7 +4445,7 @@ angular.module('BBAdminDashboard.login.directives').directive('adminDashboardLog
 });
 'use strict';
 
-/*
+/**
  * @ngdoc service
  * @name BBAdminDashboard.login.services.service:AdminLoginOptions
  *
@@ -4414,19 +4453,19 @@ angular.module('BBAdminDashboard.login.directives').directive('adminDashboardLog
  * Returns a set of admin calendar configuration options
  */
 
-/*
+/**
  * @ngdoc service
- * @name BBAdminDashboard.login.services.service:AdminLoginOptionsProvider
+ * @name BBAdminDashboard.login.services.service.AdminLoginOptionsProvider
  *
  * @description
  * Provider
  *
  * @example
- <example>
- angular.module('ExampleModule').config ['AdminLoginOptionsProvider', (AdminLoginOptionsProvider) ->
- AdminLoginOptionsProvider.setOption('option', 'value')
- ]
- </example>
+ <pre module='BBAdminDashboard.login.services.service.AdminLoginOptionsProvider'>
+     angular.module('ExampleModule').config ['AdminLoginOptionsProvider', (AdminLoginOptionsProvider) ->
+        AdminLoginOptionsProvider.setOption('option', 'value')
+     ]
+ </pre>
  */
 angular.module('BBAdminDashboard.login.services').provider('AdminLoginOptions', [function () {
     // This list of options is meant to grow
@@ -4457,7 +4496,7 @@ angular.module('BBAdminDashboard.login.services').provider('AdminLoginOptions', 
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc service
  * @name BBAdminDashboard.login.services.service:SideNavigationPartials
  *
@@ -4567,7 +4606,7 @@ angular.module('BBAdminDashboard.login.services').factory('LoggedAdmin', ['Admin
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc overview
  * @name BBAdminDashboard.login.translations
  *
@@ -4600,7 +4639,7 @@ angular.module('BBAdminDashboard.login.translations').config(['$translateProvide
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc controller
  * @name BBAdminDashboard.logout.controllers.controller:LogoutPageCtrl
  *
@@ -4620,9 +4659,9 @@ angular.module('BBAdminDashboard.logout.controllers').controller('LogoutPageCtrl
 });
 'use strict';
 
-/*
+/**
  * @ngdoc controller
- * @name BBAdminDashboard.members-iframe.controllers.controller:MembersIframePageCtrl
+ * @name BBAdminDashboard.members-iframe.controllers.controller.MembersIframePageCtrl
  *
  * @description
  * Controller for the members page
@@ -4668,7 +4707,7 @@ angular.module('BBAdminDashboard.members-iframe.controllers').controller('Member
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc controller
  * @name BBAdminDashboard.members-iframe.controllers.controller:MembersSubIframePageCtrl
  *
@@ -4691,27 +4730,12 @@ angular.module('BBAdminDashboard.members-iframe.controllers').controller('Member
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc service
  * @name BBAdminDashboard.members-iframe.services.service:AdminMembersIframeOptions
  *
  * @description
  * Returns a set of General configuration options
- */
-
-/*
- * @ngdoc service
- * @name BBAdminDashboard.members-iframe.services.service:AdminMembersIframeOptionsProvider
- *
- * @description
- * Provider
- *
- * @example
- <example>
- angular.module('ExampleModule').config ['AdminMembersIframeOptionsProvider', (AdminMembersIframeOptionsProvider) ->
- AdminMembersIframeOptionsProvider.setOption('option', 'value')
- ]
- </example>
  */
 angular.module('BBAdminDashboard.members-iframe.services').provider('AdminMembersIframeOptions', [function () {
     // This list of options is meant to grow
@@ -4738,7 +4762,7 @@ angular.module('BBAdminDashboard.members-iframe.services').provider('AdminMember
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc overview
  * @name BBAdminDashboard.members-iframe.translations
  *
@@ -4761,7 +4785,7 @@ angular.module('BBAdminDashboard.members-iframe.translations').config(['$transla
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc controller
  * @name BBAdminDashboard.publish-iframe.controllers.controller:PublishIframePageCtrl
  *
@@ -4782,7 +4806,7 @@ angular.module('BBAdminDashboard.publish-iframe.controllers').controller('Publis
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc controller
  * @name BBAdminDashboard.publish-iframe.controllers.controller:PublishSubIframePageCtrl
  *
@@ -4800,27 +4824,12 @@ angular.module('BBAdminDashboard.publish-iframe.controllers').controller('Publis
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc service
- * @name BBAdminDashboard.publish-iframe.services.service:AdminPublishIframeOptions
+ * @name BBAdminDashboard.publish-iframe.services.service.AdminPublishIframeOptions
  *
  * @description
  * Returns a set of General configuration options
- */
-
-/*
- * @ngdoc service
- * @name BBAdminDashboard.publish-iframe.services.service:AdminPublishIframeOptionsProvider
- *
- * @description
- * Provider
- *
- * @example
- <example>
- angular.module('ExampleModule').config ['AdminPublishIframeOptionsProvider', (AdminPublishIframeOptionsProvider) ->
- AdminPublishIframeOptionsProvider.setOption('option', 'value')
- ]
- </example>
  */
 angular.module('BBAdminDashboard.publish-iframe.services').provider('AdminPublishIframeOptions', [function () {
     // This list of options is meant to grow
@@ -4847,7 +4856,7 @@ angular.module('BBAdminDashboard.publish-iframe.services').provider('AdminPublis
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc overview
  * @name BBAdminDashboard.publish-iframe.translations
  *
@@ -4873,7 +4882,7 @@ angular.module('BBAdminDashboard.publish-iframe.translations').config(['$transla
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc controller
  * @name BBAdminDashboard.reset-password.controller:ResetPasswordCtrl
  *
@@ -5021,7 +5030,7 @@ var ResetPasswordCtrl = function ResetPasswordCtrl($scope, $state, AdminLoginOpt
 angular.module('BBAdminDashboard.reset-password').controller('ResetPasswordCtrl', ResetPasswordCtrl);
 'use strict';
 
-/*
+/**
  * @ngdoc controller
  * @name BBAdminDashboard.reset-password.controller:ResetPasswordPageCtrl
  *
@@ -5045,7 +5054,7 @@ var ResetPasswordPageCtrl = function ResetPasswordPageCtrl($scope) {
 angular.module('BBAdminDashboard.reset-password').controller('ResetPasswordPageCtrl', ResetPasswordPageCtrl);
 'use strict';
 
-/*
+/**
  * @ngdoc directive
  * @name BBAdminDashboard.reset-password.directive:adminDashboardResetPassword
  * @scope
@@ -5072,7 +5081,7 @@ var adminDashboardResetPassword = function adminDashboardResetPassword() {
 angular.module('BBAdminDashboard.reset-password').directive('adminDashboardResetPassword', adminDashboardResetPassword);
 'use strict';
 
-/*
+/**
  * @ngdoc service
  * @name BBAdminDashboard.reset-password.service:ResetPasswordSchemaFormService
  *
@@ -5132,7 +5141,7 @@ var ResetPasswordSchemaFormService = function ResetPasswordSchemaFormService($q,
 angular.module('BBAdminDashboard.reset-password').factory('ResetPasswordSchemaFormService', ResetPasswordSchemaFormService);
 'use strict';
 
-/*
+/**
  * @ngdoc service
  * @name BBAdminDashboard.reset-password.service:ResetPasswordService
  *
@@ -5168,7 +5177,7 @@ var ResetPasswordService = function ResetPasswordService($q, $window, $http) {
 angular.module('BBAdminDashboard.reset-password').factory('ResetPasswordService', ResetPasswordService);
 'use strict';
 
-/*
+/**
  * @ngdoc overview
  * @name BBAdminDashboard.reset-password.translations
  *
@@ -5206,7 +5215,7 @@ angular.module('BBAdminDashboard.reset-password').config(['$translateProvider', 
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc controller
  * @name BBAdminDashboard.settings-iframe.controllers.controller:SettingsIframeAdvancedSettingsPageCtrl
  *
@@ -5247,7 +5256,7 @@ angular.module('BBAdminDashboard.settings-iframe.controllers').controller('Setti
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc controller
  * @name BBAdminDashboard.settings-iframe.controllers.controller:SettingsIframeBasicSettingsPageCtrl
  *
@@ -5316,7 +5325,7 @@ angular.module('BBAdminDashboard.settings-iframe.controllers').controller('Setti
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc controller
  * @name BBAdminDashboard.settings-iframe.controllers.controller:SettingsIframeIntegrationsPageCtrl
  *
@@ -5353,7 +5362,7 @@ angular.module('BBAdminDashboard.settings-iframe.controllers').controller('Setti
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc controller
  * @name BBAdminDashboard.settings-iframe.controllers.controller:SettingsIframePageCtrl
  *
@@ -5374,7 +5383,7 @@ angular.module('BBAdminDashboard.settings-iframe.controllers').controller('Setti
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc controller
  * @name BBAdminDashboard.settings-iframe.controllers.controller:SettingsIframeSubscriptionPageCtrl
  *
@@ -5411,7 +5420,7 @@ angular.module('BBAdminDashboard.settings-iframe.controllers').controller('Setti
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc controller
  * @name BBAdminDashboard.settings-iframe.controllers.controller:SettingsSubIframePageCtrl
  *
@@ -5443,27 +5452,27 @@ angular.module('BBAdminDashboard.settings-iframe.controllers').controller('Setti
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc service
- * @name BBAdminDashboard.settings-iframe.services.service:AdminSettingsIframeOptions
+ * @name BBAdminDashboard.settings-iframe.services.service.AdminSettingsIframeOptions
  *
  * @description
  * Returns a set of General configuration options
  */
 
-/*
+/**
  * @ngdoc service
- * @name BBAdminDashboard.settings-iframe.services.service:AdminSettingsIframeOptionsProvider
+ * @name BBAdminDashboard.settings-iframe.services.service.AdminSettingsIframeOptionsProvider
  *
  * @description
  * Provider
  *
- * @example
- <example>
- angular.module('ExampleModule').config ['AdminSettingsIframeOptionsProvider', (AdminSettingsIframeOptionsProvider) ->
- AdminSettingsIframeOptionsProvider.setOption('option', 'value')
- ]
- </example>
+ @example
+ <pre module='BBAdminDashboard.settings-iframe.services.service.AdminSettingsIframeOptionsProvider'>
+     angular.module('ExampleModule').config ['AdminSettingsIframeOptionsProvider', (AdminSettingsIframeOptionsProvider) ->
+     AdminSettingsIframeOptionsProvider.setOption('option', 'value')
+     ]
+ </pre>
  */
 angular.module('BBAdminDashboard.settings-iframe.services').provider('AdminSettingsIframeOptions', [function () {
     // This list of options is meant to grow
@@ -5490,7 +5499,7 @@ angular.module('BBAdminDashboard.settings-iframe.services').provider('AdminSetti
 }]);
 'use strict';
 
-/*
+/**
  * @ngdoc overview
  * @name BBAdminDashboard.settings-iframe.translations
  *
@@ -5552,3 +5561,35 @@ angular.module('BBAdminDashboard.settings-iframe.translations').config(['$transl
         }
     });
 }]);
+'use strict';
+
+(function () {
+
+    angular.module('BBAdminDashboard.calendar').component('bbNewBooking', {
+        templateUrl: 'core/new_booking_button.html',
+        bindings: {
+            client: '<',
+            companyId: '<'
+        },
+        controller: bbNewBookingCtrl,
+        controllerAs: '$bbNewBookingCtrl'
+    });
+
+    function bbNewBookingCtrl(AdminBookingPopup, AdminBookingOptions) {
+        var _this = this;
+
+        this.newBooking = function () {
+            AdminBookingPopup.open({
+                item_defaults: {
+                    day_view: AdminBookingOptions.day_view,
+                    merge_people: true,
+                    merge_resources: true
+                },
+                client: _this.client,
+                company_id: _this.companyId,
+                on_conflict: "cancel()",
+                template: 'main'
+            });
+        };
+    }
+})();
