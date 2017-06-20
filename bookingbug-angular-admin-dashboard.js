@@ -672,768 +672,744 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
 });
 'use strict';
 
-angular.module('BBAdminDashboard.calendar.controllers').controller('bbResourceCalendarController', function (AdminBookingPopup, AdminCalendarOptions, AdminCompanyService, AdminMoveBookingPopup, $attrs, BBAssets, BBModel, $bbug, CalendarEventSources, ColorPalette, Dialog, $filter, GeneralOptions, ModalForm, PrePostTime, ProcessAssetsFilter, $q, $rootScope, $scope, $state, TitleAssembler, $translate, $window, uiCalendarConfig, CompanyStoreService, bbi18nOptions, bbTimeZone) {
+(function (angular) {
 
-    'ngInject';
+    angular.module('BBAdminDashboard.calendar.controllers').controller('bbResourceCalendarController', bbResourceCalendarController);
 
-    /*jshint validthis: true */
+    function bbResourceCalendarController($rootScope, $scope, $state, $attrs, $filter, $q, $translate, $bbug, AdminBookingPopup, AdminCalendarOptions, AdminCompanyService, AdminMoveBookingPopup, BBAssets, BBModel, CalendarEventSources, ColorPalette, Dialog, GeneralOptions, ModalForm, PrePostTime, ProcessAssetsFilter, TitleAssembler, uiCalendarConfig, bbTimeZone, CalendarEventRenderer) {
+        'ngInject';
 
-    var vm = this;
+        /*jshint validthis: true */
 
-    var filters = null;
+        var vm = this;
 
-    var company = null;
-    var companyServices = [];
+        var filters = null;
+        var company = null;
+        var companyServices = [];
+        var calOptions = [];
 
-    var calOptions = [];
+        vm.assets = []; // All options sets (resources, people) go to the same select
 
-    vm.assets = []; // All options sets (resources, people) go to the same select
-
-    vm.selectedResources = {
-        selected: []
-    };
-
-    var init = function init() {
-        applyFilters();
-
-        prepareCalOptions();
-        prepareEventSources();
-        prepareUiCalOptions();
-
-        $scope.$watch('selectedResources.selected', selectedResourcesListener);
-
-        $scope.$on('refetchBookings', refetchBookingsHandler);
-        $scope.$on('newCheckout', newCheckoutHandler);
-        $scope.$on('BBLanguagePicker:languageChanged', languageChangedHandler);
-        $scope.$on('CalendarEventSources:timeRangeChanged', timeRangeChangedHandler);
-
-        $rootScope.$on('BBTimeZoneOptions:timeZoneChanged', timeZoneChangedHandler);
-
-        getCompanyPromise().then(companyListener);
-
-        vm.changeSelectedResources = changeSelectedResources;
-        vm.updateDateHandler = updateDateHandler;
-    };
-
-    var applyFilters = function applyFilters() {
-        filters = {
-            requestedAssets: ProcessAssetsFilter($state.params.assets)
+        vm.selectedResources = {
+            selected: []
         };
 
-        vm.showAll = filters.requestedAssets.length <= 0;
-    };
+        var init = function init() {
+            applyFilters();
 
-    var setTimeToMoment = function setTimeToMoment(date, time) {
-        var newDate = moment(time, 'HH:mm');
-        newDate.set({
-            'year': parseInt(date.get('year')),
-            'month': parseInt(date.get('month')),
-            'date': parseInt(date.get('date')),
-            'second': 0
-        });
-        return newDate;
-    };
+            prepareCalOptions();
+            prepareEventSources();
+            prepareUiCalOptions();
 
-    var prepareEventSources = function prepareEventSources() {
-        vm.eventSources = [{ events: getEvents }];
-    };
+            $scope.$watch('selectedResources.selected', selectedResourcesListener);
 
-    var getEvents = function getEvents(start, end, timezone, callback) {
+            $scope.$on('refetchBookings', refetchBookingsHandler);
+            $scope.$on('newCheckout', newCheckoutHandler);
+            $scope.$on('BBLanguagePicker:languageChanged', languageChangedHandler);
+            $scope.$on('CalendarEventSources:timeRangeChanged', timeRangeChangedHandler);
 
-        if (bbTimeZone.getDisplayUTCOffset() > bbTimeZone.getCompanyUTCOffset()) start = start.clone().subtract(1, 'day');
-        if (bbTimeZone.getDisplayUTCOffset() < bbTimeZone.getCompanyUTCOffset()) end = end.clone().add(1, 'day');
+            $rootScope.$on('BBTimeZoneOptions:timeZoneChanged', timeZoneChangedHandler);
 
-        vm.loading = true;
-        getCompanyPromise().then(function (company) {
-            var options = {
-                labelAssembler: $scope.labelAssembler ? $scope.labelAssembler : AdminCalendarOptions.bookings_label_assembler,
-                blockLabelAssembler: $scope.blockLabelAssembler ? $scope.blockLabelAssembler : AdminCalendarOptions.block_label_assembler,
-                externalLabelAssembler: $scope.externalLabelAssembler ? $scope.externalLabelAssembler : AdminCalendarOptions.external_label_assembler,
-                noCache: true,
-                showAll: vm.showAll,
-                type: calOptions.type,
-                selectedResources: vm.selectedResources.selected,
-                calendarView: uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('getView').type
+            getCompanyPromise().then(companyListener);
+
+            vm.changeSelectedResources = changeSelectedResources;
+            vm.updateDateHandler = updateDateHandler;
+        };
+
+        var applyFilters = function applyFilters() {
+            filters = {
+                requestedAssets: ProcessAssetsFilter($state.params.assets)
             };
 
-            if ($scope.model) {
-                options.showAll = false;
-                options.selectedResources = [$scope.model];
-            }
+            vm.showAll = filters.requestedAssets.length <= 0;
+        };
 
-            return CalendarEventSources.getAllCalendarEntries(company, start, end, options).then(function (results) {
-                vm.loading = false;
-                return callback(results);
+        var setTimeToMoment = function setTimeToMoment(date, time) {
+            var newDate = moment(time, 'HH:mm');
+            newDate.set({
+                'year': parseInt(date.get('year')),
+                'month': parseInt(date.get('month')),
+                'date': parseInt(date.get('date')),
+                'second': 0
             });
-        });
-    };
-
-    var prepareCalOptions = function prepareCalOptions() {
-        calOptions = $scope.$eval($attrs.bbResourceCalendar);
-        if (!calOptions) {
-            calOptions = {};
-        }
-
-        if (!calOptions.defaultView) {
-            if ($scope.model) {
-                calOptions.defaultView = 'agendaWeek';
-            } else {
-                calOptions.defaultView = 'timelineDay';
-            }
-        }
-
-        if (!calOptions.views) {
-            if ($scope.model) {
-                calOptions.views = 'listDay,timelineDayThirty,agendaWeek,month';
-            } else {
-                calOptions.views = 'timelineDay,listDay,timelineDayThirty,agendaWeek,month';
-            }
-        }
-
-        // height = if calOptions.header_height
-        //   $bbug($window).height() - calOptions.header_height
-        // else
-        //   800
-
-        if (calOptions.name) {
-            vm.calendar_name = calOptions.name;
-        } else {
-            vm.calendar_name = 'resourceCalendar';
-        }
-
-        if (calOptions.cal_slot_duration == null) {
-            calOptions.cal_slot_duration = GeneralOptions.calendar_slot_duration;
-        }
-    };
-
-    var prepareUiCalOptions = function prepareUiCalOptions() {
-        vm.uiCalOptions = { // @todo REPLACE ALL THIS WITH VARIABLES FROM THE GeneralOptions Service
-            calendar: {
-                editable: true,
-                schedulerLicenseKey: '0598149132-fcs-1443104297',
-                eventStartEditable: false,
-                eventDurationEditable: false,
-                height: 'auto',
-                buttonText: {},
-                header: {
-                    left: 'today,prev,next',
-                    center: 'title',
-                    right: calOptions.views
-                },
-                defaultView: calOptions.defaultView,
-                views: {
-                    listDay: {},
-                    agendaWeek: {
-                        slotDuration: $filter('minutesToString')(calOptions.cal_slot_duration),
-                        groupByDateAndResource: false
-                    },
-                    month: {
-                        eventLimit: 5
-                    },
-                    timelineDay: {
-                        slotDuration: $filter('minutesToString')(calOptions.cal_slot_duration),
-                        eventOverlap: false,
-                        slotWidth: 25,
-                        resourceAreaWidth: '18%'
-                    }
-                },
-                resourceGroupField: 'group',
-                resourceLabelText: ' ',
-                eventResourceEditable: true,
-                selectable: true,
-                lazyFetching: false,
-                columnFormat: AdminCalendarOptions.column_format,
-                resources: fcResources,
-                eventDragStop: fcEventDragStop,
-                eventDrop: fcEventDrop,
-                eventClick: fcEventClick,
-                eventRender: fcEventRender,
-                eventAfterRender: fcEventAfterRender,
-                eventAfterAllRender: fcEventAfterAllRender,
-                select: fcSelect,
-                viewRender: fcViewRender,
-                eventResize: fcEventResize,
-                loading: fcLoading,
-                ignoreTimezone: false,
-                timezone: bbTimeZone.getDisplay()
-            }
+            return newDate;
         };
-        updateCalendarLanguage();
-        updateCalendarTimeRange();
-    };
 
-    var updateCalendarLanguage = function updateCalendarLanguage() {
-        vm.uiCalOptions.calendar.locale = $translate.use();
-        vm.uiCalOptions.calendar.buttonText.today = $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.TODAY');
-        vm.uiCalOptions.calendar.views.listDay.buttonText = $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.TODAY');
-        vm.uiCalOptions.calendar.views.agendaWeek.buttonText = $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.WEEK');
-        vm.uiCalOptions.calendar.views.month.buttonText = $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MONTH');
-        vm.uiCalOptions.calendar.views.timelineDay.buttonText = $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.DAY', { minutes: calOptions.cal_slot_duration });
-    };
+        var prepareEventSources = function prepareEventSources() {
+            vm.eventSources = [{ events: getEvents }];
+        };
 
-    var updateCalendarTimeRange = function updateCalendarTimeRange() {
-        vm.uiCalOptions.calendar.minTime = AdminCalendarOptions.minTime;
-        vm.uiCalOptions.calendar.maxTime = AdminCalendarOptions.maxTime;
-    };
+        var getEvents = function getEvents(start, end, timezone, callback) {
 
-    var fcResources = function fcResources(callback) {
-        return getCalendarAssets(callback);
-    };
+            if (bbTimeZone.getDisplayUTCOffset() > bbTimeZone.getCompanyUTCOffset()) start = start.clone().subtract(1, 'day');
+            if (bbTimeZone.getDisplayUTCOffset() < bbTimeZone.getCompanyUTCOffset()) end = end.clone().add(1, 'day');
 
-    var fcEventDragStop = function fcEventDragStop(event, jsEvent, ui, view) {
-        event.oldResourceIds = event.resourceIds;
-    };
-
-    var fcEventDrop = function fcEventDrop(booking, delta, revertFunc) {
-        // we need a full move cal if either it has a person and resource, or they've dragged over multiple days
-
-        var calendar = uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('getCalendar');
-        booking.start = calendar.moment(bbTimeZone.convertToDisplay(booking.start.toISOString()));
-        booking.end = calendar.moment(bbTimeZone.convertToDisplay(booking.end.toISOString()));
-
-        // not blocked and is a change in person/resource, or over multiple days
-        if (booking.status !== 3 && (booking.person_id && booking.resource_id || delta.days() > 0)) {
-            var start = booking.start;
-            var end = booking.end;
-
-
-            start = bbTimeZone.convertToCompany(start);
-            end = bbTimeZone.convertToCompany(end);
-
-            var item_defaults = {
-                date: start.format('YYYY-MM-DD'),
-                time: start.hour() * 60 + start.minute()
-            };
-
-            if (booking.resourceId) {
-                //let orginal_resource;
-                var newAssetId = booking.resourceId.substring(0, booking.resourceId.indexOf('_'));
-                if (booking.resourceId.indexOf('_p') > -1) {
-                    item_defaults.person = newAssetId;
-                    //orginal_resource = `${event.person_id}_p`;
-                } else if (booking.resourceId.indexOf('_r') > -1) {
-                    item_defaults.resource = newAssetId;
-                    //orginal_resource = `${event.resource_id}_r`;
-                }
-            }
-
+            vm.loading = true;
             getCompanyPromise().then(function (company) {
-                return AdminMoveBookingPopup.open({
-                    min_date: setTimeToMoment(start, AdminCalendarOptions.minTime),
-                    max_date: setTimeToMoment(end, AdminCalendarOptions.maxTime),
-                    from_datetime: moment(start.toISOString()),
-                    to_datetime: moment(end.toISOString()),
-                    item_defaults: item_defaults,
-                    company_id: company.id,
-                    booking_id: booking.id,
-                    success: function success(model) {
-                        return refreshBooking(booking);
-                    },
-                    fail: function fail() {
-                        return refreshBooking(booking);
-                    }
-                });
-            });
-            return;
-        }
+                var options = {
+                    labelAssembler: $scope.labelAssembler ? $scope.labelAssembler : AdminCalendarOptions.bookings_label_assembler,
+                    blockLabelAssembler: $scope.blockLabelAssembler ? $scope.blockLabelAssembler : AdminCalendarOptions.block_label_assembler,
+                    externalLabelAssembler: $scope.externalLabelAssembler ? $scope.externalLabelAssembler : AdminCalendarOptions.external_label_assembler,
+                    noCache: true,
+                    showAll: vm.showAll,
+                    type: calOptions.type,
+                    selectedResources: vm.selectedResources.selected,
+                    calendarView: uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('getView').type
+                };
 
-        // if it's got a person and resource - then it
-        return Dialog.confirm({
-            title: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MOVE_MODAL_HEADING'),
-            model: booking,
-            body: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MOVE_MODAL_BODY'),
-            success: function success(model) {
-
-                booking.start = bbTimeZone.convertToCompany(booking.start);
-                booking.end = bbTimeZone.convertToCompany(booking.end);
-
-                return updateBooking(booking);
-            },
-            fail: function fail() {
-                return revertFunc();
-            }
-        });
-    };
-
-    var fcEventClick = function fcEventClick(booking, jsEvent, view) {
-        if (booking.type === 'external') return;
-
-        if (booking.$has('edit')) {
-            return editBooking(new BBModel.Admin.Booking(booking));
-        }
-    };
-
-    var fcEventRender = function fcEventRender(booking, element) {
-        var _uiCalendarConfig$cal = uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('getView'),
-            type = _uiCalendarConfig$cal.type;
-
-        var service = _.findWhere(companyServices, { id: booking.service_id });
-        if (!$scope.model) {
-            // if not a single item view
-            var a = void 0,
-                link = void 0;
-            if (type === 'listDay') {
-                link = $bbug(element.children()[2]);
-                if (link) {
-                    a = link.children()[0];
-                    if (a) {
-                        if (booking.person_name && (!calOptions.type || calOptions.type === 'person')) {
-                            a.innerHTML = booking.person_name + ' - ' + a.innerHTML;
-                        } else if (booking.resource_name && calOptions.type === 'resource') {
-                            a.innerHTML = booking.resource_name + ' - ' + a.innerHTML;
-                        }
-                    }
+                if ($scope.model) {
+                    options.showAll = false;
+                    options.selectedResources = [$scope.model];
                 }
-            } else if (type === 'agendaWeek' || type === 'month') {
-                link = $bbug(element.children()[0]);
-                if (link) {
-                    a = link.children()[1];
-                    if (a) {
-                        if (booking.person_name && (!calOptions.type || calOptions.type === 'person')) {
-                            a.innerHTML = booking.person_name + '<br/>' + a.innerHTML;
-                        } else if (booking.resource_name && calOptions.type === 'resource') {
-                            a.innerHTML = booking.resource_name + '<br/>' + a.innerHTML;
-                        }
-                    }
-                }
-            }
-        }
-        if (service && type !== 'listDay') {
-            element.css('background-color', service.color);
-            element.css('color', service.textColor);
-            element.css('border-color', service.textColor);
-        }
-        return element;
-    };
 
-    var fcEventAfterRender = function fcEventAfterRender(event, elements, view) {
-        if (event.rendering == null || event.rendering !== 'background') {
-            return PrePostTime.apply(event, elements, view, $scope);
-        }
-    };
-
-    var fcEventAfterAllRender = function fcEventAfterAllRender() {
-        $scope.$emit('UICalendar:EventAfterAllRender');
-    };
-
-    var fcSelect = function fcSelect(start, end, jsEvent, view, resource) {
-        // For some reason clicking on the scrollbars triggers this event therefore we filter based on the jsEvent target
-        if (jsEvent && jsEvent.target.className === 'fc-scroller') {
-            return;
-        }
-
-        var calendar = uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('getCalendar');
-        start = calendar.moment(bbTimeZone.convertToCompany(moment(start.toISOString())));
-        end = calendar.moment(bbTimeZone.convertToCompany(moment(end.toISOString())));
-
-        view.calendar.unselect();
-
-        if (!calOptions.enforce_schedules || isTimeRangeAvailable(start, end, resource) || Math.abs(start.diff(end, 'days')) === 1 && dayHasAvailability(start)) {
-            if (Math.abs(start.diff(end, 'days')) > 0) {
-                end.subtract(1, 'days');
-                end = setTimeToMoment(end, AdminCalendarOptions.maxTime);
-            }
-
-            var item_defaults = {
-                date: start.format('YYYY-MM-DD'),
-                time: start.hour() * 60 + start.minute()
-            };
-
-            if (resource && resource.type === 'person') {
-                item_defaults.person = resource.id.substring(0, resource.id.indexOf('_'));
-            } else if (resource && resource.type === 'resource') {
-                item_defaults.resource = resource.id.substring(0, resource.id.indexOf('_'));
-            }
-
-            return getCompanyPromise().then(function (company) {
-                return AdminBookingPopup.open({
-                    min_date: setTimeToMoment(start, AdminCalendarOptions.minTime),
-                    max_date: setTimeToMoment(end, AdminCalendarOptions.maxTime),
-                    from_datetime: moment(start.toISOString()),
-                    to_datetime: moment(end.toISOString()),
-                    item_defaults: item_defaults,
-                    first_page: 'quick_pick',
-                    on_conflict: 'cancel()',
-                    company_id: company.id,
-                    title: moment(start).format('LLLL')
-                });
-            });
-        }
-    };
-
-    var fcViewRender = function fcViewRender(view, element) {
-        var date = uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('getDate');
-        var newDate = moment().tz(moment.tz.guess());
-        newDate.set({
-            'year': parseInt(date.get('year')),
-            'month': parseInt(date.get('month')),
-            'date': parseInt(date.get('date')),
-            'hour': 0,
-            'minute': 0,
-            'second': 0
-        });
-        return vm.currentDate = newDate.toDate();
-    };
-
-    var fcEventResize = function fcEventResize(booking, delta, revertFunc, jsEvent, ui, view) {
-        booking.duration = booking.end.diff(booking.start, 'minutes');
-        return updateBooking(booking);
-    };
-
-    var fcLoading = function fcLoading(isLoading, view) {
-        vm.calendarLoading = isLoading;
-    };
-
-    var isTimeRangeAvailable = function isTimeRangeAvailable(start, end, resource) {
-        var st = moment(start.toISOString()).unix();
-        var en = moment(end.toISOString()).unix();
-        var events = uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('clientEvents', function (event) {
-            return event.rendering === 'background' && st >= event.start.unix() && event.end && en <= event.end.unix() && (resource && parseInt(event.resourceId) === parseInt(resource.id) || !resource);
-        });
-        return events.length > 0;
-    };
-
-    var dayHasAvailability = function dayHasAvailability(start) {
-        var events = uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('clientEvents', function (event) {
-            return event.rendering === 'background' && event.start.year() === start.year() && event.start.month() === start.month() && event.start.date() === start.date();
-        });
-
-        return events.length > 0;
-    };
-
-    var selectedResourcesListener = function selectedResourcesListener(newValue, oldValue) {
-        if (newValue !== oldValue) {
-            var assets = [];
-            angular.forEach(newValue, function (asset) {
-                return assets.push(asset.id);
-            });
-
-            var params = $state.params;
-
-            params.assets = assets.join();
-            $state.go($state.current.name, params, { notify: false, reload: false });
-        }
-    };
-
-    var getCalendarAssets = function getCalendarAssets(callback) {
-        if ($scope.model) {
-            callback([$scope.model]);
-            return;
-        }
-
-        vm.loading = true;
-
-        getCompanyPromise().then(function (company) {
-            if (vm.showAll) {
-                BBAssets.getAssets(company).then(function (assets) {
-                    if (calOptions.type) {
-                        assets = _.filter(assets, function (a) {
-                            return a.type === calOptions.type;
-                        });
-                    }
-
-                    var _iteratorNormalCompletion = true;
-                    var _didIteratorError = false;
-                    var _iteratorError = undefined;
-
-                    try {
-                        for (var _iterator = Array.from(assets)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                            var asset = _step.value;
-
-                            asset.id = asset.identifier;
-                        }
-                    } catch (err) {
-                        _didIteratorError = true;
-                        _iteratorError = err;
-                    } finally {
-                        try {
-                            if (!_iteratorNormalCompletion && _iterator.return) {
-                                _iterator.return();
-                            }
-                        } finally {
-                            if (_didIteratorError) {
-                                throw _iteratorError;
-                            }
-                        }
-                    }
-
+                return CalendarEventSources.getAllCalendarEntries(company, start, end, options).then(function (results) {
                     vm.loading = false;
-                    return callback(assets);
+                    return callback(results);
                 });
-            } else {
-                vm.loading = false;
-                callback(vm.selectedResources.selected);
-            }
-        });
-    };
+            });
+        };
 
-    var getBookingTitle = function getBookingTitle(booking) {
-        var labelAssembler = $scope.labelAssembler ? $scope.labelAssembler : AdminCalendarOptions.bookings_label_assembler;
-        var blockLabelAssembler = $scope.blockLabelAssembler ? $scope.blockLabelAssembler : AdminCalendarOptions.block_label_assembler;
-
-        if (booking.status !== 3 && labelAssembler) {
-            return TitleAssembler.getTitle(booking, labelAssembler);
-        } else if (booking.status === 3 && blockLabelAssembler) {
-            return TitleAssembler.getTitle(booking, blockLabelAssembler);
-        }
-
-        return booking.title;
-    };
-
-    var refreshBooking = function refreshBooking(booking) {
-        booking.$refetch().then(function (response) {
-            booking.resourceIds = [];
-            booking.resourceId = null;
-            if (booking.person_id != null) {
-                booking.resourceIds.push(booking.person_id + '_p');
-            }
-            if (booking.resource_id != null) {
-                booking.resourceIds.push(booking.resource_id + '_r');
+        var prepareCalOptions = function prepareCalOptions() {
+            calOptions = $scope.$eval($attrs.bbResourceCalendar);
+            if (!calOptions) {
+                calOptions = {};
             }
 
-            booking.title = getBookingTitle(booking);
-
-            return uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('updateEvent', booking);
-        });
-    };
-
-    var updateBooking = function updateBooking(booking) {
-        if (booking.resourceId) {
-            var newAssetId = booking.resourceId.substring(0, booking.resourceId.indexOf('_'));
-            if (booking.resourceId.indexOf('_p') > -1) {
-                booking.person_id = newAssetId;
-            } else if (booking.resourceId.indexOf('_r') > -1) {
-                booking.resource_id = newAssetId;
-            }
-        }
-
-        booking.$update().then(function (response) {
-            booking.resourceIds = [];
-            booking.resourceId = null;
-            if (booking.person_id != null) {
-                booking.resourceIds.push(booking.person_id + '_p');
-            }
-            if (booking.resource_id != null) {
-                booking.resourceIds.push(booking.resource_id + '_r');
-            }
-
-            booking.title = getBookingTitle(booking);
-
-            return uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('updateEvent', booking);
-        });
-    };
-
-    var editBooking = function editBooking(booking) {
-        var templateUrl = void 0,
-            title = void 0;
-
-        if (booking.status === 3) {
-            templateUrl = 'edit_block_modal_form.html';
-            title = $translate.instant('CORE.MODAL.EDIT_BLOCK');
-        } else {
-            templateUrl = 'edit_booking_modal_form.html';
-            title = $translate.instant('COMMON.MODAL.EDIT_BOOKING');
-        }
-        ModalForm.edit({
-            templateUrl: templateUrl,
-            model: booking,
-            title: title,
-            params: {
-                locale: $translate.use()
-            },
-            success: function success(response) {
-                if (typeof response === 'string') {
-                    if (response === 'move') {
-                        var item_defaults = { person: booking.person_id, resource: booking.resource_id };
-                        getCompanyPromise().then(function (company) {
-                            return AdminMoveBookingPopup.open({
-                                item_defaults: item_defaults,
-                                company_id: company.id,
-                                booking_id: booking.id,
-                                success: function success(model) {
-                                    return refreshBooking(booking);
-                                },
-                                fail: function fail() {
-                                    return refreshBooking(booking);
-                                }
-                            });
-                        });
-                    }
-                } else if (response.is_cancelled) {
-                    return uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('removeEvents', [response.id]);
+            if (!calOptions.defaultView) {
+                if ($scope.model) {
+                    calOptions.defaultView = 'agendaWeek';
                 } else {
-                    booking.title = getBookingTitle(booking);
-                    return uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('updateEvent', booking);
+                    calOptions.defaultView = 'timelineDay';
                 }
             }
-        });
-    };
 
-    var pusherBooking = function pusherBooking(res) {
-        if (res.id != null) {
-            var booking = _.first(uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('clientEvents', res.id));
-            if (booking && booking.$refetch) {
-                booking.$refetch().then(function () {
-                    booking.title = getBookingTitle(booking);
-                    return uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('updateEvent', booking);
-                });
+            if (!calOptions.views) {
+                if ($scope.model) {
+                    calOptions.views = 'listDay,timelineDayThirty,agendaWeek,month';
+                } else {
+                    calOptions.views = 'timelineDay,listDay,timelineDayThirty,agendaWeek,month';
+                }
+            }
+
+            if (calOptions.name) {
+                vm.calendar_name = calOptions.name;
             } else {
-                uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('refetchEvents');
+                vm.calendar_name = 'resourceCalendar';
             }
-        }
-    };
 
-    var pusherSubscribe = function pusherSubscribe() {
-        if (company) {
-            var pusher_channel = company.getPusherChannel('bookings');
-            if (pusher_channel) {
-                pusher_channel.bind('create', pusherBooking);
-                pusher_channel.bind('update', pusherBooking);
-                pusher_channel.bind('destroy', pusherBooking);
+            if (calOptions.cal_slot_duration == null) {
+                calOptions.cal_slot_duration = GeneralOptions.calendar_slot_duration;
             }
-        }
-    };
+        };
 
-    var updateDateHandler = function updateDateHandler(data) {
-        if (uiCalendarConfig.calendars[vm.calendar_name]) {
-            var assembledDate = moment.utc();
-            assembledDate.set({
-                'year': parseInt(data.date.getFullYear()),
-                'month': parseInt(data.date.getMonth()),
-                'date': parseInt(data.date.getDate()),
+        var prepareUiCalOptions = function prepareUiCalOptions() {
+            vm.uiCalOptions = { // @todo REPLACE ALL THIS WITH VARIABLES FROM THE GeneralOptions Service
+                calendar: {
+                    editable: true,
+                    schedulerLicenseKey: '0598149132-fcs-1443104297',
+                    eventStartEditable: false,
+                    eventDurationEditable: false,
+                    height: 'auto',
+                    buttonText: {},
+                    header: {
+                        left: 'today,prev,next',
+                        center: 'title',
+                        right: calOptions.views
+                    },
+                    defaultView: calOptions.defaultView,
+                    views: {
+                        listDay: {},
+                        agendaWeek: {
+                            slotDuration: $filter('minutesToString')(calOptions.cal_slot_duration),
+                            groupByDateAndResource: false
+                        },
+                        month: {
+                            eventLimit: 5
+                        },
+                        timelineDay: {
+                            slotDuration: $filter('minutesToString')(calOptions.cal_slot_duration),
+                            eventOverlap: false,
+                            slotWidth: 25,
+                            resourceAreaWidth: '18%'
+                        }
+                    },
+                    resourceGroupField: 'group',
+                    resourceLabelText: ' ',
+                    eventResourceEditable: true,
+                    selectable: true,
+                    lazyFetching: false,
+                    columnFormat: AdminCalendarOptions.column_format,
+                    resources: fcResources,
+                    eventDragStop: fcEventDragStop,
+                    eventDrop: fcEventDrop,
+                    eventClick: fcEventClick,
+                    eventRender: fcEventRender,
+                    eventAfterRender: fcEventAfterRender,
+                    eventAfterAllRender: fcEventAfterAllRender,
+                    select: fcSelect,
+                    viewRender: fcViewRender,
+                    eventResize: fcEventResize,
+                    loading: fcLoading,
+                    ignoreTimezone: false,
+                    timezone: bbTimeZone.getDisplay()
+                }
+            };
+            updateCalendarLanguage();
+            updateCalendarTimeRange();
+        };
+
+        var updateCalendarLanguage = function updateCalendarLanguage() {
+            vm.uiCalOptions.calendar.locale = $translate.use();
+            vm.uiCalOptions.calendar.buttonText.today = $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.TODAY');
+            vm.uiCalOptions.calendar.views.listDay.buttonText = $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.TODAY');
+            vm.uiCalOptions.calendar.views.agendaWeek.buttonText = $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.WEEK');
+            vm.uiCalOptions.calendar.views.month.buttonText = $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MONTH');
+            vm.uiCalOptions.calendar.views.timelineDay.buttonText = $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.DAY', { minutes: calOptions.cal_slot_duration });
+        };
+
+        var updateCalendarTimeRange = function updateCalendarTimeRange() {
+            vm.uiCalOptions.calendar.minTime = AdminCalendarOptions.minTime;
+            vm.uiCalOptions.calendar.maxTime = AdminCalendarOptions.maxTime;
+        };
+
+        var fcResources = function fcResources(callback) {
+            return getCalendarAssets(callback);
+        };
+
+        var fcEventDragStop = function fcEventDragStop(event, jsEvent, ui, view) {
+            event.oldResourceIds = event.resourceIds;
+        };
+
+        var fcEventDrop = function fcEventDrop(booking, delta, revertFunc) {
+            // we need a full move cal if either it has a person and resource, or they've dragged over multiple days
+
+            var calendar = uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('getCalendar');
+            booking.start = calendar.moment(bbTimeZone.convertToDisplay(booking.start.toISOString()));
+            booking.end = calendar.moment(bbTimeZone.convertToDisplay(booking.end.toISOString()));
+
+            // not blocked and is a change in person/resource, or over multiple days
+            if (booking.status !== 3 && (booking.person_id && booking.resource_id || delta.days() > 0)) {
+                var start = booking.start;
+                var end = booking.end;
+
+
+                start = bbTimeZone.convertToCompany(start);
+                end = bbTimeZone.convertToCompany(end);
+
+                var item_defaults = {
+                    date: start.format('YYYY-MM-DD'),
+                    time: start.hour() * 60 + start.minute()
+                };
+
+                if (booking.resourceId) {
+                    //let orginal_resource;
+                    var newAssetId = booking.resourceId.substring(0, booking.resourceId.indexOf('_'));
+                    if (booking.resourceId.indexOf('_p') > -1) {
+                        item_defaults.person = newAssetId;
+                        //orginal_resource = `${event.person_id}_p`;
+                    } else if (booking.resourceId.indexOf('_r') > -1) {
+                        item_defaults.resource = newAssetId;
+                        //orginal_resource = `${event.resource_id}_r`;
+                    }
+                }
+
+                getCompanyPromise().then(function (company) {
+                    return AdminMoveBookingPopup.open({
+                        min_date: setTimeToMoment(start, AdminCalendarOptions.minTime),
+                        max_date: setTimeToMoment(end, AdminCalendarOptions.maxTime),
+                        from_datetime: moment(start.toISOString()),
+                        to_datetime: moment(end.toISOString()),
+                        item_defaults: item_defaults,
+                        company_id: company.id,
+                        booking_id: booking.id,
+                        success: function success(model) {
+                            return refreshBooking(booking);
+                        },
+                        fail: function fail() {
+                            return refreshBooking(booking);
+                        }
+                    });
+                });
+                return;
+            }
+
+            // if it's got a person and resource - then it
+            return Dialog.confirm({
+                title: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MOVE_MODAL_HEADING'),
+                model: booking,
+                body: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MOVE_MODAL_BODY'),
+                success: function success(model) {
+
+                    booking.start = bbTimeZone.convertToCompany(booking.start);
+                    booking.end = bbTimeZone.convertToCompany(booking.end);
+
+                    return updateBooking(booking);
+                },
+                fail: function fail() {
+                    return revertFunc();
+                }
+            });
+        };
+
+        var fcEventClick = function fcEventClick(booking, jsEvent, view) {
+            if (booking.type === 'external') return;
+
+            if (booking.$has('edit')) {
+                return editBooking(new BBModel.Admin.Booking(booking));
+            }
+        };
+
+        var fcEventRender = function fcEventRender(booking, element) {
+            var _uiCalendarConfig$cal = uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('getView'),
+                type = _uiCalendarConfig$cal.type;
+
+            var service = _.findWhere(companyServices, { id: booking.service_id });
+            if (!$scope.model) {
+                // if not a single item view
+                if (type === 'listDay') {
+                    CalendarEventRenderer.renderListDayEvents(booking, element, calOptions);
+                } else if (type === 'agendaWeek' || type === 'month') {
+                    CalendarEventRenderer.renderNonListDayEvents(booking, element, calOptions);
+                }
+            }
+            if (service && type !== 'listDay') {
+                element.css('background-color', service.color);
+                element.css('color', service.textColor);
+                element.css('border-color', service.textColor);
+            }
+            return element;
+        };
+
+        var fcEventAfterRender = function fcEventAfterRender(event, elements, view) {
+            if (event.rendering == null || event.rendering !== 'background') {
+                return PrePostTime.apply(event, elements, view, $scope);
+            }
+        };
+
+        var fcEventAfterAllRender = function fcEventAfterAllRender() {
+            $scope.$emit('UICalendar:EventAfterAllRender');
+        };
+
+        var fcSelect = function fcSelect(start, end, jsEvent, view, resource) {
+            // For some reason clicking on the scrollbars triggers this event therefore we filter based on the jsEvent target
+            if (jsEvent && jsEvent.target.className === 'fc-scroller') {
+                return;
+            }
+
+            var modalTitle = start.format('LLLL');
+
+            var calendar = uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('getCalendar');
+            start = calendar.moment(bbTimeZone.convertToCompany(moment(start.toISOString())));
+            end = calendar.moment(bbTimeZone.convertToCompany(moment(end.toISOString())));
+
+            view.calendar.unselect();
+
+            if (!calOptions.enforce_schedules || isTimeRangeAvailable(start, end, resource) || Math.abs(start.diff(end, 'days')) === 1 && dayHasAvailability(start)) {
+                if (Math.abs(start.diff(end, 'days')) > 0) {
+                    end.subtract(1, 'days');
+                    end = setTimeToMoment(end, AdminCalendarOptions.maxTime);
+                }
+
+                var item_defaults = {
+                    date: start.format('YYYY-MM-DD'),
+                    time: start.hour() * 60 + start.minute()
+                };
+
+                if (resource && resource.type === 'person') {
+                    item_defaults.person = resource.id.substring(0, resource.id.indexOf('_'));
+                } else if (resource && resource.type === 'resource') {
+                    item_defaults.resource = resource.id.substring(0, resource.id.indexOf('_'));
+                }
+
+                return getCompanyPromise().then(function (company) {
+                    return AdminBookingPopup.open({
+                        min_date: setTimeToMoment(start, AdminCalendarOptions.minTime),
+                        max_date: setTimeToMoment(end, AdminCalendarOptions.maxTime),
+                        from_datetime: moment(start.toISOString()),
+                        to_datetime: moment(end.toISOString()),
+                        item_defaults: item_defaults,
+                        first_page: 'quick_pick',
+                        on_conflict: 'cancel()',
+                        company_id: company.id,
+                        title: modalTitle
+                    });
+                });
+            }
+        };
+
+        var fcViewRender = function fcViewRender(view, element) {
+            var date = uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('getDate');
+            var newDate = moment().tz(moment.tz.guess());
+            newDate.set({
+                'year': parseInt(date.get('year')),
+                'month': parseInt(date.get('month')),
+                'date': parseInt(date.get('date')),
                 'hour': 0,
                 'minute': 0,
                 'second': 0
             });
-            uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('gotoDate', assembledDate);
-        }
-    };
+            return vm.currentDate = newDate.toDate();
+        };
 
-    var refetchBookingsHandler = function refetchBookingsHandler() {
-        uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('refetchEvents');
-    };
+        var fcEventResize = function fcEventResize(booking, delta, revertFunc, jsEvent, ui, view) {
+            booking.duration = booking.end.diff(booking.start, 'minutes');
+            return updateBooking(booking);
+        };
 
-    var newCheckoutHandler = function newCheckoutHandler() {
-        uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('refetchEvents');
-    };
+        var fcLoading = function fcLoading(isLoading, view) {
+            vm.calendarLoading = isLoading;
+        };
 
-    var timeZoneChangedHandler = function timeZoneChangedHandler(event, tz) {
-        uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('option', 'timezone', tz);
-    };
-
-    var languageChangedHandler = function languageChangedHandler() {
-        updateCalendarLanguage();
-    };
-
-    var timeRangeChangedHandler = function timeRangeChangedHandler() {
-        updateCalendarTimeRange();
-    };
-
-    var getCompanyPromise = function getCompanyPromise() {
-        var defer = $q.defer();
-        if (company) {
-            defer.resolve(company);
-        } else {
-            AdminCompanyService.query($attrs).then(function (_company) {
-                company = _company;
-                return defer.resolve(company);
+        var isTimeRangeAvailable = function isTimeRangeAvailable(start, end, resource) {
+            var st = moment(start.toISOString()).unix();
+            var en = moment(end.toISOString()).unix();
+            var events = uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('clientEvents', function (event) {
+                return event.rendering === 'background' && st >= event.start.unix() && event.end && en <= event.end.unix() && (resource && parseInt(event.resourceId) === parseInt(resource.id) || !resource);
             });
-        }
-        return defer.promise;
-    };
+            return events.length > 0;
+        };
 
-    var changeSelectedResources = function changeSelectedResources() {
-        if (vm.showAll) {
-            vm.selectedResources.selected = [];
-        }
-
-        uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('refetchResources');
-        uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('refetchEvents');
-    };
-
-    var assetsListener = function assetsListener(assets) {
-        var _iteratorNormalCompletion2 = true;
-        var _didIteratorError2 = false;
-        var _iteratorError2 = undefined;
-
-        try {
-            for (var _iterator2 = Array.from(assets)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-                var asset = _step2.value;
-
-                asset.id = asset.identifier;
-            }
-        } catch (err) {
-            _didIteratorError2 = true;
-            _iteratorError2 = err;
-        } finally {
-            try {
-                if (!_iteratorNormalCompletion2 && _iterator2.return) {
-                    _iterator2.return();
-                }
-            } finally {
-                if (_didIteratorError2) {
-                    throw _iteratorError2;
-                }
-            }
-        }
-
-        vm.loading = false;
-
-        if (calOptions.type) {
-            assets = _.filter(assets, function (a) {
-                return a.type === calOptions.type;
+        var dayHasAvailability = function dayHasAvailability(start) {
+            var events = uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('clientEvents', function (event) {
+                return event.rendering === 'background' && event.start.year() === start.year() && event.start.month() === start.month() && event.start.date() === start.date();
             });
-        }
-        vm.assets = assets;
+            return events.length > 0;
+        };
 
-        // requestedAssets
-        if (filters.requestedAssets.length > 0) {
-            angular.forEach(vm.assets, function (asset) {
-                var isInArray = _.find(filters.requestedAssets, function (id) {
-                    return id === asset.id;
+        var selectedResourcesListener = function selectedResourcesListener(newValue, oldValue) {
+            if (newValue !== oldValue) {
+                var assets = [];
+                angular.forEach(newValue, function (asset) {
+                    return assets.push(asset.id);
                 });
 
-                if (typeof isInArray !== 'undefined') {
-                    return vm.selectedResources.selected.push(asset);
+                var params = $state.params;
+
+                params.assets = assets.join();
+                $state.go($state.current.name, params, { notify: false, reload: false });
+            }
+        };
+
+        var getCalendarAssets = function getCalendarAssets(callback) {
+            if ($scope.model) {
+                callback([$scope.model]);
+                return;
+            }
+
+            vm.loading = true;
+
+            getCompanyPromise().then(function (company) {
+                if (vm.showAll) {
+                    BBAssets.getAssets(company).then(function (assets) {
+                        if (calOptions.type) {
+                            assets = _.filter(assets, function (a) {
+                                return a.type === calOptions.type;
+                            });
+                        }
+
+                        var _iteratorNormalCompletion = true;
+                        var _didIteratorError = false;
+                        var _iteratorError = undefined;
+
+                        try {
+                            for (var _iterator = Array.from(assets)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                                var asset = _step.value;
+
+                                asset.id = asset.identifier;
+                            }
+                        } catch (err) {
+                            _didIteratorError = true;
+                            _iteratorError = err;
+                        } finally {
+                            try {
+                                if (!_iteratorNormalCompletion && _iterator.return) {
+                                    _iterator.return();
+                                }
+                            } finally {
+                                if (_didIteratorError) {
+                                    throw _iteratorError;
+                                }
+                            }
+                        }
+
+                        vm.loading = false;
+                        return callback(assets);
+                    });
+                } else {
+                    vm.loading = false;
+                    callback(vm.selectedResources.selected);
                 }
             });
+        };
 
-            changeSelectedResources();
-        }
-    };
+        var getBookingTitle = function getBookingTitle(booking) {
+            var labelAssembler = $scope.labelAssembler ? $scope.labelAssembler : AdminCalendarOptions.bookings_label_assembler;
+            var blockLabelAssembler = $scope.blockLabelAssembler ? $scope.blockLabelAssembler : AdminCalendarOptions.block_label_assembler;
 
-    /**
-     * {Object} company
-     */
-    var companyListener = function companyListener(company) {
-        vm.loading = true;
+            if (booking.status !== 3 && labelAssembler) {
+                return TitleAssembler.getTitle(booking, labelAssembler);
+            } else if (booking.status === 3 && blockLabelAssembler) {
+                return TitleAssembler.getTitle(booking, blockLabelAssembler);
+            }
 
-        BBAssets.getAssets(company).then(assetsListener);
+            return booking.title;
+        };
 
-        company.$get('services').then(collectionListener);
+        var refreshBooking = function refreshBooking(booking) {
+            booking.$refetch().then(function (response) {
+                booking.resourceIds = [];
+                booking.resourceId = null;
+                if (booking.person_id != null) {
+                    booking.resourceIds.push(booking.person_id + '_p');
+                }
+                if (booking.resource_id != null) {
+                    booking.resourceIds.push(booking.resource_id + '_r');
+                }
 
-        pusherSubscribe();
-    };
+                booking.title = getBookingTitle(booking);
 
-    /**
-     * {Object} baseResourceCollection
-     */
-    var collectionListener = function collectionListener(collection) {
-        collection.$get('services').then(servicesListener);
-    };
+                return uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('updateEvent', booking);
+            });
+        };
 
-    /**
-     * {Array.<Object>} services
-     */
-    var servicesListener = function servicesListener(services) {
-        companyServices = Array.from(services).map(function (service) {
-            return new BBModel.Admin.Service(service);
-        });
-        ColorPalette.setColors(companyServices);
-    };
+        var updateBooking = function updateBooking(booking) {
+            if (booking.resourceId) {
+                var newAssetId = booking.resourceId.substring(0, booking.resourceId.indexOf('_'));
+                if (booking.resourceId.indexOf('_p') > -1) {
+                    booking.person_id = newAssetId;
+                } else if (booking.resourceId.indexOf('_r') > -1) {
+                    booking.resource_id = newAssetId;
+                }
+            }
 
-    init();
-});
+            booking.$update().then(function (response) {
+                booking.resourceIds = [];
+                booking.resourceId = null;
+                if (booking.person_id != null) {
+                    booking.resourceIds.push(booking.person_id + '_p');
+                }
+                if (booking.resource_id != null) {
+                    booking.resourceIds.push(booking.resource_id + '_r');
+                }
+
+                booking.title = getBookingTitle(booking);
+
+                return uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('updateEvent', booking);
+            });
+        };
+
+        var editBooking = function editBooking(booking) {
+            var templateUrl = void 0,
+                title = void 0;
+
+            if (booking.status === 3) {
+                templateUrl = 'edit_block_modal_form.html';
+                title = $translate.instant('CORE.MODAL.EDIT_BLOCK');
+            } else {
+                templateUrl = 'edit_booking_modal_form.html';
+                title = $translate.instant('CORE.MODAL.EDIT_BOOKING');
+            }
+            ModalForm.edit({
+                templateUrl: templateUrl,
+                model: booking,
+                title: title,
+                params: {
+                    locale: $translate.use()
+                },
+                success: function success(response) {
+                    if (typeof response === 'string') {
+                        if (response === 'move') {
+                            var item_defaults = { person: booking.person_id, resource: booking.resource_id };
+                            getCompanyPromise().then(function (company) {
+                                return AdminMoveBookingPopup.open({
+                                    item_defaults: item_defaults,
+                                    company_id: company.id,
+                                    booking_id: booking.id,
+                                    success: function success(model) {
+                                        return refreshBooking(booking);
+                                    },
+                                    fail: function fail() {
+                                        return refreshBooking(booking);
+                                    }
+                                });
+                            });
+                        }
+                    } else if (response.is_cancelled) {
+                        return uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('removeEvents', [response.id]);
+                    } else {
+                        booking.title = getBookingTitle(booking);
+                        return uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('updateEvent', booking);
+                    }
+                }
+            });
+        };
+
+        var pusherBooking = function pusherBooking(res) {
+            if (res.id != null) {
+                var booking = _.first(uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('clientEvents', res.id));
+                if (booking && booking.$refetch) {
+                    booking.$refetch().then(function () {
+                        booking.title = getBookingTitle(booking);
+                        return uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('updateEvent', booking);
+                    });
+                } else {
+                    uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('refetchEvents');
+                }
+            }
+        };
+
+        var pusherSubscribe = function pusherSubscribe() {
+            if (company) {
+                var pusher_channel = company.getPusherChannel('bookings');
+                if (pusher_channel) {
+                    pusher_channel.bind('create', pusherBooking);
+                    pusher_channel.bind('update', pusherBooking);
+                    pusher_channel.bind('destroy', pusherBooking);
+                }
+            }
+        };
+
+        var updateDateHandler = function updateDateHandler(data) {
+            if (uiCalendarConfig.calendars[vm.calendar_name]) {
+                var assembledDate = moment.utc();
+                assembledDate.set({
+                    'year': parseInt(data.date.getFullYear()),
+                    'month': parseInt(data.date.getMonth()),
+                    'date': parseInt(data.date.getDate()),
+                    'hour': 0,
+                    'minute': 0,
+                    'second': 0
+                });
+                uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('gotoDate', assembledDate);
+            }
+        };
+
+        var refetchBookingsHandler = function refetchBookingsHandler() {
+            uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('refetchEvents');
+        };
+
+        var newCheckoutHandler = function newCheckoutHandler() {
+            uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('refetchEvents');
+        };
+
+        var timeZoneChangedHandler = function timeZoneChangedHandler(event, tz) {
+            uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('option', 'timezone', tz);
+        };
+
+        var languageChangedHandler = function languageChangedHandler() {
+            updateCalendarLanguage();
+        };
+
+        var timeRangeChangedHandler = function timeRangeChangedHandler() {
+            updateCalendarTimeRange();
+        };
+
+        var getCompanyPromise = function getCompanyPromise() {
+            var defer = $q.defer();
+            if (company) {
+                defer.resolve(company);
+            } else {
+                AdminCompanyService.query($attrs).then(function (_company) {
+                    company = _company;
+                    return defer.resolve(company);
+                });
+            }
+            return defer.promise;
+        };
+
+        var changeSelectedResources = function changeSelectedResources() {
+            if (vm.showAll) {
+                vm.selectedResources.selected = [];
+            }
+
+            uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('refetchResources');
+            uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('refetchEvents');
+        };
+
+        var assetsListener = function assetsListener(assets) {
+            var _iteratorNormalCompletion2 = true;
+            var _didIteratorError2 = false;
+            var _iteratorError2 = undefined;
+
+            try {
+                for (var _iterator2 = Array.from(assets)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                    var asset = _step2.value;
+
+                    asset.id = asset.identifier;
+                }
+            } catch (err) {
+                _didIteratorError2 = true;
+                _iteratorError2 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion2 && _iterator2.return) {
+                        _iterator2.return();
+                    }
+                } finally {
+                    if (_didIteratorError2) {
+                        throw _iteratorError2;
+                    }
+                }
+            }
+
+            vm.loading = false;
+
+            if (calOptions.type) {
+                assets = _.filter(assets, function (a) {
+                    return a.type === calOptions.type;
+                });
+            }
+            vm.assets = assets;
+
+            // requestedAssets
+            if (filters.requestedAssets.length > 0) {
+                angular.forEach(vm.assets, function (asset) {
+                    var isInArray = _.find(filters.requestedAssets, function (id) {
+                        return id === asset.id;
+                    });
+
+                    if (typeof isInArray !== 'undefined') {
+                        return vm.selectedResources.selected.push(asset);
+                    }
+                });
+
+                changeSelectedResources();
+            }
+        };
+
+        /**
+         * {Object} company
+         */
+        var companyListener = function companyListener(company) {
+            vm.loading = true;
+
+            BBAssets.getAssets(company).then(assetsListener);
+
+            company.$get('services').then(collectionListener);
+
+            pusherSubscribe();
+        };
+
+        /**
+         * {Object} baseResourceCollection
+         */
+        var collectionListener = function collectionListener(collection) {
+            collection.$get('services').then(servicesListener);
+        };
+
+        /**
+         * {Array.<Object>} services
+         */
+        var servicesListener = function servicesListener(services) {
+            companyServices = Array.from(services).map(function (service) {
+                return new BBModel.Admin.Service(service);
+            });
+            ColorPalette.setColors(companyServices);
+        };
+
+        init();
+    }
+})(angular);
 'use strict';
 
 angular.module('BBAdminDashboard.calendar.directives').directive('bbResourceCalendar', function ($compile) {
@@ -1530,6 +1506,82 @@ angular.module('BBAdminDashboard.calendar.services').provider('AdminCalendarOpti
 }]);
 'use strict';
 
+(function () {
+
+	/**
+ * @ngdoc service
+ * @name BBAdminDashboard.calendar.services.service:CalendarEventRenderer
+ *
+ * @description
+ * This factory exposes methods to render all events to the list view calendars
+ */
+
+	angular.module('BBAdminDashboard.calendar').factory('CalendarEventRenderer', calendarEventRenderer);
+
+	function calendarEventRenderer($bbug, uiCalendarConfig) {
+		'ngInject';
+
+		return {
+
+			/**
+   * @ngdoc method
+   * @name renderListDayEvents
+   * @methodOf BBAdminDashboard.calendar.service:CalendarEventRenderer
+   * @description
+   * Displays list day events to the calendar
+   *
+   * @param {object} booking  The booking to be rendered
+   * @param {function} element The jQuery element where the booking is to be rendered
+   * @param {Object} calOptions The calendar options for the current calendar in view
+   */
+			renderListDayEvents: function renderListDayEvents(booking, element, calOptions) {
+				var a = void 0,
+				    link = void 0;
+				link = $bbug(element.children()[2]);
+				if (link) {
+					a = link.children()[0];
+					if (a) {
+						if (booking.person_name && (!calOptions.type || calOptions.type === 'person')) {
+							a.innerHTML = booking.person_name + ' - ' + a.innerHTML;
+						} else if (booking.resource_name && calOptions.type === 'resource') {
+							a.innerHTML = booking.resource_name + ' - ' + a.innerHTML;
+						}
+					}
+				}
+			},
+
+
+			/**
+   * @ngdoc method
+   * @name renderNonListDayEvents
+   * @methodOf BBAdminDashboard.calendar.service:CalendarEventRenderer
+   * @description
+   * Displays non list day events to the calendar (week/month)
+   *
+   * @param {object} booking  The booking to be rendered
+   * @param {function} element The jQuery element where the booking is to be rendered
+   * @param {Object} calOptions The calendar options for the current calendar in view
+   */
+			renderNonListDayEvents: function renderNonListDayEvents(booking, element, calOptions) {
+				var a = void 0,
+				    link = void 0;
+				link = $bbug(element.children()[0]);
+				if (link) {
+					a = link.children()[1];
+					if (a) {
+						if (booking.person_name && (!calOptions.type || calOptions.type === 'person')) {
+							a.innerHTML = booking.person_name + '<br/>' + a.innerHTML;
+						} else if (booking.resource_name && calOptions.type === 'resource') {
+							a.innerHTML = booking.resource_name + '<br/>' + a.innerHTML;
+						}
+					}
+				}
+			}
+		};
+	}
+})();
+'use strict';
+
 /**
  * @ngdoc service
  * @name BBAdminDashboard.calendar.services.service:CalendarEventSources
@@ -1537,7 +1589,7 @@ angular.module('BBAdminDashboard.calendar.services').provider('AdminCalendarOpti
  * @description
  * This services exposes methods to get all event-type information to be shown in the calendar
  */
-angular.module('BBAdminDashboard.calendar.services').service('CalendarEventSources', function (AdminScheduleService, BBModel, $q, TitleAssembler, $translate, AdminCalendarOptions, $rootScope, bbTimeZone) {
+angular.module('BBAdminDashboard.calendar.services').service('CalendarEventSources', function (AdminScheduleService, BBModel, $q, $log, TitleAssembler, $translate, AdminCalendarOptions, $rootScope, bbTimeZone, GeneralOptions) {
 
     'ngInject';
 
@@ -1587,59 +1639,37 @@ angular.module('BBAdminDashboard.calendar.services').service('CalendarEventSourc
         BBModel.Admin.Booking.$query(params).then(function (bookings) {
             var filteredBookings = [];
 
-            var _iteratorNormalCompletion = true;
-            var _didIteratorError = false;
-            var _iteratorError = undefined;
+            bookings.items.map(function (booking) {
+                booking.service_name = $translate.instant(booking.service_name);
 
-            try {
-                for (var _iterator = Array.from(bookings.items)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                    var booking = _step.value;
+                booking.resourceIds = [];
+                if (booking.person_id != null) {
+                    booking.resourceIds.push(booking.person_id + '_p');
+                }
+                if (booking.resource_id != null) {
+                    booking.resourceIds.push(booking.resource_id + '_r');
+                }
 
-
-                    booking.service_name = $translate.instant(booking.service_name);
-
-                    booking.resourceIds = [];
-                    if (booking.person_id != null) {
-                        booking.resourceIds.push(booking.person_id + '_p');
+                // Add to returned results is no specific resources where requested
+                // or event belongs to one of the selected resources
+                if (options.showAll == null || options.showAll != null && options.showAll || bookingBelongsToSelectedResources(options.selectedResources, booking)) {
+                    booking.useFullTime();
+                    if (booking.$has('edit')) {
+                        booking.startEditable = true;
                     }
-                    if (booking.resource_id != null) {
-                        booking.resourceIds.push(booking.resource_id + '_r');
+
+                    if (booking.status !== 3 && options.labelAssembler != null) {
+                        booking.title = TitleAssembler.getTitle(booking, options.labelAssembler);
+                    } else if (booking.status === 3 && options.blockLabelAssembler != null) {
+                        booking.title = TitleAssembler.getTitle(booking, options.blockLabelAssembler);
                     }
 
-                    // Add to returned results is no specific resources where requested
-                    // or event belongs to one of the selected resources
-                    if (options.showAll == null || options.showAll != null && options.showAll || bookingBelongsToSelectedResources(options.selectedResources, booking)) {
-                        booking.useFullTime();
-                        if (booking.$has('edit')) {
-                            booking.startEditable = true;
-                        }
-
-                        if (booking.status !== 3 && options.labelAssembler != null) {
-                            booking.title = TitleAssembler.getTitle(booking, options.labelAssembler);
-                        } else if (booking.status === 3 && options.blockLabelAssembler != null) {
-                            booking.title = TitleAssembler.getTitle(booking, options.blockLabelAssembler);
-                        }
-
-                        //# if we're limiting to peopel or resoures - check this is correct
-                        if (!options.type || options.type === "resource" && booking.resource_id || options.type === "person" && booking.person_id) {
-                            filteredBookings.push(booking);
-                        }
+                    //# if we're limiting to peopel or resoures - check this is correct
+                    if (!options.type || options.type === "resource" && booking.resource_id || options.type === "person" && booking.person_id) {
+                        filteredBookings.push(booking);
                     }
                 }
-            } catch (err) {
-                _didIteratorError = true;
-                _iteratorError = err;
-            } finally {
-                try {
-                    if (!_iteratorNormalCompletion && _iterator.return) {
-                        _iterator.return();
-                    }
-                } finally {
-                    if (_didIteratorError) {
-                        throw _iteratorError;
-                    }
-                }
-            }
+            });
 
             return deferred.resolve(filteredBookings);
         }, function (err) {
@@ -1678,51 +1708,30 @@ angular.module('BBAdminDashboard.calendar.services').service('CalendarEventSourc
             company.$get('external_bookings', params).then(function (collection) {
                 var bookings = collection.external_bookings;
                 if (bookings) {
-                    var _iteratorNormalCompletion2 = true;
-                    var _didIteratorError2 = false;
-                    var _iteratorError2 = undefined;
-
-                    try {
-                        for (var _iterator2 = Array.from(bookings)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-                            var booking = _step2.value;
-
-                            booking.resourceIds = [];
-                            if (booking.person_id != null) {
-                                booking.resourceIds.push(booking.person_id + '_p');
-                            }
-
-                            if (booking.resource_id != null) {
-                                booking.resourceIds.push(booking.resource_id + '_r');
-                            }
-
-                            if (!booking.title) {
-                                booking.title = "Blocked";
-                            }
-                            if (options.externalLabelAssembler != null) {
-                                booking.title = TitleAssembler.getTitle(booking, options.externalLabelAssembler);
-                            }
-
-                            booking.className = 'status_external';
-                            booking.type = 'external';
-                            booking.editable = false;
-                            booking.startEditable = false;
-                            booking.durationEditable = false;
-                            booking.resourceEditable = false;
+                    bookings.map(function (booking) {
+                        booking.resourceIds = [];
+                        if (booking.person_id != null) {
+                            booking.resourceIds.push(booking.person_id + '_p');
                         }
-                    } catch (err) {
-                        _didIteratorError2 = true;
-                        _iteratorError2 = err;
-                    } finally {
-                        try {
-                            if (!_iteratorNormalCompletion2 && _iterator2.return) {
-                                _iterator2.return();
-                            }
-                        } finally {
-                            if (_didIteratorError2) {
-                                throw _iteratorError2;
-                            }
+
+                        if (booking.resource_id != null) {
+                            booking.resourceIds.push(booking.resource_id + '_r');
                         }
-                    }
+
+                        if (!booking.title) {
+                            booking.title = "Blocked";
+                        }
+                        if (options.externalLabelAssembler != null) {
+                            booking.title = TitleAssembler.getTitle(booking, options.externalLabelAssembler);
+                        }
+
+                        booking.className = 'status_external';
+                        booking.type = 'external';
+                        booking.editable = false;
+                        booking.startEditable = false;
+                        booking.durationEditable = false;
+                        booking.resourceEditable = false;
+                    });
 
                     return deferred.resolve(bookings);
                 } else {
@@ -1764,7 +1773,6 @@ angular.module('BBAdminDashboard.calendar.services').service('CalendarEventSourc
         var deferred = $q.defer();
 
         AdminScheduleService.getAssetsScheduleEvents(company, start, end, !options.showAll, options.selectedResources).then(function (availabilities) {
-
             if (AdminCalendarOptions.minTime == null || AdminCalendarOptions.maxTime == null) {
                 setCalendarAvailabilityRange(availabilities);
             }
@@ -1774,99 +1782,52 @@ angular.module('BBAdminDashboard.calendar.services').service('CalendarEventSourc
             } else {
                 var overAllAvailabilities = [];
 
-                var _iteratorNormalCompletion3 = true;
-                var _didIteratorError3 = false;
-                var _iteratorError3 = undefined;
-
-                try {
-                    for (var _iterator3 = Array.from(availabilities)[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-                        var avail = _step3.value;
-
-                        avail.unix_start = moment(avail.start).unix();
-                        avail.unix_end = moment(avail.end).unix();
-                        avail.delete_me = false;
-                    }
-                } catch (err) {
-                    _didIteratorError3 = true;
-                    _iteratorError3 = err;
-                } finally {
-                    try {
-                        if (!_iteratorNormalCompletion3 && _iterator3.return) {
-                            _iterator3.return();
-                        }
-                    } finally {
-                        if (_didIteratorError3) {
-                            throw _iteratorError3;
-                        }
-                    }
-                }
+                availabilities.map(function (avail) {
+                    avail.unix_start = moment(avail.start).unix();
+                    avail.unix_end = moment(avail.end).unix();
+                    avail.delete_me = false;
+                });
 
                 var sorted = _.sortBy(availabilities, function (x) {
                     return moment(x.start).unix();
                 });
-
                 var id = 0;
-                var test_id = 1;
+                var testId = 1;
 
-                while (test_id < sorted.length) {
+                while (testId < sorted.length) {
                     var src = sorted[id];
-                    var test = sorted[test_id];
-                    //console.log(id, test_id, src)
+                    var test = sorted[testId];
                     if (!src.delete_me) {
                         if (test.unix_end > src.unix_end && test.unix_start < src.unix_end) {
                             src.end = test.end;
                             src.unix_end = test.unix_end;
                             test.delete_me = true;
-                            test_id += 1;
+                            testId += 1;
                         } else if (test.unix_end <= src.unix_end) {
                             // it's inside - just delete it
                             test.delete_me = true;
-                            test_id += 1;
+                            testId += 1;
                         } else {
                             id += 1;
-                            test_id += 1;
+                            testId += 1;
                         }
                     } else {
                         id += 1;
-                        test_id = id + 1;
+                        testId = id + 1;
                     }
                 }
 
-                var _iteratorNormalCompletion4 = true;
-                var _didIteratorError4 = false;
-                var _iteratorError4 = undefined;
-
-                try {
-                    for (var _iterator4 = Array.from(sorted)[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-                        var availability = _step4.value;
-
-                        if (!availability.delete_me) {
-                            overAllAvailabilities.push({
-                                start: availability.start,
-                                end: availability.end,
-                                rendering: "background",
-                                title: 'Joined availability ' + moment(availability.start).format('YYYY-MM-DD'),
-                                allDay: options.calendarView === 'month' ? true : false
-                            });
-                        }
+                sorted.map(function (availability) {
+                    if (!availability.delete_me) {
+                        overAllAvailabilities.push({
+                            start: availability.start,
+                            end: availability.end,
+                            rendering: "background",
+                            title: 'Joined availability ' + moment(availability.start).format('YYYY-MM-DD'),
+                            allDay: options.calendarView === 'month' ? true : false
+                        });
                     }
-
-                    //console.log overAllAvailabilities
-
-                } catch (err) {
-                    _didIteratorError4 = true;
-                    _iteratorError4 = err;
-                } finally {
-                    try {
-                        if (!_iteratorNormalCompletion4 && _iterator4.return) {
-                            _iterator4.return();
-                        }
-                    } finally {
-                        if (_didIteratorError4) {
-                            throw _iteratorError4;
-                        }
-                    }
-                }
+                });
 
                 return deferred.resolve(overAllAvailabilities);
             }
@@ -1951,7 +1912,11 @@ angular.module('BBAdminDashboard.calendar.services').service('CalendarEventSourc
         }
         var deferred = $q.defer();
 
-        var promises = [getBookingsAndBlocks(company, start, end, options), getExternalBookings(company, start, end, options), getAvailabilityBackground(company, start, end, options)];
+        var promises = [getBookingsAndBlocks(company, start, end, options), getAvailabilityBackground(company, start, end, options)];
+
+        if (GeneralOptions.companyHasExternalBookings) {
+            promises.push(getExternalBookings(company, start, end, options));
+        }
 
         $q.all(promises).then(function (resolutions) {
             var allResults = [];
@@ -1961,6 +1926,7 @@ angular.module('BBAdminDashboard.calendar.services').service('CalendarEventSourc
 
             return deferred.resolve(allResults);
         }, function (err) {
+            $log.info(err);
             return deferred.reject(err);
         });
 
@@ -4076,7 +4042,7 @@ angular.module('BBAdminDashboard').factory('TemplateService', function ($templat
                     LOGO: 'Logo'
                 },
                 MODAL: {
-                    NEW_BOOKING_HEADER: 'Make Booking/Block Time'
+                    NEW_BOOKING_HEADER: 'New Booking'
                 }
             }
         };
@@ -4177,7 +4143,7 @@ angular.module('BBAdminDashboard.dashboard-iframe.translations').config(['$trans
             'SIDE_NAV': {
                 'DASHBOARD_IFRAME_PAGE': {
                     'DASHBOARD': 'Dashboard',
-                    'UPCOMING_RECENT': 'Upcoming &amp; Recent',
+                    'UPCOMING_RECENT': 'Upcoming & Recent',
                     'SEARCH': 'Search',
                     'BULK_BOOKINGS': 'Bulk bookings',
                     'INSIGHTS': 'Insights'
@@ -5517,7 +5483,7 @@ angular.module('BBAdminDashboard.settings-iframe.translations').config(['$transl
                     'ADVANCED_SETTINGS': 'Advanced settings',
                     'INTEGRATIONS': 'Integrations',
                     'IMAGES': 'Images',
-                    'USERS_ADMINS': 'Users &amp; Admins',
+                    'USERS_ADMINS': 'Users & Admins',
                     'ANNOUNCEMENTS': 'Announcements',
                     'SUBSCRIPTION': 'Subscription'
                 }
@@ -5535,7 +5501,7 @@ angular.module('BBAdminDashboard.settings-iframe.translations').config(['$transl
                     'TAB_NOTIFICATIONS': 'Notifications',
                     'TAB_PRICING': 'Pricing',
                     'TAB_TERMINOLOGY': 'Terminology',
-                    'TAB_CUSTOM_TCS': 'Custom T&amp;Cs',
+                    'TAB_CUSTOM_TCS': 'Custom T&Cs',
                     'TAB_EXTRA_FEATURES': 'Extra features'
                 },
                 'ADVANCED_SETTINGS': {
@@ -5588,7 +5554,9 @@ angular.module('BBAdminDashboard.settings-iframe.translations').config(['$transl
                 client: _this.client,
                 company_id: _this.companyId,
                 on_conflict: "cancel()",
-                template: 'main'
+                template: 'main',
+                hide_block: true,
+                title: 'ADMIN_DASHBOARD.MODAL.NEW_BOOKING_HEADER'
             });
         };
     }
