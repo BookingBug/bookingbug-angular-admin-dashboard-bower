@@ -108,6 +108,7 @@
 }
 
 .fc {
+
   .fc-event {
     border: none;
     padding: 7px 0;
@@ -121,6 +122,12 @@
       background-color: $gray !important;
       .fc-content {
         background-color: $gray !important;
+      }
+    }
+    &.status_completed {
+      background-color: $brand-success !important;
+      .fc-content {
+        background-color: $brand-success !important;
       }
     }
     &.status_external {
