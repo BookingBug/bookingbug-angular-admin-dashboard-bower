@@ -912,29 +912,40 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
                         //orginal_resource = `${event.resource_id}_r`;
                     }
                 }
-
-                getCompanyPromise().then(function (company) {
-                    return AdminMoveBookingPopup.open({
-                        min_date: setTimeToMoment(start, AdminCalendarOptions.minTime),
-                        max_date: setTimeToMoment(end, AdminCalendarOptions.maxTime),
-                        from_datetime: moment(start.toISOString()),
-                        to_datetime: moment(end.toISOString()),
-                        item_defaults: item_defaults,
-                        company_id: company.id,
-                        booking_id: booking.id,
-                        success: function success(model) {
-                            return refreshBooking(booking);
-                        },
-                        fail: function fail() {
-                            return refreshBooking(booking);
-                        }
-                    });
+                // if it's got a person and resource - then it
+                Dialog.confirm({
+                    title: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MOVE_MODAL_HEADING'),
+                    model: booking,
+                    body: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MOVE_MODAL_BODY'),
+                    success: function success(model) {
+                        getCompanyPromise().then(function (company) {
+                            return AdminMoveBookingPopup.open({
+                                min_date: setTimeToMoment(start, AdminCalendarOptions.minTime),
+                                max_date: setTimeToMoment(end, AdminCalendarOptions.maxTime),
+                                from_datetime: moment(start.toISOString()),
+                                to_datetime: moment(end.toISOString()),
+                                item_defaults: item_defaults,
+                                company_id: company.id,
+                                booking_id: booking.id,
+                                success: function success(model) {
+                                    return updateBooking(model);
+                                },
+                                fail: function fail() {
+                                    return revertFunc();
+                                }
+                            });
+                        });
+                    },
+                    fail: function fail() {
+                        return revertFunc();
+                    }
                 });
+
                 return;
             }
 
             // if it's got a person and resource - then it
-            return Dialog.confirm({
+            Dialog.confirm({
                 title: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MOVE_MODAL_HEADING'),
                 model: booking,
                 body: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MOVE_MODAL_BODY'),
@@ -990,51 +1001,82 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
             $scope.$emit('UICalendar:EventAfterAllRender');
         };
 
+        var openWidgetModal = function openWidgetModal(item_defaults, start, end, title) {
+            return getCompanyPromise().then(function (company) {
+                return AdminBookingPopup.open({
+                    min_date: setTimeToMoment(start, AdminCalendarOptions.minTime),
+                    max_date: setTimeToMoment(end, AdminCalendarOptions.maxTime),
+                    from_datetime: moment(start.toISOString()),
+                    to_datetime: moment(end.toISOString()),
+                    first_page: 'quick_pick',
+                    on_conflict: 'cancel()',
+                    company_id: company.id,
+                    title: title,
+                    item_defaults: item_defaults
+                });
+            });
+        };
+
         var fcSelect = function fcSelect(start, end, jsEvent, view, resource) {
+            // responsible for building item_defaults object depending on what calendar view user is in 
+            // initialises the widget with this item_defaults object
+            var modalTitle = void 0,
+                item_defaults = void 0;
             // For some reason clicking on the scrollbars triggers this event therefore we filter based on the jsEvent target
             if (jsEvent && jsEvent.target.className === 'fc-scroller') {
                 return;
             }
 
-            var modalTitle = start.format('LLLL');
-
             var calendar = uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('getCalendar');
-            start = calendar.moment(bbTimeZone.convertToCompany(moment(start.toISOString())));
-            end = calendar.moment(bbTimeZone.convertToCompany(moment(end.toISOString())));
+            var startTimeCompanyTimezone = calendar.moment(bbTimeZone.convertToCompany(moment(start.toISOString())));
+            var endTimeCompanyTimezone = calendar.moment(bbTimeZone.convertToCompany(moment(end.toISOString())));
 
-            view.calendar.unselect();
-
-            if (!calOptions.enforce_schedules || isTimeRangeAvailable(start, end, resource) || Math.abs(start.diff(end, 'days')) === 1 && dayHasAvailability(start)) {
-                if (Math.abs(start.diff(end, 'days')) > 0) {
-                    end.subtract(1, 'days');
-                    end = setTimeToMoment(end, AdminCalendarOptions.maxTime);
-                }
-
-                var item_defaults = {
-                    date: start.format('YYYY-MM-DD'),
-                    time: start.hour() * 60 + start.minute()
+            if (view.type === 'month') {
+                // we only need to pass in the date to item_defaults as time/resource/person is not visible from this view
+                modalTitle = start.format('dddd, Do MMMM YYYY');
+                item_defaults = {
+                    date: startTimeCompanyTimezone.format('YYYY-MM-DD')
                 };
 
-                if (resource && resource.type === 'person') {
-                    item_defaults.person = resource.id.substring(0, resource.id.indexOf('_'));
-                } else if (resource && resource.type === 'resource') {
-                    item_defaults.resource = resource.id.substring(0, resource.id.indexOf('_'));
-                }
-
-                return getCompanyPromise().then(function (company) {
-                    return AdminBookingPopup.open({
-                        min_date: setTimeToMoment(start, AdminCalendarOptions.minTime),
-                        max_date: setTimeToMoment(end, AdminCalendarOptions.maxTime),
-                        from_datetime: moment(start.toISOString()),
-                        to_datetime: moment(end.toISOString()),
-                        item_defaults: item_defaults,
-                        first_page: 'quick_pick',
-                        on_conflict: 'cancel()',
-                        company_id: company.id,
-                        title: modalTitle
-                    });
-                });
+                return openWidgetModal(item_defaults, startTimeCompanyTimezone, endTimeCompanyTimezone, modalTitle);
             }
+
+            modalTitle = start.format('LLLL');
+            view.calendar.unselect();
+
+            if (view.type === 'agendaWeek') {
+                // we only need to pass in the date and time to item_defaults as resource/person is not visible from this view    
+                item_defaults = {
+                    date: startTimeCompanyTimezone.format('YYYY-MM-DD'),
+                    time: startTimeCompanyTimezone.hour() * 60 + startTimeCompanyTimezone.minute()
+                };
+
+                return openWidgetModal(item_defaults, startTimeCompanyTimezone, endTimeCompanyTimezone, modalTitle);
+            }
+
+            if (!calOptions.enforce_schedules || isTimeRangeAvailable(startTimeCompanyTimezone, endTimeCompanyTimezone, resource) || Math.abs(startTimeCompanyTimezone.diff(endTimeCompanyTimezone, 'days')) === 1 && dayHasAvailability(startTimeCompanyTimezone)) {
+                makeSelectionDayView(startTimeCompanyTimezone, endTimeCompanyTimezone, item_defaults, resource, modalTitle);
+            }
+        };
+
+        var makeSelectionDayView = function makeSelectionDayView(startTimeCompanyTimezone, endTimeCompanyTimezone, item_defaults, resource, modalTitle) {
+            if (Math.abs(startTimeCompanyTimezone.diff(endTimeCompanyTimezone, 'days')) > 0) {
+                endTimeCompanyTimezone.subtract(1, 'days');
+                endTimeCompanyTimezone = setTimeToMoment(endTimeCompanyTimezone, AdminCalendarOptions.maxTime);
+            }
+
+            item_defaults = {
+                date: startTimeCompanyTimezone.format('YYYY-MM-DD'),
+                time: startTimeCompanyTimezone.hour() * 60 + startTimeCompanyTimezone.minute()
+            };
+
+            if (resource && resource.type === 'person') {
+                item_defaults.person = resource.id.substring(0, resource.id.indexOf('_'));
+            } else if (resource && resource.type === 'resource') {
+                item_defaults.resource = resource.id.substring(0, resource.id.indexOf('_'));
+            }
+
+            return openWidgetModal(item_defaults, startTimeCompanyTimezone, endTimeCompanyTimezone, modalTitle);
         };
 
         var fcViewRender = function fcViewRender(view, element) {
@@ -1193,6 +1235,8 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
                 }
 
                 booking.title = getBookingTitle(booking);
+                booking.start = bbTimeZone.convertToDisplay(booking.start);
+                booking.end = bbTimeZone.convertToDisplay(booking.end);
 
                 return uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('updateEvent', booking);
             });
