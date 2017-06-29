@@ -1684,7 +1684,7 @@ angular.module('BBAdminDashboard.calendar.services').service('CalendarEventSourc
             var filteredBookings = [];
 
             bookings.items.map(function (booking) {
-                booking.service_name = $translate.instant(booking.service_name);
+                booking.service_name = $translate.instant(booking.service_name, null, null, null, null);
 
                 booking.resourceIds = [];
                 if (booking.person_id != null) {
