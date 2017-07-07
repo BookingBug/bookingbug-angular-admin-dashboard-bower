@@ -370,21 +370,25 @@ angular.module('BBAdminDashboard.dashboard-iframe').run(function (RuntimeStates,
 });
 'use strict';
 
-angular.module('BBAdminDashboard.login').run(function (RuntimeStates, AdminLoginOptions) {
-    'ngInject';
+(function (angular) {
 
-    // Choose to opt out of the default routing
+    angular.module('BBAdminDashboard.login').run(run);
 
-    if (AdminLoginOptions.use_default_states) {
-        RuntimeStates.state('login', {
-            url: "/login",
-            resolve: {
-                user: function user($q, BBModel, AdminSsoLogin) {
-                    var defer = $q.defer();
-                    BBModel.Admin.Login.$user().then(function (user) {
-                        if (user) {
-                            return defer.resolve(user);
-                        } else {
+    function run(RuntimeStates, AdminLoginOptions) {
+        'ngInject';
+
+        // Choose to opt out of the default routing
+
+        if (AdminLoginOptions.use_default_states) {
+            RuntimeStates.state('login', {
+                url: '/login',
+                resolve: {
+                    user: function user($q, BBModel, AdminSsoLogin) {
+                        var defer = $q.defer();
+                        BBModel.Admin.Login.$user().then(function (user) {
+                            if (user) {
+                                return defer.resolve(user);
+                            }
                             return AdminSsoLogin.ssoLoginPromise().then(function (admin) {
                                 BBModel.Admin.Login.$setLogin(admin);
                                 return BBModel.Admin.Login.$user().then(function (user) {
@@ -393,20 +397,21 @@ angular.module('BBAdminDashboard.login').run(function (RuntimeStates, AdminLogin
                                     return defer.reject({ reason: 'GET_USER_ERROR', error: err });
                                 });
                             }, function (err) {
-                                return defer.resolve();
+                                return defer.resolve({ reason: 'SSO_INVALID', error: err });
                             });
-                        }
-                    }, function (err) {
-                        return defer.reject({ reason: 'LOGIN_SERVICE_ERROR', error: err });
-                    });
-                    return defer.promise;
-                }
-            },
-            controller: "LoginPageCtrl",
-            templateUrl: "login/index.html"
-        });
+                        }, function (err) {
+                            return defer.reject({ reason: 'LOGIN_SERVICE_ERROR', error: err });
+                        });
+
+                        return defer.promise;
+                    }
+                },
+                controller: 'LoginPageCtrl',
+                templateUrl: 'login/index.html'
+            });
+        }
     }
-});
+})(angular);
 'use strict';
 
 angular.module('BBAdminDashboard.logout').config(function ($stateProvider, $urlRouterProvider) {
@@ -605,18 +610,22 @@ angular.module('BBAdminDashboard.settings-iframe').run(function (RuntimeStates, 
     function CalendarDatePickerCtrl() {
         'ngInject';
 
-        var ctrl = this;
+        var _this = this;
 
-        ctrl.openDatePicker = function ($event) {
+        this.dateFormat = 'dd/MM/yyyy';
+        this.datePickerOpened = false;
+
+        this.openDatePicker = function ($event) {
             $event.preventDefault();
-            ctrl.datePickerOpened = true;
+            _this.datePickerOpened = true;
         };
 
-        ctrl.datePickerUpdated = function () {
-            if (_.isDate(ctrl.currentDate)) {
-                ctrl.onChangeDate({
+        this.datePickerUpdated = function () {
+            var currentDate = _this.currentDate;
+            if (_.isDate(_this.currentDate)) {
+                _this.onChangeDate({
                     $event: {
-                        date: ctrl.currentDate
+                        date: currentDate
                     }
                 });
             }
@@ -673,10 +682,9 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
 'use strict';
 
 (function (angular) {
-
     angular.module('BBAdminDashboard.calendar.controllers').controller('bbResourceCalendarController', bbResourceCalendarController);
 
-    function bbResourceCalendarController($rootScope, $scope, $state, $attrs, $filter, $q, $translate, $bbug, AdminBookingPopup, AdminCalendarOptions, AdminCompanyService, AdminMoveBookingPopup, BBAssets, BBModel, CalendarEventSources, ColorPalette, Dialog, GeneralOptions, ModalForm, PrePostTime, ProcessAssetsFilter, TitleAssembler, uiCalendarConfig, bbTimeZone, CalendarEventRenderer) {
+    function bbResourceCalendarController($rootScope, $scope, $state, $attrs, $filter, $q, $translate, $bbug, AdminBookingPopup, AdminCalendarOptions, AdminCompanyService, AdminMoveBookingPopup, BBAssets, BBModel, CalendarEventSources, ColorPalette, Dialog, GeneralOptions, ModalForm, PrePostTime, ProcessAssetsFilter, TitleAssembler, uiCalendarConfig, bbTimeZone, CalendarEventRenderer, BBCalendarViewsService, BBAdminCalendarService) {
         'ngInject';
 
         /*jshint validthis: true */
@@ -686,7 +694,7 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
         var filters = null;
         var company = null;
         var companyServices = [];
-        var calOptions = [];
+        var calendarOptions = {};
 
         vm.assets = []; // All options sets (resources, people) go to the same select
 
@@ -694,10 +702,15 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
             selected: []
         };
 
+        vm.currentViewType = 'fullCalendar';
+        vm.availableViews = {};
+
         var init = function init() {
+            BBCalendarViewsService.addCustomViewsToCalendar();
             applyFilters();
 
             prepareCalOptions();
+            vm.availableViews = BBAdminCalendarService.prepareViewsConfig(calendarOptions);
             prepareEventSources();
             prepareUiCalOptions();
 
@@ -714,6 +727,24 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
 
             vm.changeSelectedResources = changeSelectedResources;
             vm.updateDateHandler = updateDateHandler;
+        };
+
+        var prepareCalOptions = function prepareCalOptions() {
+            calendarOptions = $scope.$eval($attrs.bbResourceCalendar);
+
+            if (!calendarOptions) {
+                calendarOptions = {};
+            }
+
+            if (calendarOptions.name) {
+                vm.calendar_name = calendarOptions.name;
+            } else {
+                vm.calendar_name = 'resourceCalendar';
+            }
+
+            if (!calendarOptions.cal_slot_duration) {
+                calendarOptions.cal_slot_duration = GeneralOptions.calendar_slot_duration;
+            }
         };
 
         var applyFilters = function applyFilters() {
@@ -752,7 +783,7 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
                     externalLabelAssembler: $scope.externalLabelAssembler ? $scope.externalLabelAssembler : AdminCalendarOptions.external_label_assembler,
                     noCache: true,
                     showAll: vm.showAll,
-                    type: calOptions.type,
+                    type: calendarOptions.type,
                     selectedResources: vm.selectedResources.selected,
                     calendarView: uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('getView').type
                 };
@@ -769,37 +800,16 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
             });
         };
 
-        var prepareCalOptions = function prepareCalOptions() {
-            calOptions = $scope.$eval($attrs.bbResourceCalendar);
-            if (!calOptions) {
-                calOptions = {};
+        var selectView = function selectView(view) {
+            if (view === vm.currentViewType) {
+                return;
             }
 
-            if (!calOptions.defaultView) {
-                if ($scope.model) {
-                    calOptions.defaultView = 'agendaWeek';
-                } else {
-                    calOptions.defaultView = 'timelineDay';
-                }
-            }
-
-            if (!calOptions.views) {
-                if ($scope.model) {
-                    calOptions.views = 'listDay,timelineDayThirty,agendaWeek,month';
-                } else {
-                    calOptions.views = 'timelineDay,listDay,timelineDayThirty,agendaWeek,month';
-                }
-            }
-
-            if (calOptions.name) {
-                vm.calendar_name = calOptions.name;
-            } else {
-                vm.calendar_name = 'resourceCalendar';
-            }
-
-            if (calOptions.cal_slot_duration == null) {
-                calOptions.cal_slot_duration = GeneralOptions.calendar_slot_duration;
-            }
+            vm.currentViewType = view;
+            // set this flag so we only hijack focus when switching between calendar and agenda.
+            vm.switchViewType = true;
+            prepareUiCalOptions();
+            uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('refetchEvents');
         };
 
         var prepareUiCalOptions = function prepareUiCalOptions() {
@@ -810,29 +820,30 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
                     eventStartEditable: false,
                     eventDurationEditable: false,
                     height: 'auto',
-                    buttonText: {},
+                    buttonText: {
+                        today: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.TODAY')
+                    },
+                    customButtons: {
+                        fullCalendar: {
+                            text: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.CALENDAR'),
+                            click: function click() {
+                                selectView('fullCalendar');
+                            }
+                        },
+                        bbListView: {
+                            text: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.AGENDA'),
+                            click: function click() {
+                                selectView('bbListView');
+                            }
+                        }
+                    },
                     header: {
                         left: 'today,prev,next',
                         center: 'title',
-                        right: calOptions.views
+                        right: BBAdminCalendarService.constructViewsString(vm.currentViewType, vm.availableViews)
                     },
-                    defaultView: calOptions.defaultView,
-                    views: {
-                        listDay: {},
-                        agendaWeek: {
-                            slotDuration: $filter('minutesToString')(calOptions.cal_slot_duration),
-                            groupByDateAndResource: false
-                        },
-                        month: {
-                            eventLimit: 5
-                        },
-                        timelineDay: {
-                            slotDuration: $filter('minutesToString')(calOptions.cal_slot_duration),
-                            eventOverlap: false,
-                            slotWidth: 25,
-                            resourceAreaWidth: '18%'
-                        }
-                    },
+                    defaultView: Object.keys(vm.availableViews[vm.currentViewType])[0],
+                    views: vm.availableViews[vm.currentViewType],
                     resourceGroupField: 'group',
                     resourceLabelText: ' ',
                     eventResourceEditable: true,
@@ -854,17 +865,8 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
                     timezone: bbTimeZone.getDisplay()
                 }
             };
-            updateCalendarLanguage();
-            updateCalendarTimeRange();
-        };
-
-        var updateCalendarLanguage = function updateCalendarLanguage() {
             vm.uiCalOptions.calendar.locale = $translate.use();
-            vm.uiCalOptions.calendar.buttonText.today = $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.TODAY');
-            vm.uiCalOptions.calendar.views.listDay.buttonText = $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.TODAY');
-            vm.uiCalOptions.calendar.views.agendaWeek.buttonText = $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.WEEK');
-            vm.uiCalOptions.calendar.views.month.buttonText = $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MONTH');
-            vm.uiCalOptions.calendar.views.timelineDay.buttonText = $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.DAY', { minutes: calOptions.cal_slot_duration });
+            updateCalendarTimeRange();
         };
 
         var updateCalendarTimeRange = function updateCalendarTimeRange() {
@@ -902,14 +904,11 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
                 };
 
                 if (booking.resourceId) {
-                    //let orginal_resource;
                     var newAssetId = booking.resourceId.substring(0, booking.resourceId.indexOf('_'));
                     if (booking.resourceId.indexOf('_p') > -1) {
                         item_defaults.person = newAssetId;
-                        //orginal_resource = `${event.person_id}_p`;
                     } else if (booking.resourceId.indexOf('_r') > -1) {
                         item_defaults.resource = newAssetId;
-                        //orginal_resource = `${event.resource_id}_r`;
                     }
                 }
                 // if it's got a person and resource - then it
@@ -978,12 +977,12 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
             if (!$scope.model) {
                 // if not a single item view
                 if (type === 'listDay') {
-                    CalendarEventRenderer.renderListDayEvents(booking, element, calOptions);
+                    CalendarEventRenderer.renderListDayEvents(booking, element, calendarOptions);
                 } else if (type === 'agendaWeek' || type === 'month') {
-                    CalendarEventRenderer.renderNonListDayEvents(booking, element, calOptions);
+                    CalendarEventRenderer.renderNonListDayEvents(booking, element, calendarOptions);
                 }
             }
-            if (service && type !== 'listDay') {
+            if (service && !['listDay', 'bbListDay', 'bbListWeek', 'bbListMonth'].includes(type)) {
                 element.css('background-color', service.color);
                 element.css('color', service.textColor);
                 element.css('border-color', service.textColor);
@@ -997,7 +996,18 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
             }
         };
 
-        var fcEventAfterAllRender = function fcEventAfterAllRender() {
+        var fcEventAfterAllRender = function fcEventAfterAllRender(view) {
+            // Replace the fullcalendar hardcoded h2 element with an h1
+            // Will this mess with a screen reader's document outline??
+            var fcInstance = uiCalendarConfig.calendars[vm.calendar_name];
+            var titleContainer = fcInstance.find('.fc-center');
+            var titleElement = titleContainer.find('h1')[0] || titleContainer.find('h2')[0];
+
+            // sometimes it is undefined
+            if (titleElement) {
+                titleContainer.replaceWith('<div class="fc-center"><h1 tabindex="0">' + view.start.format('ll') + '</h1></div>');
+            }
+
             $scope.$emit('UICalendar:EventAfterAllRender');
         };
 
@@ -1018,7 +1028,7 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
         };
 
         var fcSelect = function fcSelect(start, end, jsEvent, view, resource) {
-            // responsible for building item_defaults object depending on what calendar view user is in 
+            // responsible for building item_defaults object depending on what calendar view user is in
             // initialises the widget with this item_defaults object
             var modalTitle = void 0,
                 item_defaults = void 0;
@@ -1045,7 +1055,7 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
             view.calendar.unselect();
 
             if (view.type === 'agendaWeek') {
-                // we only need to pass in the date and time to item_defaults as resource/person is not visible from this view    
+                // we only need to pass in the date and time to item_defaults as resource/person is not visible from this view
                 item_defaults = {
                     date: startTimeCompanyTimezone.format('YYYY-MM-DD'),
                     time: startTimeCompanyTimezone.hour() * 60 + startTimeCompanyTimezone.minute()
@@ -1054,7 +1064,7 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
                 return openWidgetModal(item_defaults, startTimeCompanyTimezone, endTimeCompanyTimezone, modalTitle);
             }
 
-            if (!calOptions.enforce_schedules || isTimeRangeAvailable(startTimeCompanyTimezone, endTimeCompanyTimezone, resource) || Math.abs(startTimeCompanyTimezone.diff(endTimeCompanyTimezone, 'days')) === 1 && dayHasAvailability(startTimeCompanyTimezone)) {
+            if (!calendarOptions.enforce_schedules || isTimeRangeAvailable(startTimeCompanyTimezone, endTimeCompanyTimezone, resource) || Math.abs(startTimeCompanyTimezone.diff(endTimeCompanyTimezone, 'days')) === 1 && dayHasAvailability(startTimeCompanyTimezone)) {
                 makeSelectionDayView(startTimeCompanyTimezone, endTimeCompanyTimezone, item_defaults, resource, modalTitle);
             }
         };
@@ -1080,6 +1090,20 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
         };
 
         var fcViewRender = function fcViewRender(view, element) {
+            // Add active colour to view type buttons
+            var activeBtn = $('.fc-' + vm.currentViewType + '-button');
+            activeBtn.addClass('fc-state-active');
+
+            // Refocus if we were switching view as it gets lost when rendering happens.
+            if (vm.switchViewType) {
+                activeBtn.focus();
+                vm.switchViewType = false;
+            }
+
+            // Add aria labels to icon buttons
+            $('.fc-prev-button').attr('aria-label', $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.PREVIOUS'));
+            $('.fc-next-button').attr('aria-label', $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.NEXT'));
+
             var date = uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('getDate');
             var newDate = moment().tz(moment.tz.guess());
             newDate.set({
@@ -1143,9 +1167,9 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
             getCompanyPromise().then(function (company) {
                 if (vm.showAll) {
                     BBAssets.getAssets(company).then(function (assets) {
-                        if (calOptions.type) {
+                        if (calendarOptions.type) {
                             assets = _.filter(assets, function (a) {
-                                return a.type === calOptions.type;
+                                return a.type === calendarOptions.type;
                             });
                         }
 
@@ -1398,9 +1422,9 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
 
             vm.loading = false;
 
-            if (calOptions.type) {
+            if (calendarOptions.type) {
                 assets = _.filter(assets, function (a) {
-                    return a.type === calOptions.type;
+                    return a.type === calendarOptions.type;
                 });
             }
             vm.assets = assets;
@@ -1456,44 +1480,190 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
 })(angular);
 'use strict';
 
-angular.module('BBAdminDashboard.calendar.directives').directive('bbResourceCalendar', function ($compile) {
-    'ngInject';
+(function (angular) {
 
-    var link = function link(scope, element, attrs) {
+    angular.module('BBAdminDashboard.calendar.directives').directive('bbResourceCalendar', bbResourceCalendarDirective);
 
-        var init = function init() {
-            scope.$on('UICalendar:EventAfterAllRender', addDatePickerToFCToolbar);
-        };
+    function bbResourceCalendarDirective($compile) {
+        'ngInject';
 
-        var addDatePickerToFCToolbar = function addDatePickerToFCToolbar() {
-            var uiCalElement = angular.element(document.getElementById('uicalendar'));
-            var datePicker = uiCalElement.find('bb-calendar-date-picker');
-            if (!datePicker.length) {
-                var toolbarElement = angular.element(uiCalElement.children()[0]);
-                var toolbarLeftElement = angular.element(toolbarElement.children()[0]);
-                var datePickerComponent = '<bb-calendar-date-picker on-change-date="vm.updateDateHandler($event)" current-date="vm.currentDate"></bb-calendar-date-picker>';
-                var datePickerElement = $compile(datePickerComponent)(scope);
-                toolbarLeftElement.append(datePickerElement);
+        return {
+            controller: 'bbResourceCalendarController',
+            controllerAs: 'vm',
+            link: link,
+            templateUrl: 'calendar/resource-calendar.html',
+            replace: true,
+            scope: {
+                labelAssembler: '@',
+                blockLabelAssembler: '@',
+                externalLabelAssembler: '@',
+                model: '=?'
             }
         };
 
-        init();
+        function link(scope, element, attrs) {
+
+            var init = function init() {
+                scope.$on('UICalendar:EventAfterAllRender', addDatePickerToFCToolbar);
+            };
+
+            var addDatePickerToFCToolbar = function addDatePickerToFCToolbar() {
+                var uiCalElement = angular.element(document.getElementById('uicalendar'));
+                var datePicker = uiCalElement.find('bb-calendar-date-picker');
+
+                if (!datePicker.length) {
+
+                    //add calender picker
+                    var toolbarElement = angular.element(uiCalElement.children()[0]);
+                    var toolbarLeftElement = angular.element(toolbarElement.children()[0]);
+                    var datePickerComponent = '<bb-calendar-date-picker on-change-date="vm.updateDateHandler($event)" current-date="vm.currentDate"></bb-calendar-date-picker>';
+                    var datePickerElement = $compile(datePickerComponent)(scope);
+                    toolbarLeftElement.append(datePickerElement);
+                }
+            };
+
+            init();
+        }
+    }
+})(angular);
+'use strict';
+/**
+ * @ngdoc service
+ * @name BBAdminDashboard.calendar.services:BBAdminCalendarService
+ *
+ * @description
+ * Provides methods for initialisation of different calendar view types.
+ */
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var BBAdminCalendarService = function () {
+    function BBAdminCalendarService($translate, $filter) {
+        'ngInject';
+
+        _classCallCheck(this, BBAdminCalendarService);
+
+        this.$translate = $translate;
+        this.$filter = $filter;
+    }
+
+    /**
+     * @ngdoc method
+     * @name prepareViewsConfig
+     * @methodOf BBAdminDashboard.calendar.services.BBAdminCalendarService
+     *
+     * @description
+     * Prepares the view definition object to be passed to fullcalendar using the configuration options provided.
+     *
+     * @param {object} calendarOptions A hash of configuration options. { cal_slot_duration: 15 // this is a required value }.
+     *
+     * @returns {object} An object containing properly configured view objects ready to be passed to fullcalendar.
+     * @throws {Error} An error if no calendarOptions are provided or if the cal_slot_duration property is not present.
+     */
+
+
+    BBAdminCalendarService.prototype.prepareViewsConfig = function prepareViewsConfig(calendarOptions) {
+        if (!calendarOptions) {
+            throw new Error('Please provide calendar options to initialise the views.');
+        }
+
+        if (!calendarOptions.cal_slot_duration) {
+            throw new Error('cal_slot_duration is required to initialise the views: ' + calendarOptions);
+        }
+
+        return {
+            fullCalendar: {
+                timelineDay: {
+                    buttonText: this.$translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.DAY'),
+                    slotDuration: this.$filter('minutesToString')(calendarOptions.cal_slot_duration),
+                    eventOverlap: false,
+                    slotWidth: 25,
+                    resourceAreaWidth: '18%'
+                },
+                agendaWeek: {
+                    buttonText: this.$translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.WEEK'),
+                    slotDuration: this.$filter('minutesToString')(calendarOptions.cal_slot_duration),
+                    groupByDateAndResource: false
+                },
+                month: {
+                    buttonText: this.$translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MONTH'),
+                    eventLimit: 5
+                }
+            },
+            bbListView: {
+                bbListDay: {
+                    buttonText: this.$translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.DAY'),
+                    type: 'bbListView'
+                },
+                bbListWeek: {
+                    buttonText: this.$translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.WEEK'),
+                    type: 'bbListView',
+                    duration: { weeks: 1 }
+                },
+                bbListMonth: {
+                    buttonText: this.$translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MONTH'),
+                    type: 'bbListView',
+                    duration: { months: 1 }
+                }
+            }
+        };
     };
 
-    return {
-        controller: 'bbResourceCalendarController',
-        controllerAs: 'vm',
-        link: link,
-        templateUrl: 'calendar/resource-calendar.html',
-        replace: true,
-        scope: {
-            labelAssembler: '@',
-            blockLabelAssembler: '@',
-            externalLabelAssembler: '@',
-            model: '=?'
+    /**
+     * @ngdoc method
+     * @name constructViewsString
+     * @methodOf BBAdminDashboard.calendar.services.BBAdminCalendarService
+     *
+     * @description
+     * Builds a string in the format required by the fullcalendar library in order to render the header buttons.
+     *
+     * @param {string} currentViewType The currently selected view type. Must be present in the available views.
+     * @param {object} availableViews The views definition object from which the string will be created.
+     *
+     * @returns {string} A correctly formatting string of view types used to render the fullcalendar header buttons.
+     * @throws {TypeError} If the current view type is not a string.
+     * @throws {Error} If no availableViews object is provided.
+     * @throws {Error} If the view type does not exist within the availableViews object.
+     */
+
+
+    BBAdminCalendarService.prototype.constructViewsString = function constructViewsString(currentViewType, availableViews) {
+        if (typeof currentViewType !== 'string') {
+            throw new TypeError('Please provide a view type string: ' + currentViewType);
         }
+
+        if (!availableViews) {
+            throw new Error('Please provide valid view definition objects: ' + availableViews);
+        }
+
+        var views = availableViews[currentViewType];
+
+        if (!views) {
+            throw new Error(currentViewType + ' is not in the available views: ' + availableViews);
+        }
+
+        var viewsString = '';
+        var viewTypes = Object.keys(availableViews);
+
+        viewTypes.forEach(function (viewType) {
+            return viewsString += viewType + ',';
+        });
+
+        // replace extra comma with a space as required to separate button groups.
+        viewsString = viewsString.substr(0, viewsString.length - 1) + ' ';
+
+        for (var viewName in views) {
+            viewsString += viewName + ',';
+        }
+
+        // strip comma off the end
+        return viewsString.substr(0, viewsString.length - 1);
     };
-});
+
+    return BBAdminCalendarService;
+}();
+
+angular.module('BBAdminDashboard.calendar.services').service('BBAdminCalendarService', BBAdminCalendarService);
 'use strict';
 
 /**
@@ -1548,6 +1718,378 @@ angular.module('BBAdminDashboard.calendar.services').provider('AdminCalendarOpti
         return options;
     };
 }]);
+'use strict';
+
+/**
+ * @ngdoc service
+ * @name BBAdminDashboard.calendar:BBCalendarViewsService
+ *
+ * @description
+ * Initialises custom view classes and assigns them to the list of fullcalendar view types that are available.
+ */
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var BBCalendarViewsService = function () {
+    function BBCalendarViewsService($translate) {
+        'ngInject';
+
+        _classCallCheck(this, BBCalendarViewsService);
+
+        this.$translate = $translate;
+    }
+
+    /**
+     * @ngdoc method
+     * @name addCustomViewsToCalendar
+     * @methodOf BBAdminDashboard.calendar.BBCalendarViewsService
+     *
+     * @description
+     * Initialise the BBListView class and assign it to the global jQuery fullcalendar object.
+     */
+
+
+    BBCalendarViewsService.prototype.addCustomViewsToCalendar = function addCustomViewsToCalendar() {
+        var listView = new BBListView();
+
+        $.fullCalendar.views.bbListView = {
+            class: listView.fullCalendarClass,
+            buttonTextKey: 'bbListView',
+            defaults: {
+                buttonText: 'bbListView',
+                listDayFormat: 'LL',
+                noEventsMessage: this.$translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.NO_EVENTS')
+            }
+        };
+    };
+
+    return BBCalendarViewsService;
+}();
+
+angular.module('BBAdminDashboard.calendar').service('BBCalendarViewsService', BBCalendarViewsService);
+'use strict';
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+/* exported BBListView */
+
+/**
+ * This class is a modified version of the fullcalendar ListView. Sadly that particular class cannot be extended
+ * using the API of the library. Therefore this code has been copied and modified to facilitate the accessibility
+ * requirements. Modifications can be determined by comparing this file with the original source available here:
+ * https://github.com/fullcalendar/fullcalendar/blob/8da9b7f362e872ba1980fa1bae70dbdf2aadc149/src/list/ListView.js
+ *
+ * There is currently an open issue (as of the time of writing this comment 03/07/2017) to make the list view extensible.
+ * Once this work has been completed it would be good to refactor this class to leverage the extension API of the
+ * fullcalendar library. The issue can be seen here:
+ * https://github.com/fullcalendar/fullcalendar/issues/3489
+ *
+ * @returns {object} An object extending the fullcalendar View class. It provides a property called fullCalendarClass which
+ * can be registered with the fullcalendar library and is then available to use as a view definition.
+ */
+var BBListView = function BBListView() {
+    _classCallCheck(this, BBListView);
+
+    this.FC = $.fullCalendar;
+    this.FCGrid = this.FC.Grid;
+    this.view = this.FC.View;
+
+    var Scroller = this.FC.Scroller;
+    var self = this;
+
+    this.fullCalendarClass = this.view.extend({
+        grid: null,
+        scroller: null,
+        subtractInnerElHeight: function subtractInnerElHeight(outerEl, innerEl) {
+            var both = outerEl.add(innerEl);
+            var diff;
+
+            // effin' IE8/9/10/11 sometimes returns 0 for dimensions. this weird hack was the only thing that worked
+            both.css({
+                position: 'relative', // cause a reflow, which will force fresh dimension recalculation
+                left: -1 // ensure reflow in case the el was already relative. negative is less likely to cause new scroll
+            });
+            diff = outerEl.outerHeight() - innerEl.outerHeight(); // grab the dimensions
+            both.css({ position: '', left: '' }); // undo hack
+
+            return diff;
+        },
+        initialize: function initialize() {
+            this.grid = new ListViewGrid(this);
+            this.scroller = new Scroller({
+                overflowX: 'hidden',
+                overflowY: 'auto'
+            });
+        },
+
+        renderSkeleton: function renderSkeleton() {
+            this.el.addClass('fc-list-view ' + this.widgetContentClass);
+
+            this.scroller.render();
+            this.scroller.el.appendTo(this.el);
+
+            this.grid.setElement(this.scroller.scrollEl);
+        },
+
+        unrenderSkeleton: function unrenderSkeleton() {
+            this.scroller.destroy(); // will remove the Grid too
+        },
+
+        setHeight: function setHeight(totalHeight, isAuto) {
+            this.scroller.setHeight(this.computeScrollerHeight(totalHeight));
+        },
+
+        computeScrollerHeight: function computeScrollerHeight(totalHeight) {
+            return totalHeight - this.subtractInnerElHeight(this.el, this.scroller.el); // everything that's NOT the scroller
+        },
+
+        renderDates: function renderDates() {
+            this.grid.setRange(this); // needs to process range-related options
+        },
+
+        renderEvents: function renderEvents(events) {
+            this.grid.renderEvents(events);
+        },
+
+        unrenderEvents: function unrenderEvents() {
+            this.grid.unrenderEvents();
+        },
+
+        isEventResizable: function isEventResizable(event) {
+            return false;
+        },
+
+        isEventDraggable: function isEventDraggable(event) {
+            return false;
+        }
+
+    });
+
+    /*
+    Responsible for event rendering and user-interaction.
+    Its "el" is the inner-content of the above view's scroller.
+    */
+
+    var ListViewGrid = this.FCGrid.extend({
+
+        segSelector: '.fc-list-item', // which elements accept event actions
+        hasDayInteractions: false, // no day selection or day clicking
+
+        // slices by day
+        spanToSegs: function spanToSegs(span) {
+            var dayStart = this.start.clone().time(0); // timed, so segs get times!
+            var dayIndex = 0;
+            var seg = void 0;
+            var segs = [];
+
+            while (dayStart < this.end) {
+
+                seg = self.FC.intersectRanges(span, {
+                    start: dayStart,
+                    end: dayStart.clone().add(1, 'day')
+                });
+
+                if (seg) {
+                    seg.dayIndex = dayIndex;
+                    segs.push(seg);
+                }
+
+                dayStart.add(1, 'day');
+                dayIndex++;
+
+                // detect when span won't go fully into the next day,
+                // and mutate the latest seg to the be the end.
+                if (seg && !seg.isEnd && span.end.hasTime() && span.end < dayStart.clone().add(this.view.nextDayThreshold)) {
+                    seg.end = span.end.clone();
+                    seg.isEnd = true;
+                    break;
+                }
+            }
+            return segs;
+        },
+
+        // like "4:00am"
+        computeEventTimeFormat: function computeEventTimeFormat() {
+            return this.view.opt('mediumTimeFormat');
+        },
+
+        // for events with a url, the whole <tr> should be clickable,
+        // but it's impossible to wrap with an <a> tag. simulate this.
+        handleSegClick: function handleSegClick(seg, ev) {
+            var url = void 0;
+
+            self.FCGrid.prototype.handleSegClick.apply(this, arguments); // super. might prevent the default action
+
+            // not clicking on or within an <a> with an href
+            if (!$(ev.target).closest('a[href]').length) {
+                url = seg.event.url;
+                if (url && !ev.isDefaultPrevented()) {
+                    // jsEvent not cancelled in handler
+                    window.location.href = url; // simulate link click
+                }
+            }
+        },
+
+        // returns list of foreground segs that were actually rendered
+        renderFgSegs: function renderFgSegs(segs) {
+            segs = this.renderFgSegEls(segs); // might filter away hidden events
+            if (!segs.length) {
+                this.renderEmptyMessage();
+            } else {
+                this.renderSegList(segs);
+            }
+
+            return segs;
+        },
+
+        renderEmptyMessage: function renderEmptyMessage() {
+            this.el.html('<div class="fc-list-empty-wrap2">' + // TODO: try less wraps
+            '<div class="fc-list-empty-wrap1">' + '<div class="fc-list-empty">' + self.FC.htmlEscape(this.view.opt('noEventsMessage')) + '</div>' + '</div>' + '</div>');
+        },
+
+        // render the event segments in the view
+        renderSegList: function renderSegList(allSegs) {
+            var _this = this;
+
+            var segsByDay = this.groupSegsByDay(allSegs); // sparse array
+            var dayTables = [];
+
+            var i = 0;
+            var _iteratorNormalCompletion = true;
+            var _didIteratorError = false;
+            var _iteratorError = undefined;
+
+            try {
+                for (var _iterator = segsByDay[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                    var day = _step.value;
+
+                    var tableEl = $('<table class="fc-list-table"><thead/><tbody/></table>');
+                    var tHeadEl = tableEl.find('thead');
+                    var tbodyEl = tableEl.find('tbody');
+
+                    // If there is no data for a day just continue
+                    // but increment i so that date is correct in header.
+                    if (!day) {
+                        i++;
+                        continue;
+                    }
+
+                    tHeadEl.append(this.dayHeaderHtml(this.start.clone().add(i, 'days')));
+
+                    i++;
+
+                    this.sortEventSegs(day);
+
+                    var _iteratorNormalCompletion2 = true;
+                    var _didIteratorError2 = false;
+                    var _iteratorError2 = undefined;
+
+                    try {
+                        var _loop = function _loop() {
+                            var listItem = _step2.value;
+
+                            tbodyEl.append(listItem.el); // append event row
+                            listItem.el.on('keypress', function (e) {
+                                _this.view.trigger('eventClick', listItem.el[0], listItem.event, 'keydown');
+                            });
+                        };
+
+                        for (var _iterator2 = day[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                            _loop();
+                        }
+                    } catch (err) {
+                        _didIteratorError2 = true;
+                        _iteratorError2 = err;
+                    } finally {
+                        try {
+                            if (!_iteratorNormalCompletion2 && _iterator2.return) {
+                                _iterator2.return();
+                            }
+                        } finally {
+                            if (_didIteratorError2) {
+                                throw _iteratorError2;
+                            }
+                        }
+                    }
+
+                    dayTables.push(tableEl);
+                }
+            } catch (err) {
+                _didIteratorError = true;
+                _iteratorError = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion && _iterator.return) {
+                        _iterator.return();
+                    }
+                } finally {
+                    if (_didIteratorError) {
+                        throw _iteratorError;
+                    }
+                }
+            }
+
+            this.el.empty();
+            dayTables.forEach(function (dayTable) {
+                return _this.el.append(dayTable);
+            });
+        },
+
+        // Returns a sparse array of arrays, segs grouped by their dayIndex
+        groupSegsByDay: function groupSegsByDay(segs) {
+            var segsByDay = []; // sparse array
+            var i = void 0,
+                seg = void 0;
+
+            for (i = 0; i < segs.length; i++) {
+                seg = segs[i];
+                (segsByDay[seg.dayIndex] || (segsByDay[seg.dayIndex] = [])).push(seg);
+            }
+
+            return segsByDay;
+        },
+
+        // generates the HTML for the day headers that live amongst the event rows
+        dayHeaderHtml: function dayHeaderHtml(dayDate) {
+            var view = this.view;
+            var mainFormat = 'LL';
+
+            return '<tr tabindex="0" class="fc-list-heading" data-date="' + dayDate.format('YYYY-MM-DD') + '">' + '<th class="' + view.widgetHeaderClass + '" colspan="3"><h2>' + view.buildGotoAnchorHtml(dayDate, { 'class': 'fc-list-heading-main' }, self.FC.htmlEscape(dayDate.format(mainFormat)) // inner HTML
+            ) + '</h2></th>' + '</tr>';
+        },
+
+        // generates the HTML for a single event row
+        fgSegHtml: function fgSegHtml(seg) {
+            var classes = ['fc-list-item'].concat(this.getSegCustomClasses(seg));
+            var bgColor = this.getSegBackgroundColor(seg);
+            var event = seg.event;
+            var url = event.url;
+            var timeHtml = void 0;
+
+            if (event.allDay) {
+                timeHtml = this.view.getAllDayHtml();
+            } else if (this.view.isMultiDayEvent(event)) {
+                // if the event appears to span more than one day
+                if (seg.isStart || seg.isEnd) {
+                    // outer segment that probably lasts part of the day
+                    timeHtml = self.FC.htmlEscape(this.getEventTimeText(seg));
+                } else {
+                    // inner segment that lasts the whole day
+                    timeHtml = this.view.getAllDayHtml();
+                }
+            } else {
+                // Display the normal time text for the *event's* times
+                timeHtml = self.FC.htmlEscape(this.getEventTimeText(event));
+            }
+
+            if (url) {
+                classes.push('fc-has-url');
+            }
+
+            return '<tr role="button" style="{margin-top: 30px}" tabindex="0" class="' + classes.join(' ') + '">' + (this.displayEventTime ? '<td class="fc-list-item-time ' + this.view.widgetContentClass + '">' + (timeHtml || '') + '</td>' : '') + '<td class="fc-list-item-marker ' + this.view.widgetContentClass + '">' + '<span class="fc-event-dot"' + (bgColor ? ' style="background-color:' + bgColor + '"' : '') + '></span>' + '</td>' + '<td class="fc-list-item-title ' + this.view.widgetContentClass + '">' + '<a' + (url ? ' href="' + self.FC.htmlEscape(url) + '"' : '') + '>' + self.FC.htmlEscape(seg.event.title || '') + '</a>' + '</td>' + '</tr>';
+        }
+    });
+};
 'use strict';
 
 (function () {
@@ -2150,6 +2692,9 @@ angular.module('BBAdminDashboard.calendar.translations').config(['$translateProv
             },
 
             'CALENDAR_PAGE': {
+                'NEXT': 'Next',
+                'PREVIOUS': 'Previous',
+                'CALENDAR': 'Calendar',
                 'SHOW': 'Show',
                 'ALL': 'all',
                 'SOME': 'some',
@@ -2158,13 +2703,17 @@ angular.module('BBAdminDashboard.calendar.translations').config(['$translateProv
                 'TODAY': 'Today',
                 'WEEK': 'Week',
                 'MONTH': 'Month',
-                'DAY': 'Day ({{minutes}}m)',
+                'DAY': 'Day',
                 'AGENDA': 'Agenda',
                 'STAFF': 'Staff',
                 'RESOURCES': 'Resources',
                 'MOVE_MODAL_HEADING': 'Move',
                 'MOVE_MODAL_BODY': 'Are you sure you want to move?',
-                'ADD_BOOKING': 'New Booking'
+                'ADD_BOOKING': 'New Booking',
+                'DATE_PICKER': 'Calendar date picker',
+                'INVALID_DATE': 'Invalid date',
+                'SELECTED': 'Selected',
+                'NO_EVENTS': 'No events to display'
             }
         }
     });
@@ -4208,7 +4757,7 @@ angular.module('BBAdminDashboard.dashboard-iframe.translations').config(['$trans
 angular.module('BBAdminDashboard.login.controllers').controller('LoginPageCtrl', ['$scope', '$state', 'AdminLoginService', 'AdminCoreOptions', 'user', function ($scope, $state, AdminLoginService, AdminCoreOptions, user) {
     $scope.user = user;
 
-    return $scope.loginSuccess = function (company) {
+    $scope.loginSuccess = function (company) {
         $scope.company = company;
         $scope.bb.company = company;
         return $state.go(AdminCoreOptions.default_state);
@@ -4216,243 +4765,264 @@ angular.module('BBAdminDashboard.login.controllers').controller('LoginPageCtrl',
 }]);
 'use strict';
 
-/**
- * @ngdoc directive
- * @name BBAdminDashboard.login.directives.directive:adminDashboardLogin
- * @scope
- * @restrict A
- *
- * @description
- * Admin login journey directive
- *
- * @param {object}  field   A field object
- */
-angular.module('BBAdminDashboard.login.directives').directive('adminDashboardLogin', function () {
-    return {
-        restrict: 'AE',
-        replace: true,
-        scope: {
-            onSuccess: '=',
-            onCancel: '=',
-            onError: '=',
-            bb: '=',
-            user: '=?'
-        },
-        templateUrl: 'login/admin-dashboard-login.html',
-        controller: function controller($scope, $rootScope, BBModel, $q, $localStorage, $state, AdminLoginOptions) {
-            'ngInject';
+(function (angular) {
 
-            $scope.template_vars = {
-                show_api_field: AdminLoginOptions.show_api_field,
-                show_login: true,
-                show_pick_company: false,
-                show_pick_department: false,
-                show_loading: false
-            };
+    /**
+     * @ngdoc directive
+     * @name BBAdminDashboard.login.directives.directive:adminDashboardLogin
+     * @scope
+     * @restrict A
+     *
+     * @description
+     * Admin login journey directive
+     *
+     * @param {object}  field   A field object
+     */
+    angular.module('BBAdminDashboard.login.directives').directive('adminDashboardLogin', function () {
+        return {
+            restrict: 'AE',
+            replace: true,
+            scope: {
+                onSuccess: '=',
+                onCancel: '=',
+                onError: '=',
+                bb: '=',
+                user: '=?'
+            },
+            templateUrl: 'login/admin-dashboard-login.html',
+            controller: adminDashboardLoginCtrl
+        };
+    });
 
-            $scope.login_data = {
-                email: null,
-                password: null,
-                selected_admin: null,
-                selected_company: null,
-                site: $localStorage.getItem("api_url")
-            };
+    function adminDashboardLoginCtrl($scope, $rootScope, BBModel, $localStorage, $state, AdminLoginOptions) {
+        'ngInject';
 
-            $scope.formErrors = [];
-
-            var formErrorExists = function formErrorExists(message) {
-                // iterate through the formErrors array
-                var _iteratorNormalCompletion = true;
-                var _didIteratorError = false;
-                var _iteratorError = undefined;
-
-                try {
-                    for (var _iterator = Array.from($scope.formErrors)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                        var obj = _step.value;
-
-                        // check if the message passed in matches any pre-existing ones.
-                        if (obj.message.match(message)) {
-                            return true;
-                        }
-                    }
-                } catch (err) {
-                    _didIteratorError = true;
-                    _iteratorError = err;
-                } finally {
-                    try {
-                        if (!_iteratorNormalCompletion && _iterator.return) {
-                            _iterator.return();
-                        }
-                    } finally {
-                        if (_didIteratorError) {
-                            throw _iteratorError;
-                        }
-                    }
-                }
-
-                return false;
-            };
-
-            var companySelection = function companySelection(user) {
-                // if user is admin
-                if (user.$has('administrators')) {
-                    return user.$getAdministrators().then(function (administrators) {
-                        $scope.administrators = administrators;
-
-                        // if user is admin in more than one company show select company
-                        if (administrators.length > 1) {
-                            $scope.template_vars.show_loading = false;
-                            $scope.template_vars.show_login = false;
-                            return $scope.template_vars.show_pick_company = true;
-                        } else if (administrators.length === 1) {
-                            // else automatically select the first admin
-                            var params = {
-                                email: $scope.login_data.email,
-                                password: $scope.login_data.password
-                            };
-
-                            $scope.login_data.selected_admin = _.first(administrators);
-                            return $scope.login_data.selected_admin.$post('login', {}, params).then(function (login) {
-                                return $scope.login_data.selected_admin.$getCompany().then(function (company) {
-                                    $scope.template_vars.show_loading = false;
-                                    // if there are departments show department selector
-                                    if (company.companies && company.companies.length > 0) {
-                                        $scope.template_vars.show_pick_department = true;
-                                        return $scope.departments = company.companies;
-                                    } else {
-                                        // else select that company directly and move on
-                                        $scope.login_data.selected_company = company;
-                                        BBModel.Admin.Login.$setLogin($scope.login_data.selected_admin);
-                                        return BBModel.Admin.Login.$setCompany($scope.login_data.selected_company.id).then(function (user) {
-                                            return $scope.onSuccess($scope.login_data.selected_company);
-                                        });
-                                    }
-                                });
-                            });
-                        } else {
-                            $scope.template_vars.show_loading = false;
-                            var message = "ADMIN_DASHBOARD.LOGIN_PAGE.ERROR_INCORRECT_CREDS";
-                            if (!formErrorExists(message)) {
-                                return $scope.formErrors.push({ message: message });
-                            }
-                        }
-                    });
-
-                    // else if there is an associated company
-                } else if (user.$has('company')) {
-                    $scope.login_data.selected_admin = user;
-
-                    return user.$getCompany().then(function (company) {
-                        // if departments are available show departments selector
-                        if (company.companies && company.companies.length > 0) {
-                            $scope.template_vars.show_loading = false;
-                            $scope.template_vars.show_pick_department = true;
-                            $scope.template_vars.show_login = false;
-                            return $scope.departments = company.companies;
-                        } else {
-                            // else select that company directly and move on
-                            $scope.login_data.selected_company = company;
-                            BBModel.Admin.Login.$setLogin($scope.login_data.selected_admin);
-                            return BBModel.Admin.Login.$setCompany($scope.login_data.selected_company.id).then(function (user) {
-                                return $scope.onSuccess($scope.login_data.selected_company);
-                            });
-                        }
-                    }, function (err) {
-                        $scope.template_vars.show_loading = false;
-                        var message = "ADMIN_DASHBOARD.LOGIN_PAGE.ERROR_ISSUE_WITH_COMPANY";
-                        if (!formErrorExists(message)) {
-                            return $scope.formErrors.push({ message: message });
-                        }
-                    });
-                } else {
-                    $scope.template_vars.show_loading = false;
-                    var message = "ADMIN_DASHBOARD.LOGIN_PAGE.ERROR_ACCOUNT_ISSUES";
-                    if (!formErrorExists(message)) {
-                        return $scope.formErrors.push({ message: message });
-                    }
-                }
-            };
-
+        var init = function init() {
             // If a User is available at this stages SSO login is implied
             if ($scope.user) {
+
+                // If SSO promise returns error
+                if ($scope.user.reason && $scope.user.error) {
+                    return $scope.formErrors.push({ message: 'ADMIN_DASHBOARD.LOGIN_PAGE.SSO_INVALID' });
+                }
+
+                // If SSO promise does not return error
+                if ($scope.user.reason && !$scope.user.error) {
+                    return;
+                }
+
+                // User is valid
                 $scope.template_vars.show_pick_department = true;
                 $scope.template_vars.show_login = false;
                 companySelection($scope.user);
             }
+        };
 
-            $scope.login = function (isValid) {
-                if (isValid) {
-                    $scope.template_vars.show_loading = true;
+        var formErrorExists = function formErrorExists(message) {
+            // iterate through the formErrors array
+            var _iteratorNormalCompletion = true;
+            var _didIteratorError = false;
+            var _iteratorError = undefined;
 
-                    //if the site field is used set the api url to the submmited url
-                    if (AdminLoginOptions.show_api_field) {
-                        // strip trailing spaces from the url to avoid calling an invalid endpoint
-                        // since all service calls to api end-points begin with '/', e.g '/api/v1/...'
-                        $scope.login_data.site = $scope.login_data.site.replace(/\/+$/, '');
-                        if ($scope.login_data.site.indexOf("http") === -1) {
-                            $scope.login_data.site = 'https://' + $scope.login_data.site;
-                        }
-                        $scope.bb.api_url = $scope.login_data.site;
-                        $rootScope.bb.api_url = $scope.login_data.site;
-                        $localStorage.setItem("api_url", $scope.login_data.site);
+            try {
+                for (var _iterator = Array.from($scope.formErrors)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                    var obj = _step.value;
+
+                    // check if the message passed in matches any pre-existing ones.
+                    if (obj.message.match(message)) {
+                        return true;
                     }
+                }
+            } catch (err) {
+                _didIteratorError = true;
+                _iteratorError = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion && _iterator.return) {
+                        _iterator.return();
+                    }
+                } finally {
+                    if (_didIteratorError) {
+                        throw _iteratorError;
+                    }
+                }
+            }
 
-                    var params = {
-                        email: $scope.login_data.email,
-                        password: $scope.login_data.password
-                    };
-                    return BBModel.Admin.Login.$login(params).then(function (user) {
-                        return companySelection(user);
-                    }, function (err) {
+            return false;
+        };
+
+        var companySelection = function companySelection(user) {
+            // if user is admin
+            if (user.$has('administrators')) {
+                return user.$getAdministrators().then(function (administrators) {
+                    $scope.administrators = administrators;
+
+                    // if user is admin in more than one company show select company
+                    if (administrators.length > 1) {
+                        $scope.template_vars.show_loading = false;
+                        $scope.template_vars.show_login = false;
+                        return $scope.template_vars.show_pick_company = true;
+                    } else if (administrators.length === 1) {
+                        // else automatically select the first admin
+                        var params = {
+                            email: $scope.login_data.email,
+                            password: $scope.login_data.password
+                        };
+
+                        $scope.login_data.selected_admin = _.first(administrators);
+                        return $scope.login_data.selected_admin.$post('login', {}, params).then(function (login) {
+                            return $scope.login_data.selected_admin.$getCompany().then(function (company) {
+                                $scope.template_vars.show_loading = false;
+                                // if there are departments show department selector
+                                if (company.companies && company.companies.length > 0) {
+                                    $scope.template_vars.show_pick_department = true;
+                                    return $scope.departments = company.companies;
+                                } else {
+                                    // else select that company directly and move on
+                                    $scope.login_data.selected_company = company;
+                                    BBModel.Admin.Login.$setLogin($scope.login_data.selected_admin);
+                                    return BBModel.Admin.Login.$setCompany($scope.login_data.selected_company.id).then(function (user) {
+                                        return $scope.onSuccess($scope.login_data.selected_company);
+                                    });
+                                }
+                            });
+                        });
+                    } else {
                         $scope.template_vars.show_loading = false;
                         var message = "ADMIN_DASHBOARD.LOGIN_PAGE.ERROR_INCORRECT_CREDS";
                         if (!formErrorExists(message)) {
                             return $scope.formErrors.push({ message: message });
                         }
-                    });
+                    }
+                });
+
+                // else if there is an associated company
+            } else if (user.$has('company')) {
+                $scope.login_data.selected_admin = user;
+
+                return user.$getCompany().then(function (company) {
+                    // if departments are available show departments selector
+                    if (company.companies && company.companies.length > 0) {
+                        $scope.template_vars.show_loading = false;
+                        $scope.template_vars.show_pick_department = true;
+                        $scope.template_vars.show_login = false;
+                        return $scope.departments = company.companies;
+                    } else {
+                        // else select that company directly and move on
+                        $scope.login_data.selected_company = company;
+                        BBModel.Admin.Login.$setLogin($scope.login_data.selected_admin);
+                        return BBModel.Admin.Login.$setCompany($scope.login_data.selected_company.id).then(function (user) {
+                            return $scope.onSuccess($scope.login_data.selected_company);
+                        });
+                    }
+                }, function (err) {
+                    $scope.template_vars.show_loading = false;
+                    var message = "ADMIN_DASHBOARD.LOGIN_PAGE.ERROR_ISSUE_WITH_COMPANY";
+                    if (!formErrorExists(message)) {
+                        return $scope.formErrors.push({ message: message });
+                    }
+                });
+            } else {
+                $scope.template_vars.show_loading = false;
+                var message = "ADMIN_DASHBOARD.LOGIN_PAGE.ERROR_ACCOUNT_ISSUES";
+                if (!formErrorExists(message)) {
+                    return $scope.formErrors.push({ message: message });
                 }
-            };
+            }
+        };
 
-            $scope.goToResetPassword = function () {
-                return $state.go('reset-password');
-            };
+        $scope.template_vars = {
+            show_api_field: AdminLoginOptions.show_api_field,
+            show_login: true,
+            show_pick_company: false,
+            show_pick_department: false,
+            show_loading: false
+        };
 
-            $scope.pickCompany = function () {
+        $scope.login_data = {
+            email: null,
+            password: null,
+            selected_admin: null,
+            selected_company: null,
+            site: $localStorage.getItem("api_url")
+        };
+
+        $scope.formErrors = [];
+
+        $scope.login = function (isValid) {
+            if (isValid) {
                 $scope.template_vars.show_loading = true;
-                $scope.template_vars.show_pick_department = false;
+
+                //if the site field is used set the api url to the submmited url
+                if (AdminLoginOptions.show_api_field) {
+                    // strip trailing spaces from the url to avoid calling an invalid endpoint
+                    // since all service calls to api end-points begin with '/', e.g '/api/v1/...'
+                    $scope.login_data.site = $scope.login_data.site.replace(/\/+$/, '');
+                    if ($scope.login_data.site.indexOf("http") === -1) {
+                        $scope.login_data.site = 'https://' + $scope.login_data.site;
+                    }
+                    $scope.bb.api_url = $scope.login_data.site;
+                    $rootScope.bb.api_url = $scope.login_data.site;
+                    $localStorage.setItem("api_url", $scope.login_data.site);
+                }
 
                 var params = {
                     email: $scope.login_data.email,
                     password: $scope.login_data.password
                 };
-
-                return $scope.login_data.selected_admin.$post('login', {}, params).then(function (login) {
-                    return $scope.login_data.selected_admin.$getCompany().then(function (company) {
-                        $scope.template_vars.show_loading = false;
-
-                        if (company.companies && company.companies.length > 0) {
-                            $scope.template_vars.show_pick_department = true;
-                            return $scope.departments = company.companies;
-                        } else {
-                            return $scope.login_data.selected_company = company;
-                        }
-                    });
+                return BBModel.Admin.Login.$login(params).then(function (user) {
+                    return companySelection(user);
+                }, function (err) {
+                    $scope.template_vars.show_loading = false;
+                    var message = "ADMIN_DASHBOARD.LOGIN_PAGE.ERROR_INCORRECT_CREDS";
+                    if (!formErrorExists(message)) {
+                        return $scope.formErrors.push({ message: message });
+                    }
                 });
+            }
+        };
+
+        $scope.goToResetPassword = function () {
+            return $state.go('reset-password');
+        };
+
+        $scope.pickCompany = function () {
+            $scope.template_vars.show_loading = true;
+            $scope.template_vars.show_pick_department = false;
+
+            var params = {
+                email: $scope.login_data.email,
+                password: $scope.login_data.password
             };
 
-            return $scope.selectCompanyDepartment = function (isValid) {
-                $scope.template_vars.show_loading = true;
-                if (isValid) {
-                    $scope.bb.company = $scope.login_data.selected_company;
-                    BBModel.Admin.Login.$setLogin($scope.login_data.selected_admin);
-                    return BBModel.Admin.Login.$setCompany($scope.login_data.selected_company.id).then(function (user) {
-                        return $scope.onSuccess($scope.login_data.selected_company);
-                    });
-                }
-            };
-        }
-    };
-});
+            return $scope.login_data.selected_admin.$post('login', {}, params).then(function (login) {
+                return $scope.login_data.selected_admin.$getCompany().then(function (company) {
+                    $scope.template_vars.show_loading = false;
+
+                    if (company.companies && company.companies.length > 0) {
+                        $scope.template_vars.show_pick_department = true;
+                        return $scope.departments = company.companies;
+                    } else {
+                        return $scope.login_data.selected_company = company;
+                    }
+                });
+            });
+        };
+
+        $scope.selectCompanyDepartment = function (isValid) {
+            $scope.template_vars.show_loading = true;
+            if (isValid) {
+                $scope.bb.company = $scope.login_data.selected_company;
+                BBModel.Admin.Login.$setLogin($scope.login_data.selected_admin);
+                return BBModel.Admin.Login.$setCompany($scope.login_data.selected_company.id).then(function (user) {
+                    return $scope.onSuccess($scope.login_data.selected_company);
+                });
+            }
+        };
+
+        init();
+    }
+})(angular);
 'use strict';
 
 /**
@@ -4642,7 +5212,8 @@ angular.module('BBAdminDashboard.login.translations').config(['$translateProvide
                 'ERROR_ISSUE_WITH_COMPANY': 'Sorry, there seems to be a problem with the company associated with this account',
                 'ERROR_INCORRECT_CREDS': 'Sorry, either your email or password was incorrect',
                 'ERROR_ACCOUNT_ISSUES': 'Sorry, there seems to be a problem with this account',
-                'ERROR_REQUIRED': 'This field is required.'
+                'ERROR_REQUIRED': 'This field is required.',
+                'SSO_INVALID': 'Access Denied due to incorrect user permissions. Please contact your System Administrator'
             }
         }
     });
