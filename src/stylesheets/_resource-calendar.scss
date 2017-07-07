@@ -17,6 +17,9 @@
 				height: 29px;
 				width: 140px;
 			}
+      input.ng-invalid.ng-touched.ng-invalid-date{
+        border: solid 1px red;
+      }
 
 			.input-group-btn {
 				font-size: 1em;
@@ -28,9 +31,13 @@
 			}
 		}
 
-		h2 {
+		h1 {
 			font-size: 1.9em;
 		}
+    table {
+      width: 260px;
+      table-layout: inherit;
+    }
 	}
 
 	.fc-view-container {
@@ -141,6 +148,19 @@
     .fc-bg {
       background: none;
     }
+  }
+
+  .fc-list-heading {
+      h2 {
+          font-size: 1.5em;
+      }
+
+      th {
+        font-weight: bold;
+        border-width: 1px 0 0;
+	      padding: 8px 14px;
+        background-color: #eee;
+      }
   }
 
   .fc-list-item {
