@@ -918,7 +918,7 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
                     body: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MOVE_MODAL_BODY'),
                     success: function success(model) {
                         getCompanyPromise().then(function (company) {
-                            return AdminMoveBookingPopup.open({
+                            return WidgetModalService.open({
                                 min_date: setTimeToMoment(start, AdminCalendarOptions.minTime),
                                 max_date: setTimeToMoment(end, AdminCalendarOptions.maxTime),
                                 from_datetime: moment(start.toISOString()),
@@ -939,8 +939,6 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
                         return revertFunc();
                     }
                 });
-
-                return;
             }
 
             // if it's got a person and resource - then it
@@ -1287,20 +1285,7 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
                 success: function success(response) {
                     if (typeof response === 'string') {
                         if (response === 'move') {
-                            var item_defaults = { person: booking.person_id, resource: booking.resource_id };
-                            getCompanyPromise().then(function (company) {
-                                return AdminMoveBookingPopup.open({
-                                    item_defaults: item_defaults,
-                                    company_id: company.id,
-                                    booking_id: booking.id,
-                                    success: function success(model) {
-                                        return refreshBooking(booking);
-                                    },
-                                    fail: function fail() {
-                                        return refreshBooking(booking);
-                                    }
-                                });
-                            });
+                            openMoveModal(booking);
                         }
                     } else if (response.is_cancelled) {
                         return uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('removeEvents', [response.id]);
@@ -1309,6 +1294,25 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
                         return uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('updateEvent', booking);
                     }
                 }
+            });
+        };
+
+        var openMoveModal = function openMoveModal(booking) {
+            var item_defaults = { person: booking.person_id, resource: booking.resource_id };
+            getCompanyPromise().then(function (company) {
+                WidgetModalService.open({
+                    item_defaults: item_defaults,
+                    first_page: 'calendar',
+                    templateUrl: 'widget_modal.html',
+                    company_id: company.id,
+                    total_id: booking.purchase_ref,
+                    success: function success(model) {
+                        return refreshBooking(booking);
+                    },
+                    fail: function fail() {
+                        return refreshBooking(booking);
+                    }
+                });
             });
         };
 
@@ -4220,6 +4224,10 @@ angular.module('BBAdminDashboard').filter('minutesToString', function () {
  *
  * @description
  * Returns a set of General configuration options
+ *
+ * @return {object} options
+ *
+ *    - **onLogoutRedirectionURL** – `{string}` – URL which will be used when user clicks on logout button.
  */
 
 /**
@@ -4257,7 +4265,8 @@ angular.module('BBAdminDashboard').provider('AdminCoreOptions', function () {
         }, {
             group_name: 'SIDE_NAV_CONFIG',
             items: ['config-iframe', 'publish-iframe', 'settings-iframe']
-        }]
+        }],
+        onLogoutRedirectionURL: null
     };
 
     this.setOption = function (option, value) {
@@ -5233,19 +5242,44 @@ angular.module('BBAdminDashboard.login.translations').config(['$translateProvide
  * @name BBAdminDashboard.logout.controllers.controller:LogoutPageCtrl
  *
  * @description
- * Controller for the logout page
+ * Controller for the logout page.
  */
-angular.module('BBAdminDashboard.logout.controllers').controller('LogoutPageCtrl', function (AdminSsoLogin, BBModel, $scope, $state, $sessionStorage) {
-    BBModel.Admin.Login.$logout().then(function () {
-        $sessionStorage.removeItem("user");
-        $sessionStorage.removeItem("auth_token");
+angular.module('BBAdminDashboard.logout.controllers').controller('LogoutPageCtrl', LogoutPageCtrl);
 
-        AdminSsoLogin.ssoToken = null;
-        AdminSsoLogin.companyId = null;
+function LogoutPageCtrl($state, $sessionStorage, BBModel, AdminCoreOptions, bbWidgetUtilities) {
 
+    // Angular $onInit hook no present for $stateProvider controllers.
+    (function onInit() {
+        // Decide on the redirection which is to be made.
+        BBModel.Admin.Login.$isLoggedIn().then(function () {
+            return performDefaultLogoutAction();
+        }, function () {
+            return redirectToLogoutUrlIfDetected();
+        });
+    })();
+
+    function performDefaultLogoutAction() {
+        BBModel.Admin.Login.$logout().then(function () {
+            // Double checking made to ensure session is free of SSO tokens.
+            $sessionStorage.removeItem("user");
+            $sessionStorage.removeItem("auth_token");
+
+            redirectToLogoutUrlIfDetected();
+        });
+    }
+
+    function redirectToLogoutUrlIfDetected() {
+        if (AdminCoreOptions.onLogoutRedirectionURL) {
+            bbWidgetUtilities.redirectTo(AdminCoreOptions.onLogoutRedirectionURL);
+        } else {
+            goToStudioLoginPage();
+        }
+    }
+
+    function goToStudioLoginPage() {
         $state.go('login', {}, { reload: true });
-    });
-});
+    }
+}
 'use strict';
 
 /**
