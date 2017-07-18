@@ -1005,7 +1005,7 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
 
             // sometimes it is undefined
             if (titleElement) {
-                titleContainer.replaceWith('<div class="fc-center"><h1 tabindex="0">' + view.start.format('ll') + '</h1></div>');
+                titleContainer.replaceWith('<div class="fc-center"><h1 tabindex="0">' + view.title + '</h1></div>');
             }
 
             $scope.$emit('UICalendar:EventAfterAllRender');
@@ -1043,7 +1043,7 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
 
             if (view.type === 'month') {
                 // we only need to pass in the date to item_defaults as time/resource/person is not visible from this view
-                modalTitle = start.format('dddd, Do MMMM YYYY');
+                modalTitle = start.format(AdminCalendarOptions.monthTitleFormat);
                 item_defaults = {
                     date: startTimeCompanyTimezone.format('YYYY-MM-DD')
                 };
@@ -1700,7 +1700,8 @@ angular.module('BBAdminDashboard.calendar.services').provider('AdminCalendarOpti
         block_label_assembler: 'Blocked',
         external_label_assembler: '{title}',
         minTime: null,
-        maxTime: null
+        maxTime: null,
+        monthTitleFormat: 'dddd, Do MMMM YYYY'
     };
 
     this.setOption = function (option, value) {
@@ -4798,6 +4799,7 @@ angular.module('BBAdminDashboard.login.controllers').controller('LoginPageCtrl',
         'ngInject';
 
         var init = function init() {
+            $scope.showPasswordResetForm = AdminLoginOptions.showPasswordResetForm;
             // If a User is available at this stages SSO login is implied
             if ($scope.user) {
 
@@ -5025,55 +5027,61 @@ angular.module('BBAdminDashboard.login.controllers').controller('LoginPageCtrl',
 })(angular);
 'use strict';
 
-/**
- * @ngdoc service
- * @name BBAdminDashboard.login.services.service:AdminLoginOptions
- *
- * @description
- * Returns a set of admin calendar configuration options
- */
+(function () {
 
-/**
- * @ngdoc service
- * @name BBAdminDashboard.login.services.service.AdminLoginOptionsProvider
- *
- * @description
- * Provider
- *
- * @example
- <pre module='BBAdminDashboard.login.services.service.AdminLoginOptionsProvider'>
-     angular.module('ExampleModule').config ['AdminLoginOptionsProvider', (AdminLoginOptionsProvider) ->
-        AdminLoginOptionsProvider.setOption('option', 'value')
-     ]
- </pre>
- */
-angular.module('BBAdminDashboard.login.services').provider('AdminLoginOptions', [function () {
-    // This list of options is meant to grow
-    var options = {
-        show_api_field: false,
-        use_default_states: true,
-        show_in_navigation: true,
-        parent_state: 'root',
-        sso_token: null,
-        company_id: null
+    /**
+     * @ngdoc service
+     * @name BBAdminDashboard.login.services.service:AdminLoginOptions
+     *
+     * @description
+     * Returns a set of admin calendar configuration options
+     */
 
-    };
+    /**
+     * @ngdoc service
+     * @name BBAdminDashboard.login.services.service.AdminLoginOptionsProvider
+     *
+     * @description
+     * Provider
+     *
+     * @example
+     <pre module='BBAdminDashboard.login.services.service.AdminLoginOptionsProvider'>
+         angular.module('ExampleModule').config ['AdminLoginOptionsProvider', (AdminLoginOptionsProvider) ->
+            AdminLoginOptionsProvider.setOption('option', 'value')
+         ]
+     </pre>
+     */
+    angular.module('BBAdminDashboard.login.services').provider('AdminLoginOptions', AdminLoginOptions);
 
-    this.setOption = function (option, value) {
-        if (options.hasOwnProperty(option)) {
-            options[option] = value;
-        }
-    };
+    function AdminLoginOptions() {
+        // This list of options is meant to grow
+        var options = {
+            show_api_field: false,
+            use_default_states: true,
+            show_in_navigation: true,
+            parent_state: 'root',
+            sso_token: null,
+            company_id: null,
+            showPasswordResetForm: true
 
-    this.getOption = function (option) {
-        if (options.hasOwnProperty(option)) {
-            return options[option];
-        }
-    };
-    this.$get = function () {
-        return options;
-    };
-}]);
+        };
+
+        this.setOption = function (option, value) {
+            if (options.hasOwnProperty(option)) {
+                options[option] = value;
+            }
+        };
+
+        this.getOption = function (option) {
+            if (options.hasOwnProperty(option)) {
+                return options[option];
+            }
+        };
+        this.$get = function () {
+            return options;
+        };
+    }
+})();
 'use strict';
 
 /**
