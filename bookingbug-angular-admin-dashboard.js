@@ -918,7 +918,7 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
                     body: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MOVE_MODAL_BODY'),
                     success: function success(model) {
                         getCompanyPromise().then(function (company) {
-                            return WidgetModalService.open({
+                            return AdminMoveBookingPopup.open({
                                 min_date: setTimeToMoment(start, AdminCalendarOptions.minTime),
                                 max_date: setTimeToMoment(end, AdminCalendarOptions.maxTime),
                                 from_datetime: moment(start.toISOString()),
@@ -939,6 +939,8 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
                         return revertFunc();
                     }
                 });
+
+                return;
             }
 
             // if it's got a person and resource - then it
@@ -1285,7 +1287,20 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
                 success: function success(response) {
                     if (typeof response === 'string') {
                         if (response === 'move') {
-                            openMoveModal(booking);
+                            var item_defaults = { person: booking.person_id, resource: booking.resource_id };
+                            getCompanyPromise().then(function (company) {
+                                return AdminMoveBookingPopup.open({
+                                    item_defaults: item_defaults,
+                                    company_id: company.id,
+                                    booking_id: booking.id,
+                                    success: function success(model) {
+                                        return refreshBooking(booking);
+                                    },
+                                    fail: function fail() {
+                                        return refreshBooking(booking);
+                                    }
+                                });
+                            });
                         }
                     } else if (response.is_cancelled) {
                         return uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('removeEvents', [response.id]);
@@ -1294,25 +1309,6 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
                         return uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('updateEvent', booking);
                     }
                 }
-            });
-        };
-
-        var openMoveModal = function openMoveModal(booking) {
-            var item_defaults = { person: booking.person_id, resource: booking.resource_id };
-            getCompanyPromise().then(function (company) {
-                WidgetModalService.open({
-                    item_defaults: item_defaults,
-                    first_page: 'calendar',
-                    templateUrl: 'widget_modal.html',
-                    company_id: company.id,
-                    total_id: booking.purchase_ref,
-                    success: function success(model) {
-                        return refreshBooking(booking);
-                    },
-                    fail: function fail() {
-                        return refreshBooking(booking);
-                    }
-                });
             });
         };
 
