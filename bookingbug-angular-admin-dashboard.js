@@ -684,7 +684,7 @@ angular.module('BBAdminDashboard.settings-iframe').run(function (RuntimeStates, 
 (function (angular) {
     angular.module('BBAdminDashboard.calendar.controllers').controller('bbResourceCalendarController', bbResourceCalendarController);
 
-    function bbResourceCalendarController($rootScope, $scope, $state, $attrs, $filter, $q, $translate, $bbug, AdminBookingPopup, AdminCalendarOptions, AdminCompanyService, AdminMoveBookingPopup, BBAssets, BBModel, CalendarEventSources, ColorPalette, Dialog, GeneralOptions, ModalForm, PrePostTime, ProcessAssetsFilter, TitleAssembler, uiCalendarConfig, bbTimeZone, CalendarEventRenderer, BBCalendarViewsService, BBAdminCalendarService) {
+    function bbResourceCalendarController($rootScope, $scope, $state, $attrs, $filter, $q, $translate, $bbug, AdminBookingPopup, AdminCalendarOptions, AdminCompanyService, AdminMoveBookingPopup, BBAssets, BBModel, CalendarEventSources, ColorPalette, Dialog, GeneralOptions, ModalForm, PrePostTime, ProcessAssetsFilter, TitleAssembler, uiCalendarConfig, bbTimeZone, CalendarEventRenderer, BBCalendarViewsService, BBAdminCalendarService, WidgetModalService) {
         'ngInject';
 
         /*jshint validthis: true */
@@ -917,7 +917,7 @@ angular.module('BBAdminDashboard.settings-iframe').run(function (RuntimeStates, 
                     body: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MOVE_MODAL_BODY'),
                     success: function success(model) {
                         getCompanyPromise().then(function (company) {
-                            return AdminMoveBookingPopup.open({
+                            return WidgetModalService.open({
                                 min_date: setTimeToMoment(start, AdminCalendarOptions.minTime),
                                 max_date: setTimeToMoment(end, AdminCalendarOptions.maxTime),
                                 from_datetime: moment(start.toISOString()),
@@ -938,8 +938,6 @@ angular.module('BBAdminDashboard.settings-iframe').run(function (RuntimeStates, 
                         return revertFunc();
                     }
                 });
-
-                return;
             }
 
             // if it's got a person and resource - then it
@@ -1286,20 +1284,7 @@ angular.module('BBAdminDashboard.settings-iframe').run(function (RuntimeStates, 
                 success: function success(response) {
                     if (typeof response === 'string') {
                         if (response === 'move') {
-                            var item_defaults = { person: booking.person_id, resource: booking.resource_id };
-                            getCompanyPromise().then(function (company) {
-                                return AdminMoveBookingPopup.open({
-                                    item_defaults: item_defaults,
-                                    company_id: company.id,
-                                    booking_id: booking.id,
-                                    success: function success(model) {
-                                        return refreshBooking(booking);
-                                    },
-                                    fail: function fail() {
-                                        return refreshBooking(booking);
-                                    }
-                                });
-                            });
+                            openMoveModal(booking);
                         }
                     } else if (response.is_cancelled) {
                         return uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('removeEvents', [response.id]);
@@ -1308,6 +1293,25 @@ angular.module('BBAdminDashboard.settings-iframe').run(function (RuntimeStates, 
                         return uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('updateEvent', booking);
                     }
                 }
+            });
+        };
+
+        var openMoveModal = function openMoveModal(booking) {
+            var item_defaults = { person: booking.person_id, resource: booking.resource_id };
+            getCompanyPromise().then(function (company) {
+                WidgetModalService.open({
+                    item_defaults: item_defaults,
+                    first_page: 'calendar',
+                    templateUrl: 'widget_modal.html',
+                    company_id: company.id,
+                    total_id: booking.purchase_ref,
+                    success: function success(model) {
+                        return refreshBooking(booking);
+                    },
+                    fail: function fail() {
+                        return refreshBooking(booking);
+                    }
+                });
             });
         };
 
