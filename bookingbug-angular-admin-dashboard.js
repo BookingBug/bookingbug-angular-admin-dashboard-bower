@@ -634,51 +634,51 @@ angular.module('BBAdminDashboard.settings-iframe').run(function (RuntimeStates, 
 })();
 'use strict';
 
-/**
- * @ngdoc controller
- * @name BBAdminDashboard.calendar.controllers.controller:CalendarPageCtrl
- *
- * @description
- * Controller for the calendar page
- */
-angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPageCtrl', function ($log, $scope, $state) {
-    'ngInject';
+(function () {
+    /**
+     * @ngdoc controller
+     * @name BBAdminDashboard.calendar.controllers.controller:CalendarPageCtrl
+     *
+     * @description
+     * Controller for the calendar page
+     */
+    angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPageCtrl', CalendarPageCtrl);
 
-    var init = function init() {
+    function CalendarPageCtrl($log, $scope, $state) {
+        'ngInject';
 
-        bindToPusherChannel();
+        var init = function init() {
+            bindToPusherChannel();
+            if ($state.current.name === 'calendar') {
+                gotToProperState();
+            }
+        };
 
-        if ($state.current.name === 'calendar') {
-            gotToProperState();
-        }
-    };
+        var gotToProperState = function gotToProperState() {
+            if ($scope.bb.company.$has('people')) {
+                $state.go("calendar.people");
+            } else if ($scope.bb.company.$has('resources')) {
+                $state.go("calendar.resources");
+            }
+        };
 
-    var gotToProperState = function gotToProperState() {
+        var bindToPusherChannel = function bindToPusherChannel() {
+            var pusherChannel = $scope.company.getPusherChannel('bookings');
+            if (pusherChannel) {
+                pusherChannel.bind('create', refetch);
+                pusherChannel.bind('update', refetch);
+                pusherChannel.bind('destroy', refetch);
+            }
+        };
 
-        if ($scope.bb.company.$has('people')) {
-            $state.go("calendar.people");
-        } else if ($scope.bb.company.$has('resources')) {
-            $state.go("calendar.resources");
-        }
-    };
+        var refetch = _.throttle(function (data) {
+            $log.info('== booking push received in bookings == ', data);
+            $scope.$broadcast('refetchBookings', data);
+        }, 1000, { leading: false });
 
-    var bindToPusherChannel = function bindToPusherChannel() {
-        var pusherChannel = $scope.company.getPusherChannel('bookings');
-
-        if (pusherChannel) {
-            pusherChannel.bind('create', refetch);
-            pusherChannel.bind('update', refetch);
-            pusherChannel.bind('destroy', refetch);
-        }
-    };
-
-    var refetch = _.throttle(function (data) {
-        $log.info('== booking push received in bookings == ', data);
-        return $scope.$broadcast('refetchBookings', data);
-    }, 1000, { leading: false });
-
-    init();
-});
+        init();
+    }
+})();
 'use strict';
 
 (function (angular) {
@@ -718,7 +718,6 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
 
             $scope.$on('refetchBookings', refetchBookingsHandler);
             $scope.$on('newCheckout', newCheckoutHandler);
-            $scope.$on('BBLanguagePicker:languageChanged', languageChangedHandler);
             $scope.$on('CalendarEventSources:timeRangeChanged', timeRangeChangedHandler);
 
             $rootScope.$on('BBTimeZoneOptions:timeZoneChanged', timeZoneChangedHandler);
@@ -1362,10 +1361,6 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
 
         var timeZoneChangedHandler = function timeZoneChangedHandler(event, tz) {
             uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('option', 'timezone', tz);
-        };
-
-        var languageChangedHandler = function languageChangedHandler() {
-            updateCalendarLanguage();
         };
 
         var timeRangeChangedHandler = function timeRangeChangedHandler() {
