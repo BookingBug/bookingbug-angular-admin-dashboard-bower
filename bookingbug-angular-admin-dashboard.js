@@ -276,7 +276,7 @@ angular.module('BBAdminDashboard').config(function ($logProvider, $httpProvider)
 });
 'use strict';
 
-angular.module('BBAdminDashboard').run(function (RuntimeStates, AdminCoreOptions, RuntimeRoutes, AdminLoginService) {
+angular.module('BBAdminDashboard').run(function (RuntimeStates, AdminCoreOptions, RuntimeRoutes) {
     'ngInject';
 
     RuntimeRoutes.otherwise('/');
@@ -285,43 +285,36 @@ angular.module('BBAdminDashboard').run(function (RuntimeStates, AdminCoreOptions
         url: '/',
         templateUrl: "core/layout.html",
         resolve: {
-            user: function user($q, BBModel, AdminSsoLogin) {
+            user: function user($q, BBModel, $state) {
                 var defer = $q.defer();
+
                 BBModel.Admin.Login.$user().then(function (user) {
-                    if (user) {
-                        return defer.resolve(user);
-                    } else {
-                        return AdminSsoLogin.ssoLoginPromise().then(function (admin) {
-                            BBModel.Admin.Login.$setLogin(admin);
-                            return BBModel.Admin.Login.$user().then(function (user) {
-                                return defer.resolve(user);
-                            }, function (err) {
-                                return defer.reject({ reason: 'GET_USER_ERROR', error: err });
-                            });
-                        }, function (err) {
-                            return defer.reject({ reason: 'NOT_LOGGABLE_ERROR' });
-                        });
-                    }
-                }, function (err) {
-                    return defer.reject({ reason: 'LOGIN_SERVICE_ERROR', error: err });
+                    if (!user) $state.go('login');
+
+                    defer.resolve(user);
+                }).catch(function (err) {
+                    defer.reject({ reason: 'LOGIN_SERVICE_ERROR', error: err });
                 });
+
                 return defer.promise;
             },
             company: function company(user, $q, BBModel) {
                 var defer = $q.defer();
+
                 user.$getCompany().then(function (company) {
                     if (company.companies && company.companies.length > 0) {
-                        return defer.reject({ reason: 'COMPANY_IS_PARENT' });
+                        defer.reject({ reason: 'COMPANY_IS_PARENT' });
                     } else {
-                        return defer.resolve(company);
+                        defer.resolve(company);
                     }
-                }, function (err) {
-                    return BBModel.Admin.Login.$logout().then(function () {
-                        return defer.reject({ reason: 'GET_COMPANY_ERROR' });
-                    }, function (err) {
-                        return defer.reject({ reason: 'LOGOUT_ERROR' });
+                }).catch(function (err) {
+                    BBModel.Admin.Login.$logout().then(function () {
+                        defer.reject({ reason: 'GET_COMPANY_ERROR' });
+                    }).catch(function (err) {
+                        defer.reject({ reason: 'LOGOUT_ERROR' });
                     });
                 });
+
                 return defer.promise;
             }
         },
@@ -377,30 +370,17 @@ angular.module('BBAdminDashboard.dashboard-iframe').run(function (RuntimeStates,
     function run(RuntimeStates, AdminLoginOptions) {
         'ngInject';
 
-        // Choose to opt out of the default routing
-
         if (AdminLoginOptions.use_default_states) {
             RuntimeStates.state('login', {
                 url: '/login',
                 resolve: {
-                    user: function user($q, BBModel, AdminSsoLogin) {
+                    user: function user($q, BBModel) {
                         var defer = $q.defer();
+
                         BBModel.Admin.Login.$user().then(function (user) {
-                            if (user) {
-                                return defer.resolve(user);
-                            }
-                            return AdminSsoLogin.ssoLoginPromise().then(function (admin) {
-                                BBModel.Admin.Login.$setLogin(admin);
-                                return BBModel.Admin.Login.$user().then(function (user) {
-                                    return defer.resolve(user);
-                                }, function (err) {
-                                    return defer.reject({ reason: 'GET_USER_ERROR', error: err });
-                                });
-                            }, function (err) {
-                                return defer.resolve({ reason: 'SSO_INVALID', error: err });
-                            });
-                        }, function (err) {
-                            return defer.reject({ reason: 'LOGIN_SERVICE_ERROR', error: err });
+                            defer.resolve(user);
+                        }).catch(function (err) {
+                            defer.reject({ reason: 'LOGIN_SERVICE_ERROR', error: err });
                         });
 
                         return defer.promise;
@@ -634,57 +614,58 @@ angular.module('BBAdminDashboard.settings-iframe').run(function (RuntimeStates, 
 })();
 'use strict';
 
-/**
- * @ngdoc controller
- * @name BBAdminDashboard.calendar.controllers.controller:CalendarPageCtrl
- *
- * @description
- * Controller for the calendar page
- */
-angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPageCtrl', function ($log, $scope, $state) {
-    'ngInject';
+(function () {
+    /**
+     * @ngdoc controller
+     * @name BBAdminDashboard.calendar.controllers.controller:CalendarPageCtrl
+     *
+     * @description
+     * Controller for the calendar page
+     */
+    angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPageCtrl', CalendarPageCtrl);
 
-    var init = function init() {
+    function CalendarPageCtrl($log, $scope, $state) {
+        'ngInject';
 
-        bindToPusherChannel();
+        var init = function init() {
+            bindToPusherChannel();
+            if ($state.current.name === 'calendar') {
+                gotToProperState();
+            }
+        };
 
-        if ($state.current.name === 'calendar') {
-            gotToProperState();
-        }
-    };
+        var gotToProperState = function gotToProperState() {
+            if ($scope.bb.company.$has('people')) {
+                $state.go("calendar.people");
+            } else if ($scope.bb.company.$has('resources')) {
+                $state.go("calendar.resources");
+            }
+        };
 
-    var gotToProperState = function gotToProperState() {
+        var bindToPusherChannel = function bindToPusherChannel() {
+            var pusherChannel = $scope.company.getPusherChannel('bookings');
+            if (pusherChannel) {
+                pusherChannel.bind('create', refetch);
+                pusherChannel.bind('update', refetch);
+                pusherChannel.bind('destroy', refetch);
+            }
+        };
 
-        if ($scope.bb.company.$has('people')) {
-            $state.go("calendar.people");
-        } else if ($scope.bb.company.$has('resources')) {
-            $state.go("calendar.resources");
-        }
-    };
+        var refetch = _.throttle(function (data) {
+            $log.info('== booking push received in bookings == ', data);
+            $scope.$broadcast('refetchBookings', data);
+        }, 1000, { leading: false });
 
-    var bindToPusherChannel = function bindToPusherChannel() {
-        var pusherChannel = $scope.company.getPusherChannel('bookings');
-
-        if (pusherChannel) {
-            pusherChannel.bind('create', refetch);
-            pusherChannel.bind('update', refetch);
-            pusherChannel.bind('destroy', refetch);
-        }
-    };
-
-    var refetch = _.throttle(function (data) {
-        $log.info('== booking push received in bookings == ', data);
-        return $scope.$broadcast('refetchBookings', data);
-    }, 1000, { leading: false });
-
-    init();
-});
+        init();
+    }
+})();
 'use strict';
 
 (function (angular) {
     angular.module('BBAdminDashboard.calendar.controllers').controller('bbResourceCalendarController', bbResourceCalendarController);
 
-    function bbResourceCalendarController($rootScope, $scope, $state, $attrs, $filter, $q, $translate, $bbug, AdminBookingPopup, AdminCalendarOptions, AdminCompanyService, AdminMoveBookingPopup, BBAssets, BBModel, CalendarEventSources, ColorPalette, Dialog, GeneralOptions, ModalForm, PrePostTime, ProcessAssetsFilter, TitleAssembler, uiCalendarConfig, bbTimeZone, CalendarEventRenderer, BBCalendarViewsService, BBAdminCalendarService) {
+    function bbResourceCalendarController($rootScope, $scope, $state, $attrs, $q, $translate, AdminBookingPopup, AdminCalendarOptions, AdminCompanyService, AdminMoveBookingPopup, BBAssets, BBModel, CalendarEventSources, ColorPalette, Dialog, GeneralOptions, ModalForm, PrePostTime, ProcessAssetsFilter, TitleAssembler, uiCalendarConfig, bbTimeZone, $timeout, CalendarEventRenderer, BBCalendarViewsService, BBAdminCalendarService) {
+
         'ngInject';
 
         /*jshint validthis: true */
@@ -705,6 +686,12 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
         vm.currentViewType = 'fullCalendar';
         vm.availableViews = {};
 
+        vm.getEventsDebouncer = {
+            timeoutMS: 600,
+            timeoutPromise: null,
+            extraRequestsAllowed: 0
+        };
+
         var init = function init() {
             BBCalendarViewsService.addCustomViewsToCalendar();
             applyFilters();
@@ -718,7 +705,6 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
 
             $scope.$on('refetchBookings', refetchBookingsHandler);
             $scope.$on('newCheckout', newCheckoutHandler);
-            $scope.$on('BBLanguagePicker:languageChanged', languageChangedHandler);
             $scope.$on('CalendarEventSources:timeRangeChanged', timeRangeChangedHandler);
 
             $rootScope.$on('BBTimeZoneOptions:timeZoneChanged', timeZoneChangedHandler);
@@ -771,7 +757,14 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
         };
 
         var getEvents = function getEvents(start, end, timezone, callback) {
+            if (vm.getEventsDebouncer.timeoutPromise !== null && vm.getEventsDebouncer.extraRequestsAllowed === 0) $timeout.cancel(vm.getEventsDebouncer.timeoutPromise);
+            if (vm.getEventsDebouncer.extraRequestsAllowed > 0) vm.getEventsDebouncer.extraRequestsAllowed -= 1;
+            vm.getEventsDebouncer.timeoutPromise = $timeout(getEventsTimedOut.bind(null, start, end, timezone, callback), vm.getEventsDebouncer.timeoutMS);
+        };
 
+        var getEventsTimedOut = function getEventsTimedOut(start, end, timezone, callback) {
+
+            end.subtract(1, 'second'); // fullCalendar assumes end of day to be 00:00:00 so the api requests the next day unnecessarily
             if (bbTimeZone.getDisplayUTCOffset() > bbTimeZone.getCompanyUTCOffset()) start = start.clone().subtract(1, 'day');
             if (bbTimeZone.getDisplayUTCOffset() < bbTimeZone.getCompanyUTCOffset()) end = end.clone().add(1, 'day');
 
@@ -793,9 +786,10 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
                     options.selectedResources = [$scope.model];
                 }
 
-                return CalendarEventSources.getAllCalendarEntries(company, start, end, options).then(function (results) {
+                CalendarEventSources.getAllCalendarEntries(company, start, end, options).then(function (results) {
                     vm.loading = false;
-                    return callback(results);
+                    vm.calendarLoading = false;
+                    callback(results);
                 });
             });
         };
@@ -813,7 +807,7 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
         };
 
         var prepareUiCalOptions = function prepareUiCalOptions() {
-            vm.uiCalOptions = { // @todo REPLACE ALL THIS WITH VARIABLES FROM THE GeneralOptions Service
+            vm.uiCalOptions = {
                 calendar: {
                     editable: true,
                     schedulerLicenseKey: '0598149132-fcs-1443104297',
@@ -827,12 +821,14 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
                         fullCalendar: {
                             text: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.CALENDAR'),
                             click: function click() {
+                                vm.getEventsDebouncer.extraRequestsAllowed = 2;
                                 selectView('fullCalendar');
                             }
                         },
                         bbListView: {
                             text: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.AGENDA'),
                             click: function click() {
+                                vm.getEventsDebouncer.extraRequestsAllowed = 2;
                                 selectView('bbListView');
                             }
                         }
@@ -878,7 +874,7 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
             return getCalendarAssets(callback);
         };
 
-        var fcEventDragStop = function fcEventDragStop(event, jsEvent, ui, view) {
+        var fcEventDragStop = function fcEventDragStop(event) {
             event.oldResourceIds = event.resourceIds;
         };
 
@@ -888,6 +884,9 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
             var calendar = uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('getCalendar');
             booking.start = calendar.moment(bbTimeZone.convertToDisplay(booking.start.toISOString()));
             booking.end = calendar.moment(bbTimeZone.convertToDisplay(booking.end.toISOString()));
+
+            var moveModalTitleText = $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MOVE_MODAL_HEADING');
+            var moveModalBodyText = $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MOVE_MODAL_BODY');
 
             // not blocked and is a change in person/resource, or over multiple days
             if (booking.status !== 3 && (booking.person_id && booking.resource_id || delta.days() > 0)) {
@@ -911,14 +910,14 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
                         item_defaults.resource = newAssetId;
                     }
                 }
-                // if it's got a person and resource - then it
+                // if it's got a person and resource - then move it
                 Dialog.confirm({
-                    title: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MOVE_MODAL_HEADING'),
+                    title: moveModalTitleText,
+                    body: moveModalBodyText,
                     model: booking,
-                    body: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MOVE_MODAL_BODY'),
                     success: function success(model) {
                         getCompanyPromise().then(function (company) {
-                            return WidgetModalService.open({
+                            return AdminMoveBookingPopup.open({
                                 min_date: setTimeToMoment(start, AdminCalendarOptions.minTime),
                                 max_date: setTimeToMoment(end, AdminCalendarOptions.maxTime),
                                 from_datetime: moment(start.toISOString()),
@@ -939,18 +938,16 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
                         return revertFunc();
                     }
                 });
+                return;
             }
 
-            // if it's got a person and resource - then it
             Dialog.confirm({
-                title: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MOVE_MODAL_HEADING'),
+                title: moveModalTitleText,
+                body: moveModalBodyText,
                 model: booking,
-                body: $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.MOVE_MODAL_BODY'),
                 success: function success(model) {
-
                     booking.start = bbTimeZone.convertToCompany(booking.start);
                     booking.end = bbTimeZone.convertToCompany(booking.end);
-
                     return updateBooking(booking);
                 },
                 fail: function fail() {
@@ -959,11 +956,10 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
             });
         };
 
-        var fcEventClick = function fcEventClick(booking, jsEvent, view) {
+        var fcEventClick = function fcEventClick(booking) {
             if (booking.type === 'external') return;
-
             if (booking.$has('edit')) {
-                return editBooking(new BBModel.Admin.Booking(booking));
+                editBooking(new BBModel.Admin.Booking(booking));
             }
         };
 
@@ -971,7 +967,9 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
             var _uiCalendarConfig$cal = uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('getView'),
                 type = _uiCalendarConfig$cal.type;
 
-            var service = _.findWhere(companyServices, { id: booking.service_id });
+            var service = companyServices.find(function (companyService) {
+                return companyService.id === booking.service_id;
+            });
             if (!$scope.model) {
                 // if not a single item view
                 if (type === 'listDay') {
@@ -1010,7 +1008,7 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
         };
 
         var openWidgetModal = function openWidgetModal(item_defaults, start, end, title) {
-            return getCompanyPromise().then(function (company) {
+            getCompanyPromise().then(function (company) {
                 return AdminBookingPopup.open({
                     min_date: setTimeToMoment(start, AdminCalendarOptions.minTime),
                     max_date: setTimeToMoment(end, AdminCalendarOptions.maxTime),
@@ -1084,7 +1082,7 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
                 item_defaults.resource = resource.id.substring(0, resource.id.indexOf('_'));
             }
 
-            return openWidgetModal(item_defaults, startTimeCompanyTimezone, endTimeCompanyTimezone, modalTitle);
+            openWidgetModal(item_defaults, startTimeCompanyTimezone, endTimeCompanyTimezone, modalTitle);
         };
 
         var fcViewRender = function fcViewRender(view, element) {
@@ -1103,8 +1101,8 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
             $('.fc-next-button').attr('aria-label', $translate.instant('ADMIN_DASHBOARD.CALENDAR_PAGE.NEXT'));
 
             var date = uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('getDate');
-            var newDate = moment().tz(moment.tz.guess());
-            newDate.set({
+            var formattedDate = moment().tz(moment.tz.guess());
+            formattedDate.set({
                 'year': parseInt(date.get('year')),
                 'month': parseInt(date.get('month')),
                 'date': parseInt(date.get('date')),
@@ -1112,15 +1110,15 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
                 'minute': 0,
                 'second': 0
             });
-            return vm.currentDate = newDate.toDate();
+            return vm.currentDate = formattedDate.toDate();
         };
 
-        var fcEventResize = function fcEventResize(booking, delta, revertFunc, jsEvent, ui, view) {
+        var fcEventResize = function fcEventResize(booking) {
             booking.duration = booking.end.diff(booking.start, 'minutes');
             return updateBooking(booking);
         };
 
-        var fcLoading = function fcLoading(isLoading, view) {
+        var fcLoading = function fcLoading(isLoading) {
             vm.calendarLoading = isLoading;
         };
 
@@ -1231,8 +1229,7 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
                 }
 
                 booking.title = getBookingTitle(booking);
-
-                return uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('updateEvent', booking);
+                uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('updateEvent', booking);
             });
         };
 
@@ -1246,7 +1243,7 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
                 }
             }
 
-            booking.$update().then(function (response) {
+            booking.$update().then(function () {
                 booking.resourceIds = [];
                 booking.resourceId = null;
                 if (booking.person_id != null) {
@@ -1259,8 +1256,7 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
                 booking.title = getBookingTitle(booking);
                 booking.start = bbTimeZone.convertToDisplay(booking.start);
                 booking.end = bbTimeZone.convertToDisplay(booking.end);
-
-                return uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('updateEvent', booking);
+                uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('updateEvent', booking);
             });
         };
 
@@ -1285,34 +1281,28 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
                 success: function success(response) {
                     if (typeof response === 'string') {
                         if (response === 'move') {
-                            openMoveModal(booking);
+                            var item_defaults = { person: booking.person_id, resource: booking.resource_id, slot: { time: booking.time } };
+                            getCompanyPromise().then(function (company) {
+                                return AdminMoveBookingPopup.open({
+                                    item_defaults: item_defaults,
+                                    company_id: company.id,
+                                    booking_id: booking.id,
+                                    success: function success(model) {
+                                        refreshBooking(booking);
+                                    },
+                                    fail: function fail() {
+                                        refreshBooking(booking);
+                                    }
+                                });
+                            });
                         }
                     } else if (response.is_cancelled) {
-                        return uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('removeEvents', [response.id]);
+                        uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('removeEvents', [response.id]);
                     } else {
                         booking.title = getBookingTitle(booking);
-                        return uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('updateEvent', booking);
+                        uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('updateEvent', booking);
                     }
                 }
-            });
-        };
-
-        var openMoveModal = function openMoveModal(booking) {
-            var item_defaults = { person: booking.person_id, resource: booking.resource_id };
-            getCompanyPromise().then(function (company) {
-                WidgetModalService.open({
-                    item_defaults: item_defaults,
-                    first_page: 'calendar',
-                    templateUrl: 'widget_modal.html',
-                    company_id: company.id,
-                    total_id: booking.purchase_ref,
-                    success: function success(model) {
-                        return refreshBooking(booking);
-                    },
-                    fail: function fail() {
-                        return refreshBooking(booking);
-                    }
-                });
             });
         };
 
@@ -1322,7 +1312,7 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
                 if (booking && booking.$refetch) {
                     booking.$refetch().then(function () {
                         booking.title = getBookingTitle(booking);
-                        return uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('updateEvent', booking);
+                        uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('updateEvent', booking);
                     });
                 } else {
                     uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('refetchEvents');
@@ -1332,11 +1322,11 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
 
         var pusherSubscribe = function pusherSubscribe() {
             if (company) {
-                var pusher_channel = company.getPusherChannel('bookings');
-                if (pusher_channel) {
-                    pusher_channel.bind('create', pusherBooking);
-                    pusher_channel.bind('update', pusherBooking);
-                    pusher_channel.bind('destroy', pusherBooking);
+                var pusherChannel = company.getPusherChannel('bookings');
+                if (pusherChannel) {
+                    pusherChannel.bind('create', pusherBooking);
+                    pusherChannel.bind('update', pusherBooking);
+                    pusherChannel.bind('destroy', pusherBooking);
                 }
             }
         };
@@ -1368,10 +1358,6 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
             uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('option', 'timezone', tz);
         };
 
-        var languageChangedHandler = function languageChangedHandler() {
-            updateCalendarLanguage();
-        };
-
         var timeRangeChangedHandler = function timeRangeChangedHandler() {
             updateCalendarTimeRange();
         };
@@ -1383,7 +1369,7 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
             } else {
                 AdminCompanyService.query($attrs).then(function (_company) {
                     company = _company;
-                    return defer.resolve(company);
+                    defer.resolve(company);
                 });
             }
             return defer.promise;
@@ -1439,7 +1425,6 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
                     var isInArray = _.find(filters.requestedAssets, function (id) {
                         return id === asset.id;
                     });
-
                     if (typeof isInArray !== 'undefined') {
                         return vm.selectedResources.selected.push(asset);
                     }
@@ -1454,11 +1439,8 @@ angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPage
          */
         var companyListener = function companyListener(company) {
             vm.loading = true;
-
             BBAssets.getAssets(company).then(assetsListener);
-
             company.$get('services').then(collectionListener);
-
             pusherSubscribe();
         };
 
@@ -2502,7 +2484,6 @@ angular.module('BBAdminDashboard.calendar.services').service('CalendarEventSourc
             options = {};
         }
         var deferred = $q.defer();
-
         var promises = [getBookingsAndBlocks(company, start, end, options), getAvailabilityBackground(company, start, end, options)];
 
         if (GeneralOptions.companyHasExternalBookings) {
@@ -2514,11 +2495,10 @@ angular.module('BBAdminDashboard.calendar.services').service('CalendarEventSourc
             angular.forEach(resolutions, function (results, index) {
                 return allResults = allResults.concat(results);
             });
-
-            return deferred.resolve(allResults);
+            deferred.resolve(allResults);
         }, function (err) {
             $log.info(err);
-            return deferred.reject(err);
+            deferred.reject(err);
         });
 
         return deferred.promise;
@@ -2783,8 +2763,9 @@ angular.module('BBAdminDashboard.check-in.directives').directive('bbCheckinTable
     };
 });
 
-angular.module('BBAdminDashboard.check-in.directives').controller('CheckinsController', function ($scope, $rootScope, BusyService, $q, $filter, AdminTimeService, ModalForm, AdminSlotService, $timeout, AlertService, BBModel) {
+angular.module('BBAdminDashboard.check-in.directives').controller('CheckinsController', function ($scope, $rootScope, BusyService, $q, $filter, AdminTimeService, ModalForm, AdminSlotService, $timeout, AlertService, BBModel, AdminCompanyService, $attrs, AdminMoveBookingPopup) {
 
+    var company = null;
     $scope.$on('refetchCheckin', function (event, res) {
         return $scope.getAppointments(null, null, null, null, null, true);
     });
@@ -2916,6 +2897,19 @@ angular.module('BBAdminDashboard.check-in.directives').controller('CheckinsContr
         });
     };
 
+    var getCompanyPromise = function getCompanyPromise() {
+        var defer = $q.defer();
+        if (company) {
+            defer.resolve(company);
+        } else {
+            AdminCompanyService.query($attrs).then(function (_company) {
+                company = _company;
+                defer.resolve(company);
+            });
+        }
+        return defer.promise;
+    };
+
     $scope.edit = function (booking) {
         return booking.$getAnswers().then(function (answers) {
             var _iteratorNormalCompletion3 = true;
@@ -2948,8 +2942,20 @@ angular.module('BBAdminDashboard.check-in.directives').controller('CheckinsContr
                 title: 'Booking Details',
                 templateUrl: 'edit_booking_modal_form.html',
                 success: function success(b) {
-                    b = new BBModel.Admin.Booking(b);
-                    return $scope.bmap[b.id] = b;
+                    /**
+                     * See admin-dashboard/javascripts/calendar/controllers/resource_calendar.controller.js for more
+                     * TODO: we should avoid this code duplication
+                     */
+                    if (b === 'move') {
+                        var item_defaults = { person: booking.person_id, resource: booking.resource_id };
+                        getCompanyPromise().then(function (company) {
+                            return AdminMoveBookingPopup.open({
+                                item_defaults: item_defaults,
+                                company_id: company.id,
+                                booking_id: booking.id
+                            });
+                        });
+                    }
                 }
             });
         });
@@ -4300,20 +4306,21 @@ angular.module('BBAdminDashboard').factory('AdminSsoLogin', function (halClient,
         ssoToken: null,
         companyId: null,
         apiUrl: null,
-        ssoLoginPromise: function ssoLoginPromise(ssoToken, companyId, apiUrl) {
-            if (ssoToken == null) {
-                ssoToken = this.ssoToken;
-            }
-            if (companyId == null) {
-                companyId = this.companyId;
-            }
-            if (apiUrl == null) {
-                apiUrl = this.apiUrl;
-            }
-            var defer = $q.defer();
+        ssoLoginPromise: function ssoLoginPromise(ssoToken, companyId, apiUrl, childCompanyId) {
 
-            // if something is missing reject the promise
-            if (ssoToken == null || companyId == null || apiUrl == null) {
+            if (ssoToken === null) {
+                ;
+                ssoToken = this.ssoToken;
+            }if (companyId === null) {
+                ;
+                companyId = this.companyId;
+            }if (apiUrl === null) {
+                ;
+
+                apiUrl = this.apiUrl;
+            }var defer = $q.defer();
+
+            if (ssoToken === null || companyId === null || apiUrl === null) {
                 defer.reject();
                 return defer.promise;
             }
@@ -4321,16 +4328,20 @@ angular.module('BBAdminDashboard').factory('AdminSsoLogin', function (halClient,
             var data = {
                 token: ssoToken
             };
+
+            if (childCompanyId) data.company_id = childCompanyId;
+
             halClient.$post(apiUrl + '/api/v1/login/admin_sso/' + companyId, {}, data).then(function (login) {
                 var params = { auth_token: login.auth_token };
-                return login.$get('administrator', params).then(function (admin) {
-                    return defer.resolve(admin);
-                }, function (err) {
-                    return defer.reject(err);
+                login.$get('administrator', params).then(function (admin) {
+                    defer.resolve(admin);
+                }).catch(function (err) {
+                    defer.reject(err);
                 });
-            }, function (err) {
-                return defer.reject(err);
+            }).catch(function (err) {
+                defer.reject(err);
             });
+
             return defer.promise;
         }
     };
@@ -4804,29 +4815,52 @@ angular.module('BBAdminDashboard.login.controllers').controller('LoginPageCtrl',
         };
     });
 
-    function adminDashboardLoginCtrl($scope, $rootScope, BBModel, $localStorage, $state, AdminLoginOptions) {
+    function adminDashboardLoginCtrl($scope, $rootScope, BBModel, $localStorage, $state, AdminLoginOptions, QueryStringService, AdminSsoLogin, halClient) {
         'ngInject';
 
+        var _this = this;
+
         var init = function init() {
+            _this.ssoToken = QueryStringService('sso_token');
+
+            if (_this.ssoToken) handleSso();else if ($scope.user) companySelection($scope.user);
+
             $scope.showPasswordResetForm = AdminLoginOptions.showPasswordResetForm;
-            // If a User is available at this stages SSO login is implied
-            if ($scope.user) {
+        };
 
-                // If SSO promise returns error
-                if ($scope.user.reason && $scope.user.error) {
-                    return $scope.formErrors.push({ message: 'ADMIN_DASHBOARD.LOGIN_PAGE.SSO_INVALID' });
+        var handleSso = function handleSso() {
+            var childCompanyId = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
+
+
+            if (!_this.ssoToken) return;
+
+            AdminLoginOptions.sso_token = _this.ssoToken;
+
+            AdminSsoLogin.ssoLoginPromise(_this.ssoToken, null, null, childCompanyId).then(function (admin) {
+                BBModel.Admin.Login.$setLogin(admin);
+                BBModel.Admin.Login.$user().then(function (user) {
+                    $scope.user = user;
+                    if ($scope.user) {
+
+                        $scope.template_vars.show_pick_department = true;
+                        $scope.template_vars.show_login = false;
+                        companySelection($scope.user);
+                    }
+                }).catch(function (err) {
+                    $scope.formErrors.push({ message: 'GET_USER_ERROR' });
+                });
+            }).catch(function (err) {
+                if (err.status === 400) {
+                    var login = halClient.$parse(err.data);
+                    if (login.$has('administrators')) {
+                        var loginModel = new BBModel.Admin.Login(login);
+                        $scope.user = loginModel;
+                        companySelection(loginModel);
+                        return;
+                    }
                 }
-
-                // If SSO promise does not return error
-                if ($scope.user.reason && !$scope.user.error) {
-                    return;
-                }
-
-                // User is valid
-                $scope.template_vars.show_pick_department = true;
-                $scope.template_vars.show_login = false;
-                companySelection($scope.user);
-            }
+                $scope.formErrors.push({ message: 'ADMIN_DASHBOARD.LOGIN_PAGE.SSO_INVALID' });
+            });
         };
 
         var formErrorExists = function formErrorExists(message) {
@@ -5000,6 +5034,11 @@ angular.module('BBAdminDashboard.login.controllers').controller('LoginPageCtrl',
         $scope.pickCompany = function () {
             $scope.template_vars.show_loading = true;
             $scope.template_vars.show_pick_department = false;
+
+            if (_this.ssoToken) {
+                handleSso($scope.login_data.selected_admin.company_id);
+                return;
+            }
 
             var params = {
                 email: $scope.login_data.email,
