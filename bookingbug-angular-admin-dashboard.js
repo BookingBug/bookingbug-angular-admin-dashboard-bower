@@ -16,20 +16,20 @@ angular.module('BBAdminDashboard.check-in.translations', []);
 angular.module('BBAdminDashboard.check-in', ['BBAdminDashboard.check-in.controllers', 'BBAdminDashboard.check-in.services', 'BBAdminDashboard.check-in.directives', 'BBAdminDashboard.check-in.translations']);
 'use strict';
 
-angular.module('BBAdminDashboard.clients.controllers', []);
-angular.module('BBAdminDashboard.clients.services', []);
-angular.module('BBAdminDashboard.clients.directives', []);
-angular.module('BBAdminDashboard.clients.translations', []);
-
-angular.module('BBAdminDashboard.clients', ['BBAdminDashboard.clients.controllers', 'BBAdminDashboard.clients.services', 'BBAdminDashboard.clients.directives', 'BBAdminDashboard.clients.translations']);
-'use strict';
-
 angular.module('BBAdminDashboard.config-iframe.controllers', []);
 angular.module('BBAdminDashboard.config-iframe.services', []);
 angular.module('BBAdminDashboard.config-iframe.directives', []);
 angular.module('BBAdminDashboard.config-iframe.translations', []);
 
 angular.module('BBAdminDashboard.config-iframe', ['BBAdminDashboard.config-iframe.controllers', 'BBAdminDashboard.config-iframe.services', 'BBAdminDashboard.config-iframe.directives', 'BBAdminDashboard.config-iframe.translations']);
+'use strict';
+
+angular.module('BBAdminDashboard.clients.controllers', []);
+angular.module('BBAdminDashboard.clients.services', []);
+angular.module('BBAdminDashboard.clients.directives', []);
+angular.module('BBAdminDashboard.clients.translations', []);
+
+angular.module('BBAdminDashboard.clients', ['BBAdminDashboard.clients.controllers', 'BBAdminDashboard.clients.services', 'BBAdminDashboard.clients.directives', 'BBAdminDashboard.clients.translations']);
 'use strict';
 
 angular.module('BBAdminDashboard', ['ngStorage', 'ngResource', 'ngTouch', 'ngSanitize', 'ngLocalData', 'ngCookies', 'ngMessages', 'BBAdmin', 'BBAdminServices', 'BBAdminBooking', 'BBAdmin.Directives', 'BBMember', 'ui.calendar', 'ui.bootstrap', 'ui.router', 'ct.ui.router.extras', 'trNgGrid', 'toggle-switch', 'pascalprecht.translate', 'angular-loading-bar', 'ngScrollable', 'toastr', 'BBAdminDashboard.check-in', 'BBAdminDashboard.clients', 'BBAdminDashboard.login', 'BBAdminDashboard.logout', 'BBAdminDashboard.reset-password', 'BBAdminDashboard.calendar', 'BBAdminDashboard.dashboard-iframe', 'BBAdminDashboard.members-iframe', 'BBAdminDashboard.settings-iframe', 'BBAdminDashboard.config-iframe', 'BBAdminDashboard.publish-iframe']);
@@ -133,48 +133,6 @@ angular.module('BBAdminDashboard.check-in').run(function (RuntimeStates, AdminCh
 });
 'use strict';
 
-angular.module('BBAdminDashboard.clients').run(function (RuntimeStates, AdminClientsOptions, SideNavigationPartials) {
-    'ngInject';
-
-    // Choose to opt out of the default routing
-
-    if (AdminClientsOptions.use_default_states) {
-
-        RuntimeStates.state('clients', {
-            parent: AdminClientsOptions.parent_state,
-            url: "clients",
-            templateUrl: "clients/index.html",
-            controller: 'ClientsPageCtrl'
-        }).state('clients.new', {
-            url: "/new",
-            templateUrl: "clients/new.html",
-            controller: 'ClientsNewPageCtrl'
-        }).state('clients.all', {
-            url: "/all",
-            templateUrl: "clients/listing.html",
-            controller: 'ClientsAllPageCtrl'
-        }).state('clients.edit', {
-            url: "/edit/:id",
-            templateUrl: "clients/item.html",
-            resolve: {
-                client: function client(company, $stateParams, BBModel) {
-                    var params = {
-                        company: company,
-                        id: $stateParams.id
-                    };
-                    return BBModel.Admin.Client.$query(params);
-                }
-            },
-            controller: 'ClientsEditPageCtrl'
-        });
-    }
-
-    if (AdminClientsOptions.show_in_navigation) {
-        SideNavigationPartials.addPartialTemplate('clients', 'clients/nav.html');
-    }
-});
-'use strict';
-
 angular.module('BBAdminDashboard.config-iframe').run(function (RuntimeStates, AdminConfigIframeOptions, SideNavigationPartials) {
     'ngInject';
 
@@ -264,6 +222,48 @@ angular.module('BBAdminDashboard.config-iframe').run(function (RuntimeStates, Ad
 
     if (AdminConfigIframeOptions.show_in_navigation) {
         SideNavigationPartials.addPartialTemplate('config-iframe', 'config-iframe/nav.html');
+    }
+});
+'use strict';
+
+angular.module('BBAdminDashboard.clients').run(function (RuntimeStates, AdminClientsOptions, SideNavigationPartials) {
+    'ngInject';
+
+    // Choose to opt out of the default routing
+
+    if (AdminClientsOptions.use_default_states) {
+
+        RuntimeStates.state('clients', {
+            parent: AdminClientsOptions.parent_state,
+            url: "clients",
+            templateUrl: "clients/index.html",
+            controller: 'ClientsPageCtrl'
+        }).state('clients.new', {
+            url: "/new",
+            templateUrl: "clients/new.html",
+            controller: 'ClientsNewPageCtrl'
+        }).state('clients.all', {
+            url: "/all",
+            templateUrl: "clients/listing.html",
+            controller: 'ClientsAllPageCtrl'
+        }).state('clients.edit', {
+            url: "/edit/:id",
+            templateUrl: "clients/item.html",
+            resolve: {
+                client: function client(company, $stateParams, BBModel) {
+                    var params = {
+                        company: company,
+                        id: $stateParams.id
+                    };
+                    return BBModel.Admin.Client.$query(params);
+                }
+            },
+            controller: 'ClientsEditPageCtrl'
+        });
+    }
+
+    if (AdminClientsOptions.show_in_navigation) {
+        SideNavigationPartials.addPartialTemplate('clients', 'clients/nav.html');
     }
 });
 'use strict';
@@ -612,54 +612,6 @@ angular.module('BBAdminDashboard.settings-iframe').run(function (RuntimeStates, 
         };
     }
 })();
-'use strict';
-
-(function (angular) {
-
-    angular.module('BBAdminDashboard.calendar.directives').directive('bbResourceCalendar', bbResourceCalendarDirective);
-
-    function bbResourceCalendarDirective($compile) {
-        'ngInject';
-
-        return {
-            controller: 'bbResourceCalendarController',
-            controllerAs: 'vm',
-            link: link,
-            templateUrl: 'calendar/resource-calendar.html',
-            replace: true,
-            scope: {
-                labelAssembler: '@',
-                blockLabelAssembler: '@',
-                externalLabelAssembler: '@',
-                model: '=?'
-            }
-        };
-
-        function link(scope, element, attrs) {
-
-            var init = function init() {
-                scope.$on('UICalendar:EventAfterAllRender', addDatePickerToFCToolbar);
-            };
-
-            var addDatePickerToFCToolbar = function addDatePickerToFCToolbar() {
-                var uiCalElement = angular.element(document.getElementById('uicalendar'));
-                var datePicker = uiCalElement.find('bb-calendar-date-picker');
-
-                if (!datePicker.length) {
-
-                    //add calender picker
-                    var toolbarElement = angular.element(uiCalElement.children()[0]);
-                    var toolbarLeftElement = angular.element(toolbarElement.children()[0]);
-                    var datePickerComponent = '<bb-calendar-date-picker on-change-date="vm.updateDateHandler($event)" current-date="vm.currentDate"></bb-calendar-date-picker>';
-                    var datePickerElement = $compile(datePickerComponent)(scope);
-                    toolbarLeftElement.append(datePickerElement);
-                }
-            };
-
-            init();
-        }
-    }
-})(angular);
 'use strict';
 
 (function () {
@@ -1510,6 +1462,54 @@ angular.module('BBAdminDashboard.settings-iframe').run(function (RuntimeStates, 
         };
 
         init();
+    }
+})(angular);
+'use strict';
+
+(function (angular) {
+
+    angular.module('BBAdminDashboard.calendar.directives').directive('bbResourceCalendar', bbResourceCalendarDirective);
+
+    function bbResourceCalendarDirective($compile) {
+        'ngInject';
+
+        return {
+            controller: 'bbResourceCalendarController',
+            controllerAs: 'vm',
+            link: link,
+            templateUrl: 'calendar/resource-calendar.html',
+            replace: true,
+            scope: {
+                labelAssembler: '@',
+                blockLabelAssembler: '@',
+                externalLabelAssembler: '@',
+                model: '=?'
+            }
+        };
+
+        function link(scope, element, attrs) {
+
+            var init = function init() {
+                scope.$on('UICalendar:EventAfterAllRender', addDatePickerToFCToolbar);
+            };
+
+            var addDatePickerToFCToolbar = function addDatePickerToFCToolbar() {
+                var uiCalElement = angular.element(document.getElementById('uicalendar'));
+                var datePicker = uiCalElement.find('bb-calendar-date-picker');
+
+                if (!datePicker.length) {
+
+                    //add calender picker
+                    var toolbarElement = angular.element(uiCalElement.children()[0]);
+                    var toolbarLeftElement = angular.element(toolbarElement.children()[0]);
+                    var datePickerComponent = '<bb-calendar-date-picker on-change-date="vm.updateDateHandler($event)" current-date="vm.currentDate"></bb-calendar-date-picker>';
+                    var datePickerElement = $compile(datePickerComponent)(scope);
+                    toolbarLeftElement.append(datePickerElement);
+                }
+            };
+
+            init();
+        }
     }
 })(angular);
 'use strict';
@@ -3061,239 +3061,6 @@ angular.module('BBAdminDashboard.check-in.translations').config(['$translateProv
 
 /**
  * @ngdoc controller
- * @name BBAdminDashboard.clients.controllers.controller:ClientsAllPageCtrl
- *
- * @description
- * Controller for the clients all page
- */
-angular.module('BBAdminDashboard.clients.controllers').controller('ClientsAllPageCtrl', ['$scope', '$state', function ($scope, $state) {
-  return $scope.set_current_client(null);
-}]);
-'use strict';
-
-/**
- * @ngdoc controller
- * @name BBAdminDashboard.clients.controllers.controller:ClientsEditPageCtrl
- *
- * @description
- * Controller for the clients edit page
- */
-angular.module('BBAdminDashboard.clients.controllers').controller('ClientsEditPageCtrl', function ($scope, client, $state, company, BBModel) {
-
-  $scope.client = client;
-  $scope.historicalStartDate = moment().add(-1, 'years');
-  $scope.historicalEndDate = moment();
-
-  var checkNameAndEmail = function checkNameAndEmail(newVal, oldVal) {
-    if (typeof newVal === 'undefined' && oldVal === '') {
-      $scope.$broadcast('schemaForm.error.first_name', 'nameOrEmail', true);
-      $scope.$broadcast('schemaForm.error.last_name', 'nameOrEmail', true);
-      $scope.$broadcast('schemaForm.error.email', 'nameOrEmail', true);
-    }
-    var attributes = [$scope.client.first_name, $scope.client.last_name, $scope.client.email];
-    if (_.every(attributes, _.isEmpty)) {
-      $scope.$broadcast('schemaForm.error.first_name', 'nameOrEmail', 'Either a name or email address is required');
-      $scope.$broadcast('schemaForm.error.last_name', 'nameOrEmail', 'Either a name or email address is required');
-      $scope.$broadcast('schemaForm.error.email', 'nameOrEmail', 'Either a name or email address is required');
-    } else {
-      $scope.$broadcast('schemaForm.error.first_name', 'nameOrEmail', true);
-      $scope.$broadcast('schemaForm.error.last_name', 'nameOrEmail', true);
-      $scope.$broadcast('schemaForm.error.email', 'nameOrEmail', true);
-      $scope.$broadcast('schemaForm.error.email', 'default', true);
-    }
-  };
-
-  $scope.$watch('client.first_name', checkNameAndEmail);
-  $scope.$watch('client.last_name', checkNameAndEmail);
-  $scope.$watch('client.email', checkNameAndEmail);
-
-  // Refresh Client Resource after save
-  return $scope.memberSaveCallback = function () {
-    var params = {
-      company: company,
-      company_id: company.id,
-      id: $state.params.id,
-      flush: true
-    };
-
-    return BBModel.Admin.Client.$query(params).then(function (client) {
-      return $scope.client = client;
-    });
-  };
-});
-'use strict';
-
-/**
- * @ngdoc controller
- * @name BBAdminDashboard.clients.controllers.controller:ClientsNewPageCtrl
- *
- * @description
- * Controller for the clients new page
- */
-angular.module('BBAdminDashboard.clients.controllers').controller('ClientsNewPageCtrl', ['$scope', '$state', function ($scope, $state) {
-
-    $scope.onSuccess = function () {
-        $state.go('clients.all');
-    };
-}]);
-'use strict';
-
-/**
- * @ngdoc controller
- * @name BBAdminDashboard.clients.controllers.controller:ClientsPageCtrl
- *
- * @description
- * Controller for the clients page
- */
-angular.module('BBAdminDashboard.clients.controllers').controller('ClientsPageCtrl', ['$scope', '$state', function ($scope, $state) {
-
-    $scope.clientsOptions = { search: null };
-
-    return $scope.set_current_client = function (client) {
-        return $scope.current_client = client;
-    };
-}]);
-'use strict';
-
-angular.module('BBAdminDashboard.clients.directives').directive('bbClientsTable', function () {
-    return {
-        restrict: 'AE',
-        replace: true,
-        scope: true,
-        controller: 'TabletClients',
-        link: function link(scope, element, attrs) {}
-    };
-});
-
-angular.module('BBAdminDashboard.clients.directives').controller('TabletClients', function ($scope, $rootScope, $q, BBModel, AlertService) {
-
-    $scope.clientDef = $q.defer();
-    $scope.clientPromise = $scope.clientDef.promise;
-    $scope.per_page = 15;
-    $scope.total_entries = 0;
-    $scope.clients = [];
-
-    return $scope.getClients = function (currentPage, filterBy, filterByFields, orderBy, orderByReverse) {
-        var fields = angular.copy(filterByFields);
-        //   if fields.name?
-        //    fields.name = fields.name.replace(/\s/g, '')
-        if (fields.mobile != null) {
-            var mobile = fields.mobile;
-
-            if (mobile.indexOf('0') === 0) {
-                fields.mobile = mobile.substring(1);
-            }
-        }
-
-        var clientDef = $q.defer();
-
-        var params = {
-            company: $scope.bb.company,
-            per_page: $scope.per_page,
-            page: currentPage + 1,
-            filter_by: filterBy,
-            filter_by_fields: fields,
-            order_by: orderBy,
-            order_by_reverse: orderByReverse
-        };
-        return BBModel.Admin.Client.$query(params).then(function (clients) {
-            $scope.clients = clients.items;
-            $scope.total_entries = clients.total_entries;
-            return clientDef.resolve(clients.items);
-        }, function (err) {
-            console.log(err);
-            return clientDef.reject(err);
-        });
-    };
-});
-'use strict';
-
-/**
- * @ngdoc service
- * @name BBAdminDashboard.clients.services.service:AdminClientsOptions
- *
- * @description
- * Returns a set of admin calendar configuration options
- */
-
-/**
- * @ngdoc service
- * @name BBAdminDashboard.clients.services.service.AdminClientsOptionsProvider
- *
- * @description
- * Provider
- *
- *
- * @example
- <pre module='BBAdminDashboard.clients.services.service.AdminClientsOptionsProvider'>
-     angular.module('ExampleModule').config ['AdminClientsOptionsProvider', (AdminClientsOptionsProvider) ->
-        AdminClientsOptionsProvider.setOption('option', 'value')
-     ]
- </pre>
- */
-angular.module('BBAdminDashboard.clients.services').provider('AdminClientsOptions', [function () {
-    // This list of options is meant to grow
-    var options = {
-        use_default_states: true,
-        show_in_navigation: true,
-        parent_state: 'root'
-    };
-
-    this.setOption = function (option, value) {
-        if (options.hasOwnProperty(option)) {
-            options[option] = value;
-        }
-    };
-
-    this.getOption = function (option) {
-        if (options.hasOwnProperty(option)) {
-            return options[option];
-        }
-    };
-    this.$get = function () {
-        return options;
-    };
-}]);
-'use strict';
-
-/**
- * @ngdoc overview
- * @name BBAdminDashboard.clients.translations
- *
- * @description
- * Translations for the admin clients module
- */
-angular.module('BBAdminDashboard.clients.translations').config(['$translateProvider', function ($translateProvider) {
-    return $translateProvider.translations('en', {
-        'ADMIN_DASHBOARD': {
-            'SIDE_NAV': {
-                'CLIENTS_PAGE': {
-                    'CLIENTS': 'Customers'
-                }
-            },
-            'CLIENTS_PAGE': {
-                'CLIENTS': 'Customers',
-                'CLIENT': 'Customer',
-                'NAME': 'Name',
-                'EMAIL': 'Email',
-                'MOBILE': 'Mobile',
-                'PHONE': 'Phone',
-                'ACTIONS': 'Actions',
-                'EDIT': 'Edit',
-                'ABOUT': 'About',
-                'ADDRESS': 'Address',
-                'UPCOMING_BOOKINGS': 'Upcoming Bookings',
-                'PAST_BOOKINGS': 'Past Bookings',
-                'CUSTOMER_DETAILS': 'Customer Details',
-                'NEW': 'New Customer'
-            }
-        }
-    });
-}]);
-'use strict';
-
-/**
- * @ngdoc controller
  * @name BBAdminDashboard.config-iframe.controllers.controller:ConfigIframeBookingSettingsPageCtrl
  *
  * @description
@@ -3613,6 +3380,239 @@ angular.module('BBAdminDashboard.config-iframe.translations').config(['$translat
 }]);
 'use strict';
 
+/**
+ * @ngdoc controller
+ * @name BBAdminDashboard.clients.controllers.controller:ClientsAllPageCtrl
+ *
+ * @description
+ * Controller for the clients all page
+ */
+angular.module('BBAdminDashboard.clients.controllers').controller('ClientsAllPageCtrl', ['$scope', '$state', function ($scope, $state) {
+  return $scope.set_current_client(null);
+}]);
+'use strict';
+
+/**
+ * @ngdoc controller
+ * @name BBAdminDashboard.clients.controllers.controller:ClientsEditPageCtrl
+ *
+ * @description
+ * Controller for the clients edit page
+ */
+angular.module('BBAdminDashboard.clients.controllers').controller('ClientsEditPageCtrl', function ($scope, client, $state, company, BBModel) {
+
+  $scope.client = client;
+  $scope.historicalStartDate = moment().add(-1, 'years');
+  $scope.historicalEndDate = moment();
+
+  var checkNameAndEmail = function checkNameAndEmail(newVal, oldVal) {
+    if (typeof newVal === 'undefined' && oldVal === '') {
+      $scope.$broadcast('schemaForm.error.first_name', 'nameOrEmail', true);
+      $scope.$broadcast('schemaForm.error.last_name', 'nameOrEmail', true);
+      $scope.$broadcast('schemaForm.error.email', 'nameOrEmail', true);
+    }
+    var attributes = [$scope.client.first_name, $scope.client.last_name, $scope.client.email];
+    if (_.every(attributes, _.isEmpty)) {
+      $scope.$broadcast('schemaForm.error.first_name', 'nameOrEmail', 'Either a name or email address is required');
+      $scope.$broadcast('schemaForm.error.last_name', 'nameOrEmail', 'Either a name or email address is required');
+      $scope.$broadcast('schemaForm.error.email', 'nameOrEmail', 'Either a name or email address is required');
+    } else {
+      $scope.$broadcast('schemaForm.error.first_name', 'nameOrEmail', true);
+      $scope.$broadcast('schemaForm.error.last_name', 'nameOrEmail', true);
+      $scope.$broadcast('schemaForm.error.email', 'nameOrEmail', true);
+      $scope.$broadcast('schemaForm.error.email', 'default', true);
+    }
+  };
+
+  $scope.$watch('client.first_name', checkNameAndEmail);
+  $scope.$watch('client.last_name', checkNameAndEmail);
+  $scope.$watch('client.email', checkNameAndEmail);
+
+  // Refresh Client Resource after save
+  return $scope.memberSaveCallback = function () {
+    var params = {
+      company: company,
+      company_id: company.id,
+      id: $state.params.id,
+      flush: true
+    };
+
+    return BBModel.Admin.Client.$query(params).then(function (client) {
+      return $scope.client = client;
+    });
+  };
+});
+'use strict';
+
+/**
+ * @ngdoc controller
+ * @name BBAdminDashboard.clients.controllers.controller:ClientsNewPageCtrl
+ *
+ * @description
+ * Controller for the clients new page
+ */
+angular.module('BBAdminDashboard.clients.controllers').controller('ClientsNewPageCtrl', ['$scope', '$state', function ($scope, $state) {
+
+    $scope.onSuccess = function () {
+        $state.go('clients.all');
+    };
+}]);
+'use strict';
+
+/**
+ * @ngdoc controller
+ * @name BBAdminDashboard.clients.controllers.controller:ClientsPageCtrl
+ *
+ * @description
+ * Controller for the clients page
+ */
+angular.module('BBAdminDashboard.clients.controllers').controller('ClientsPageCtrl', ['$scope', '$state', function ($scope, $state) {
+
+    $scope.clientsOptions = { search: null };
+
+    return $scope.set_current_client = function (client) {
+        return $scope.current_client = client;
+    };
+}]);
+'use strict';
+
+angular.module('BBAdminDashboard.clients.directives').directive('bbClientsTable', function () {
+    return {
+        restrict: 'AE',
+        replace: true,
+        scope: true,
+        controller: 'TabletClients',
+        link: function link(scope, element, attrs) {}
+    };
+});
+
+angular.module('BBAdminDashboard.clients.directives').controller('TabletClients', function ($scope, $rootScope, $q, BBModel, AlertService) {
+
+    $scope.clientDef = $q.defer();
+    $scope.clientPromise = $scope.clientDef.promise;
+    $scope.per_page = 15;
+    $scope.total_entries = 0;
+    $scope.clients = [];
+
+    return $scope.getClients = function (currentPage, filterBy, filterByFields, orderBy, orderByReverse) {
+        var fields = angular.copy(filterByFields);
+        //   if fields.name?
+        //    fields.name = fields.name.replace(/\s/g, '')
+        if (fields.mobile != null) {
+            var mobile = fields.mobile;
+
+            if (mobile.indexOf('0') === 0) {
+                fields.mobile = mobile.substring(1);
+            }
+        }
+
+        var clientDef = $q.defer();
+
+        var params = {
+            company: $scope.bb.company,
+            per_page: $scope.per_page,
+            page: currentPage + 1,
+            filter_by: filterBy,
+            filter_by_fields: fields,
+            order_by: orderBy,
+            order_by_reverse: orderByReverse
+        };
+        return BBModel.Admin.Client.$query(params).then(function (clients) {
+            $scope.clients = clients.items;
+            $scope.total_entries = clients.total_entries;
+            return clientDef.resolve(clients.items);
+        }, function (err) {
+            console.log(err);
+            return clientDef.reject(err);
+        });
+    };
+});
+'use strict';
+
+/**
+ * @ngdoc service
+ * @name BBAdminDashboard.clients.services.service:AdminClientsOptions
+ *
+ * @description
+ * Returns a set of admin calendar configuration options
+ */
+
+/**
+ * @ngdoc service
+ * @name BBAdminDashboard.clients.services.service.AdminClientsOptionsProvider
+ *
+ * @description
+ * Provider
+ *
+ *
+ * @example
+ <pre module='BBAdminDashboard.clients.services.service.AdminClientsOptionsProvider'>
+     angular.module('ExampleModule').config ['AdminClientsOptionsProvider', (AdminClientsOptionsProvider) ->
+        AdminClientsOptionsProvider.setOption('option', 'value')
+     ]
+ </pre>
+ */
+angular.module('BBAdminDashboard.clients.services').provider('AdminClientsOptions', [function () {
+    // This list of options is meant to grow
+    var options = {
+        use_default_states: true,
+        show_in_navigation: true,
+        parent_state: 'root'
+    };
+
+    this.setOption = function (option, value) {
+        if (options.hasOwnProperty(option)) {
+            options[option] = value;
+        }
+    };
+
+    this.getOption = function (option) {
+        if (options.hasOwnProperty(option)) {
+            return options[option];
+        }
+    };
+    this.$get = function () {
+        return options;
+    };
+}]);
+'use strict';
+
+/**
+ * @ngdoc overview
+ * @name BBAdminDashboard.clients.translations
+ *
+ * @description
+ * Translations for the admin clients module
+ */
+angular.module('BBAdminDashboard.clients.translations').config(['$translateProvider', function ($translateProvider) {
+    return $translateProvider.translations('en', {
+        'ADMIN_DASHBOARD': {
+            'SIDE_NAV': {
+                'CLIENTS_PAGE': {
+                    'CLIENTS': 'Customers'
+                }
+            },
+            'CLIENTS_PAGE': {
+                'CLIENTS': 'Customers',
+                'CLIENT': 'Customer',
+                'NAME': 'Name',
+                'EMAIL': 'Email',
+                'MOBILE': 'Mobile',
+                'PHONE': 'Phone',
+                'ACTIONS': 'Actions',
+                'EDIT': 'Edit',
+                'ABOUT': 'About',
+                'ADDRESS': 'Address',
+                'UPCOMING_BOOKINGS': 'Upcoming Bookings',
+                'PAST_BOOKINGS': 'Past Bookings',
+                'CUSTOMER_DETAILS': 'Customer Details',
+                'NEW': 'New Customer'
+            }
+        }
+    });
+}]);
+'use strict';
+
 (function () {
 
     'use strict';
@@ -3655,12 +3655,13 @@ angular.module('BBAdminDashboard.config-iframe.translations').config(['$translat
 
     angular.module('BBAdminDashboard').controller('CorePageController', corePageController);
 
-    function corePageController($scope, $state, company, $uibModalStack, $rootScope, CompanyStoreService, bbTimeZone) {
+    function corePageController($scope, $state, company, $uibModalStack, $rootScope, CompanyStoreService, bbTimeZone, $sessionStorage) {
         'ngInject';
 
         $scope.company = company;
         $scope.bb.company = company;
         $scope.user = $rootScope.user;
+        $scope.multiLocationUser = $sessionStorage.getItem('multiLocationUser');
 
         CompanyStoreService.country_code = company.country_code;
         CompanyStoreService.currency_code = company.currency_code;
@@ -3678,22 +3679,6 @@ angular.module('BBAdminDashboard.config-iframe.translations').config(['$translat
         });
     }
 })();
-'use strict';
-
-/**
- * @ngdoc filter
- * @name BBAdminDashboard.filters.filter:minutesToString
- * @description
- * Converts a number to the desired format (default is hour minute(HH:mm))
- */
-angular.module('BBAdminDashboard').filter('minutesToString', function () {
-    return function (minutes, format) {
-        if (format == null) {
-            format = 'HH:mm';
-        }
-        return moment(moment.duration(minutes, 'minutes')._data).format(format);
-    };
-});
 'use strict';
 
 /**
@@ -3887,21 +3872,18 @@ angular.module('BBAdminDashboard').directive('bbChildCompanySwitch', function ()
         controller: function controller($scope, $state, AdminLoginService) {
 
             return $scope.logoutChildCompany = function () {
-                return (
-                    // fetch the id of the parent of the currently logged in child company.
-                    $scope.bb.company.$getParent().then(function (parent_company) {
-                        return (
-                            // set the current company to be the parent.
-                            AdminLoginService.setCompany(parent_company.id).then(function (response) {
-                                return $state.go('login');
-                            }, function (err) {
-                                return $scope.formErrors.push({ message: "ADMIN_DASHBOARD.LOGIN_PAGE.ERROR_ISSUE_WITH_COMPANY" });
-                            })
-                        );
+
+                // fetch the id of the parent of the currently logged in child company.
+                $scope.bb.company.$getParent().then(function (parent_company) {
+                    // set the current company to be the parent.
+                    AdminLoginService.setCompany(parent_company.id).then(function (response) {
+                        $state.go('login');
                     }, function (err) {
                         return $scope.formErrors.push({ message: "ADMIN_DASHBOARD.LOGIN_PAGE.ERROR_ISSUE_WITH_COMPANY" });
-                    })
-                );
+                    });
+                }, function (err) {
+                    return $scope.formErrors.push({ message: "ADMIN_DASHBOARD.LOGIN_PAGE.ERROR_ISSUE_WITH_COMPANY" });
+                });
             };
         }
     };
@@ -4205,11 +4187,11 @@ angular.module('BBAdminDashboard').directive('contentHeight', function ($window,
                 var height = $window.innerHeight;
                 //subtrackt the header height
                 if (includeHeader === true) {
-                    height = height - angular.element(document).find('header')[0].offsetHeight;
+                    height = height - (angular.element(document).find('header')[0] ? angular.element(document).find('header')[0].offsetHeight : 0);
                 }
                 //subtrackt the footer height
                 if (includeFooter === true) {
-                    height = height - angular.element(document).find('footer')[0].offsetHeight;
+                    height = height - (angular.element(document).find('footer')[0] ? angular.element(document).find('footer')[0].offsetHeight : 0);
                 }
 
                 element.css({
@@ -4220,6 +4202,22 @@ angular.module('BBAdminDashboard').directive('contentHeight', function ($window,
                 scope.$broadcast('content.changed', { height: height });
             };
         }
+    };
+});
+'use strict';
+
+/**
+ * @ngdoc filter
+ * @name BBAdminDashboard.filters.filter:minutesToString
+ * @description
+ * Converts a number to the desired format (default is hour minute(HH:mm))
+ */
+angular.module('BBAdminDashboard').filter('minutesToString', function () {
+    return function (minutes, format) {
+        if (format == null) {
+            format = 'HH:mm';
+        }
+        return moment(moment.duration(minutes, 'minutes')._data).format(format);
     };
 });
 'use strict';
@@ -4301,48 +4299,42 @@ angular.module('BBAdminDashboard').provider('AdminCoreOptions', function () {
  * Responsible for loging in the admin user via the sso token
  *
  */
-angular.module('BBAdminDashboard').factory('AdminSsoLogin', function (halClient, $q) {
+angular.module('BBAdminDashboard').factory('AdminSsoLogin', function (halClient) {
     return {
         ssoToken: null,
         companyId: null,
         apiUrl: null,
         ssoLoginPromise: function ssoLoginPromise(ssoToken, companyId, apiUrl, childCompanyId) {
+            var _this = this;
 
-            if (ssoToken === null) {
-                ;
-                ssoToken = this.ssoToken;
-            }if (companyId === null) {
-                ;
-                companyId = this.companyId;
-            }if (apiUrl === null) {
-                ;
+            return new Promise(function (resolve, reject) {
+                if (!ssoToken) {
+                    ssoToken = _this.ssoToken;
+                }
 
-                apiUrl = this.apiUrl;
-            }var defer = $q.defer();
+                if (!companyId) {
+                    companyId = _this.companyId;
+                }
 
-            if (ssoToken === null || companyId === null || apiUrl === null) {
-                defer.reject();
-                return defer.promise;
-            }
+                if (!apiUrl) {
+                    apiUrl = _this.apiUrl;
+                }
 
-            var data = {
-                token: ssoToken
-            };
+                if (!ssoToken || !companyId || !apiUrl) {
+                    reject({ status: 500 });
+                }
 
-            if (childCompanyId) data.company_id = childCompanyId;
+                var SSOParams = {
+                    token: ssoToken
+                };
 
-            halClient.$post(apiUrl + '/api/v1/login/admin_sso/' + companyId, {}, data).then(function (login) {
-                var params = { auth_token: login.auth_token };
-                login.$get('administrator', params).then(function (admin) {
-                    defer.resolve(admin);
-                }).catch(function (err) {
-                    defer.reject(err);
-                });
-            }).catch(function (err) {
-                defer.reject(err);
+                if (childCompanyId) SSOParams.company_id = childCompanyId;
+
+                halClient.$post(apiUrl + '/api/v1/login/admin_sso/' + companyId, {}, SSOParams).then(function (login) {
+                    var loginParams = { auth_token: login.auth_token };
+                    return login.$get('administrator', loginParams);
+                }).then(resolve).catch(reject);
             });
-
-            return defer.promise;
         }
     };
 });
@@ -4367,31 +4359,6 @@ angular.module('BBAdminDashboard').factory('AdminSsoLoginUrl', ['$rootScope', 'c
 
     return $rootScope.bb.api_url + '/api/v1/login/admin_sso/' + $rootScope.bb.companyId;
 }]);
-'use strict';
-
-angular.module('BBAdminDashboard').provider('bbStates', function () {
-    var states = {};
-
-    states['config.business.page'] = {
-        tabs: ['staff', 'services']
-    };
-
-    this.setState = function (state, value) {
-        if (states.hasOwnProperty(state)) {
-            states[state] = value;
-        }
-    };
-
-    this.getState = function (state) {
-        if (states.hasOwnProperty(state)) {
-            return states[state];
-        }
-    };
-
-    this.$get = function () {
-        return states;
-    };
-});
 'use strict';
 
 /**
@@ -4476,140 +4443,6 @@ angular.module('BBAdminDashboard').factory("BusyService", function ($q, $log, $r
                 return true;
             }
         }
-    };
-});
-'use strict';
-
-angular.module('BBAdminDashboard').factory('iFrameTabFactory', function () {
-    var availableTabs = {
-        businessSettings: {
-            staff: {
-                name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BUSINESS.TAB_STAFF',
-                icon: 'fa fa-male',
-                path: 'config.business.page({path: "person"})'
-            },
-            resources: {
-                name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BUSINESS.TAB_RESOURCES',
-                icon: 'fa fa-diamond',
-                path: 'config.business.page({path: "resource"})'
-            },
-            services: {
-                name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BUSINESS.TAB_SERVICES',
-                icon: 'fa fa-wrench',
-                path: 'config.business.page({path: "service"})'
-            },
-            whoWhatWhere: {
-                name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BUSINESS.TAB_WHO_WHAT_WHERE',
-                icon: 'fa fa-question-circle',
-                path: 'config.business.page({path: "grid"})'
-            },
-            queues: {
-                name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BUSINESS.TAB_QUEUES',
-                icon: 'fa fa-users',
-                path: 'config.business.page({path: "client_queue"})'
-            }
-        },
-        eventSettings: {
-            courses: {
-                name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.EVENT_SETTINGS.TAB_COURSES',
-                icon: 'fa fa-clipboard',
-                path: 'config.event-settings.page({path: "sessions/courses"})'
-            },
-            singleEvents: {
-                name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.EVENT_SETTINGS.TAB_SINGLE_EVENTS',
-                icon: 'fa fa-ticket',
-                path: 'config.event-settings.page({path: "sessions/events"})'
-            },
-            regularEvents: {
-                name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.EVENT_SETTINGS.TAB_REGULAR_EVENTS',
-                icon: 'fa fa-calendar',
-                path: 'config.event-settings.page({path: "sessions/recurring"})'
-            },
-            groups: {
-                name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.EVENT_SETTINGS.TAB_GROUPS',
-                icon: 'fa fa-object-group',
-                path: 'config.event-settings.page({path: "sessions/types"})'
-            },
-            templates: {
-                name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.EVENT_SETTINGS.TAB_TEMPLATES',
-                icon: 'fa fa-folder-open',
-                path: 'config.event-settings.page({path: "sessions/template"})'
-            }
-        },
-        promotionsSettings: {
-            deals: {
-                name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.PROMOTIONS.TAB_DEALS',
-                icon: 'fa fa-exclamation-triangle',
-                path: 'config.promotions.page({path: "price/deal/summary"})'
-            },
-            coupons: {
-                name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.PROMOTIONS.TAB_COUPONS',
-                icon: 'fa fa-money',
-                path: 'config.promotions.page({path: "price/coupon"})'
-            },
-            bulkPurchases: {
-                name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.PROMOTIONS.TAB_BULK_PURCHASES',
-                icon: 'fa fa-th',
-                path: 'config.promotions.page({path: "price/block"})'
-            },
-            packages: {
-                name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.PROMOTIONS.TAB_PACKAGES',
-                icon: 'fa fa-gift',
-                path: 'config.promotions.page({path: "package"})'
-            }
-        },
-        bookingSettings: {
-            questions: {
-                name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BOOKING_SETTINGS.TAB_QUESTIONS',
-                icon: 'fa fa-question-circle',
-                path: 'config.booking-settings.page({path: "detail_type"})'
-            },
-            questionGroups: {
-                name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BOOKING_SETTINGS.TAB_QUESTION_GROUPS',
-                icon: 'fa fa-question-circle',
-                path: 'config.booking-settings.page({path: "detail_group"})'
-            },
-            bookingText: {
-                name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BOOKING_SETTINGS.TAB_BOOKING_TEXT',
-                icon: 'fa fa-file-text',
-                path: 'config.booking-settings.page({path: "conf/text/text_edit"})'
-            },
-            addresses: {
-                name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BOOKING_SETTINGS.TAB_ADDRESSES',
-                icon: 'fa fa-building-o',
-                path: 'config.booking-settings.page({path: "address"})'
-            },
-            images: {
-                name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BOOKING_SETTINGS.TAB_IMAGES',
-                icon: 'fa fa-picture-o',
-                path: 'config.booking-settings.page({path: "media/image/all"})'
-            }
-        }
-    };
-
-    var getTabsForCategory = function getTabsForCategory(_ref) {
-        var categoryName = _ref.categoryName,
-            tabNames = _ref.tabNames;
-
-        if (typeof categoryName !== 'string') {
-            throw new Error('Invalid tab category: ' + categoryName + '.');
-        }
-
-        if (!availableTabs.hasOwnProperty(categoryName)) {
-            throw new Error('The category: ' + categoryName + ' is not in the categories available: ' + Object.keys(availableTabs).join(', ') + '.');
-        }
-
-        if (!Array.isArray(tabNames)) {
-            throw new Error('Invalid tab names: ' + tabNames + '. Must be an array.');
-        }
-
-        return tabNames.map(function (name) {
-            return availableTabs[categoryName][name];
-        });
-    };
-
-    return {
-        getTabsForCategory: getTabsForCategory
     };
 });
 'use strict';
@@ -4974,28 +4807,42 @@ angular.module('BBAdminDashboard.login.controllers').controller('LoginPageCtrl',
         };
     });
 
-    function adminDashboardLoginCtrl($scope, $rootScope, BBModel, $localStorage, $state, AdminLoginOptions, QueryStringService, AdminSsoLogin, halClient) {
+    function adminDashboardLoginCtrl($scope, $rootScope, BBModel, $sessionStorage, $localStorage, $state, AdminLoginOptions, QueryStringService, AdminSsoLogin, halClient) {
         'ngInject';
 
         var _this = this;
 
         var init = function init() {
-            _this.ssoToken = QueryStringService('sso_token');
+            /*
+             * We try to retrieve the sso_token from the session storage because maybe we've set it before.
+             * The example can be with the switch dept feature when the user has logged using sso token
+             */
+            _this.ssoToken = sessionStorage.getItem('sso_token') || QueryStringService('sso_token');
 
-            if (_this.ssoToken) handleSso();else if ($scope.user) companySelection($scope.user);
+            /*
+             * Clearing any previously existed multiLocationUser key, in order to have a clean login
+             */
+            $sessionStorage.removeItem('multiLocationUser');
+
+            if (_this.ssoToken) {
+                $scope.template_vars.show_login = false;
+                $scope.template_vars.show_loading = true;
+                handleSSO();
+            } else if ($scope.user) {
+                companySelection($scope.user);
+            }
 
             $scope.showPasswordResetForm = AdminLoginOptions.showPasswordResetForm;
         };
 
-        var handleSso = function handleSso() {
-            var childCompanyId = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
-
+        var handleSSO = function handleSSO(childCompanyId) {
 
             if (!_this.ssoToken) return;
 
             AdminLoginOptions.sso_token = _this.ssoToken;
 
             AdminSsoLogin.ssoLoginPromise(_this.ssoToken, null, null, childCompanyId).then(function (admin) {
+
                 BBModel.Admin.Login.$setLogin(admin);
                 BBModel.Admin.Login.$user().then(function (user) {
                     $scope.user = user;
@@ -5015,11 +4862,23 @@ angular.module('BBAdminDashboard.login.controllers').controller('LoginPageCtrl',
                         var loginModel = new BBModel.Admin.Login(login);
                         $scope.user = loginModel;
                         companySelection(loginModel);
-                        return;
+                    } else {
+                        handleSSOError(err);
                     }
+                } else {
+                    handleSSOError(err);
                 }
-                $scope.formErrors.push({ message: 'ADMIN_DASHBOARD.LOGIN_PAGE.SSO_INVALID' });
+            }).then(function () {
+                $scope.template_vars.show_loading = false;
             });
+        };
+
+        var handleSSOError = function handleSSOError(err) {
+            $scope.formErrors.push({ message: 'ADMIN_DASHBOARD.LOGIN_PAGE.SSO_INVALID' });
+
+            if (AdminLoginOptions.SSOErrorHandler) {
+                AdminLoginOptions.SSOErrorHandler(err);
+            }
         };
 
         var formErrorExists = function formErrorExists(message) {
@@ -5059,13 +4918,15 @@ angular.module('BBAdminDashboard.login.controllers').controller('LoginPageCtrl',
             // if user is admin
             if (user.$has('administrators')) {
                 return user.$getAdministrators().then(function (administrators) {
+
                     $scope.administrators = administrators;
 
                     // if user is admin in more than one company show select company
                     if (administrators.length > 1) {
+                        $sessionStorage.setItem('multiLocationUser', true);
                         $scope.template_vars.show_loading = false;
                         $scope.template_vars.show_login = false;
-                        return $scope.template_vars.show_pick_company = true;
+                        $scope.template_vars.show_pick_company = true;
                     } else if (administrators.length === 1) {
                         // else automatically select the first admin
                         var params = {
@@ -5107,6 +4968,11 @@ angular.module('BBAdminDashboard.login.controllers').controller('LoginPageCtrl',
                 return user.$getCompany().then(function (company) {
                     // if departments are available show departments selector
                     if (company.companies && company.companies.length > 0) {
+                        if (company.companies.length > 1) {
+                            $sessionStorage.setItem('multiLocationUser', true);
+                            $scope.multiLocationUser = true;
+                        }
+
                         $scope.template_vars.show_loading = false;
                         $scope.template_vars.show_pick_department = true;
                         $scope.template_vars.show_login = false;
@@ -5124,6 +4990,33 @@ angular.module('BBAdminDashboard.login.controllers').controller('LoginPageCtrl',
                     var message = "ADMIN_DASHBOARD.LOGIN_PAGE.ERROR_ISSUE_WITH_COMPANY";
                     if (!formErrorExists(message)) {
                         return $scope.formErrors.push({ message: message });
+                    }
+                });
+            } else if (user.$has('companies')) {
+                return user.$getCompanies().then(function (companies) {
+                    if (companies && angular.isArray(companies) && companies.length > 0) {
+                        if (companies.length > 1) {
+                            $sessionStorage.setItem('multiLocationUser', true);
+                            $scope.template_vars.show_loading = false;
+                            $scope.template_vars.show_pick_company = false;
+                            $scope.template_vars.show_pick_department = false;
+                            $scope.template_vars.show_pick_company_from_companies = true;
+                            $scope.template_vars.show_login = false;
+                            return $scope.administrators = companies;
+                        } else {
+                            // else select that company directly and move on
+                            $scope.login_data.selected_company = companies[0];
+                            BBModel.Admin.Login.$setLogin($scope.login_data.selected_company);
+                            return BBModel.Admin.Login.$setCompany($scope.login_data.selected_company.company_id).then(function (user) {
+                                return $scope.onSuccess($scope.login_data.selected_company);
+                            });
+                        }
+                    } else {
+                        $scope.template_vars.show_loading = false;
+                        var message = "ADMIN_DASHBOARD.LOGIN_PAGE.ERROR_ISSUE_WITH_COMPANY";
+                        if (!formErrorExists(message)) {
+                            return $scope.formErrors.push({ message: message });
+                        }
                     }
                 });
             } else {
@@ -5170,13 +5063,12 @@ angular.module('BBAdminDashboard.login.controllers').controller('LoginPageCtrl',
                     $localStorage.setItem("api_url", $scope.login_data.site);
                 }
 
-                var params = {
+                var loginParams = {
                     email: $scope.login_data.email,
                     password: $scope.login_data.password
                 };
-                return BBModel.Admin.Login.$login(params).then(function (user) {
-                    return companySelection(user);
-                }, function (err) {
+
+                return BBModel.Admin.Login.$login(loginParams).then(companySelection).catch(function (err) {
                     $scope.template_vars.show_loading = false;
                     var message = "ADMIN_DASHBOARD.LOGIN_PAGE.ERROR_INCORRECT_CREDS";
                     if (!formErrorExists(message)) {
@@ -5195,37 +5087,47 @@ angular.module('BBAdminDashboard.login.controllers').controller('LoginPageCtrl',
             $scope.template_vars.show_pick_department = false;
 
             if (_this.ssoToken) {
-                handleSso($scope.login_data.selected_admin.company_id);
-                return;
-            }
+                handleSSO($scope.login_data.selected_admin.company_id);
+            } else {
+                var params = {
+                    email: $scope.login_data.email,
+                    password: $scope.login_data.password
+                };
 
-            var params = {
-                email: $scope.login_data.email,
-                password: $scope.login_data.password
-            };
-
-            return $scope.login_data.selected_admin.$post('login', {}, params).then(function (login) {
-                return $scope.login_data.selected_admin.$getCompany().then(function (company) {
-                    $scope.template_vars.show_loading = false;
-
-                    if (company.companies && company.companies.length > 0) {
-                        $scope.template_vars.show_pick_department = true;
-                        return $scope.departments = company.companies;
-                    } else {
-                        return $scope.login_data.selected_company = company;
-                    }
+                return $scope.login_data.selected_admin.$post('login', {}, params).then(function (login) {
+                    $scope.login_data.selected_admin.$getCompany().then(function (company) {
+                        $scope.template_vars.show_loading = false;
+                        if (company.companies && company.companies.length > 0) {
+                            $scope.template_vars.show_pick_department = true;
+                            return $scope.departments = company.companies;
+                        } else {
+                            return $scope.login_data.selected_company = company;
+                        }
+                    });
                 });
-            });
+            }
         };
 
         $scope.selectCompanyDepartment = function (isValid) {
             $scope.template_vars.show_loading = true;
             if (isValid) {
+
                 $scope.bb.company = $scope.login_data.selected_company;
-                BBModel.Admin.Login.$setLogin($scope.login_data.selected_admin);
-                return BBModel.Admin.Login.$setCompany($scope.login_data.selected_company.id).then(function (user) {
-                    return $scope.onSuccess($scope.login_data.selected_company);
-                });
+
+                /*
+                  If the user doesn't have access to the parent company
+                 */
+                if ($scope.template_vars.show_pick_company_from_companies) {
+                    BBModel.Admin.Login.$setLogin($scope.login_data.selected_company);
+                    return BBModel.Admin.Login.$setCompany($scope.login_data.selected_company.company_id).then(function (user) {
+                        return $scope.onSuccess($scope.login_data.selected_company);
+                    });
+                } else {
+                    BBModel.Admin.Login.$setLogin($scope.login_data.selected_admin);
+                    return BBModel.Admin.Login.$setCompany($scope.login_data.selected_company.id).then(function (user) {
+                        return $scope.onSuccess($scope.login_data.selected_company);
+                    });
+                }
             }
         };
 
@@ -5269,8 +5171,8 @@ angular.module('BBAdminDashboard.login.controllers').controller('LoginPageCtrl',
             parent_state: 'root',
             sso_token: null,
             company_id: null,
-            showPasswordResetForm: true
-
+            showPasswordResetForm: true,
+            SSOErrorHandler: null // Allow project specific error handling for SSO
         };
 
         this.setOption = function (option, value) {
@@ -5444,7 +5346,7 @@ angular.module('BBAdminDashboard.login.translations').config(['$translateProvide
  */
 angular.module('BBAdminDashboard.logout.controllers').controller('LogoutPageCtrl', LogoutPageCtrl);
 
-function LogoutPageCtrl($state, $sessionStorage, BBModel, AdminCoreOptions, bbWidgetUtilities) {
+function LogoutPageCtrl($state, $sessionStorage, BBModel, AdminCoreOptions, bbWidgetUtilities, AdminSsoLogin) {
 
     // Angular $onInit hook no present for $stateProvider controllers.
     (function onInit() {
@@ -5461,6 +5363,10 @@ function LogoutPageCtrl($state, $sessionStorage, BBModel, AdminCoreOptions, bbWi
             // Double checking made to ensure session is free of SSO tokens.
             $sessionStorage.removeItem("user");
             $sessionStorage.removeItem("auth_token");
+
+            $sessionStorage.removeItem("multiLocationUser");
+            AdminSsoLogin.ssoToken = null;
+            AdminSsoLogin.companyId = null;
 
             redirectToLogoutUrlIfDetected();
         });
