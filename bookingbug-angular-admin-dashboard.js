@@ -181,7 +181,6 @@ angular.module('BBAdminDashboard.config-iframe').run(function (RuntimeStates, Ad
     // Choose to opt out of the default routing
 
     if (AdminConfigIframeOptions.use_default_states) {
-
         RuntimeStates.state('config', {
             parent: AdminConfigIframeOptions.parent_state,
             url: 'config',
@@ -210,7 +209,39 @@ angular.module('BBAdminDashboard.config-iframe').run(function (RuntimeStates, Ad
         }).state('config.business.page', {
             url: '/page/:path',
             templateUrl: 'core/iframe-page.html',
-            controller: 'ConfigSubIframePageCtrl'
+            controller: 'ConfigSubIframePageCtrl',
+            tabs: {
+                staff: {
+                    name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BUSINESS.TAB_STAFF',
+                    icon: 'fa fa-male',
+                    path: 'config.business.page({path: "person"})',
+                    visible: true
+                },
+                resources: {
+                    name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BUSINESS.TAB_RESOURCES',
+                    icon: 'fa fa-diamond',
+                    path: 'config.business.page({path: "resource"})',
+                    visible: true
+                },
+                services: {
+                    name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BUSINESS.TAB_SERVICES',
+                    icon: 'fa fa-wrench',
+                    path: 'config.business.page({path: "service"})',
+                    visible: true
+                },
+                whoWhatWhere: {
+                    name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BUSINESS.TAB_WHO_WHAT_WHERE',
+                    icon: 'fa fa-question-circle',
+                    path: 'config.business.page({path: "grid"})',
+                    visible: true
+                },
+                queues: {
+                    name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BUSINESS.TAB_QUEUES',
+                    icon: 'fa fa-users',
+                    path: 'config.business.page({path: "client_queue"})',
+                    visible: true
+                }
+            }
         }).state('config.event-settings', {
             url: '/event-settings',
             templateUrl: 'core/tabbed-substates-page.html',
@@ -226,7 +257,39 @@ angular.module('BBAdminDashboard.config-iframe').run(function (RuntimeStates, Ad
         }).state('config.event-settings.page', {
             url: '/page/:path',
             templateUrl: 'core/iframe-page.html',
-            controller: 'ConfigSubIframePageCtrl'
+            controller: 'ConfigSubIframePageCtrl',
+            tabs: {
+                courses: {
+                    name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.EVENT_SETTINGS.TAB_COURSES',
+                    icon: 'fa fa-clipboard',
+                    path: 'config.event-settings.page({path: "sessions/courses"})',
+                    visible: true
+                },
+                singleEvents: {
+                    name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.EVENT_SETTINGS.TAB_SINGLE_EVENTS',
+                    icon: 'fa fa-ticket',
+                    path: 'config.event-settings.page({path: "sessions/events"})',
+                    visible: true
+                },
+                regularEvents: {
+                    name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.EVENT_SETTINGS.TAB_REGULAR_EVENTS',
+                    icon: 'fa fa-calendar',
+                    path: 'config.event-settings.page({path: "sessions/recurring"})',
+                    visible: true
+                },
+                groups: {
+                    name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.EVENT_SETTINGS.TAB_GROUPS',
+                    icon: 'fa fa-object-group',
+                    path: 'config.event-settings.page({path: "sessions/types"})',
+                    visible: true
+                },
+                templates: {
+                    name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.EVENT_SETTINGS.TAB_TEMPLATES',
+                    icon: 'fa fa-folder-open',
+                    path: 'config.event-settings.page({path: "sessions/template"})',
+                    visible: true
+                }
+            }
         }).state('config.promotions', {
             url: '/promotions',
             templateUrl: 'core/tabbed-substates-page.html',
@@ -242,7 +305,33 @@ angular.module('BBAdminDashboard.config-iframe').run(function (RuntimeStates, Ad
         }).state('config.promotions.page', {
             url: '/page/:path',
             templateUrl: 'core/iframe-page.html',
-            controller: 'ConfigSubIframePageCtrl'
+            controller: 'ConfigSubIframePageCtrl',
+            tabs: {
+                deals: {
+                    name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.PROMOTIONS.TAB_DEALS',
+                    icon: 'fa fa-exclamation-triangle',
+                    path: 'config.promotions.page({path: "price/deal/summary"})',
+                    visible: true
+                },
+                coupons: {
+                    name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.PROMOTIONS.TAB_COUPONS',
+                    icon: 'fa fa-money',
+                    path: 'config.promotions.page({path: "price/coupon"})',
+                    visible: true
+                },
+                bulkPurchases: {
+                    name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.PROMOTIONS.TAB_BULK_PURCHASES',
+                    icon: 'fa fa-th',
+                    path: 'config.promotions.page({path: "price/block"})',
+                    visible: true
+                },
+                packages: {
+                    name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.PROMOTIONS.TAB_PACKAGES',
+                    icon: 'fa fa-gift',
+                    path: 'config.promotions.page({path: "package"})',
+                    visible: true
+                }
+            }
         }).state('config.booking-settings', {
             url: '/booking-settings',
             templateUrl: 'core/tabbed-substates-page.html',
@@ -258,7 +347,39 @@ angular.module('BBAdminDashboard.config-iframe').run(function (RuntimeStates, Ad
         }).state('config.booking-settings.page', {
             url: '/page/:path',
             templateUrl: 'core/iframe-page.html',
-            controller: 'ConfigSubIframePageCtrl'
+            controller: 'ConfigSubIframePageCtrl',
+            tabs: {
+                questions: {
+                    name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BOOKING_SETTINGS.TAB_QUESTIONS',
+                    icon: 'fa fa-question-circle',
+                    path: 'config.booking-settings.page({path: "detail_type"})',
+                    visible: true
+                },
+                questionGroups: {
+                    name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BOOKING_SETTINGS.TAB_QUESTION_GROUPS',
+                    icon: 'fa fa-question-circle',
+                    path: 'config.booking-settings.page({path: "detail_group"})',
+                    visible: true
+                },
+                bookingText: {
+                    name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BOOKING_SETTINGS.TAB_BOOKING_TEXT',
+                    icon: 'fa fa-file-text',
+                    path: 'config.booking-settings.page({path: "conf/text/text_edit"})',
+                    visible: true
+                },
+                addresses: {
+                    name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BOOKING_SETTINGS.TAB_ADDRESSES',
+                    icon: 'fa fa-building-o',
+                    path: 'config.booking-settings.page({path: "address"})',
+                    visible: true
+                },
+                images: {
+                    name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BOOKING_SETTINGS.TAB_IMAGES',
+                    icon: 'fa fa-picture-o',
+                    path: 'config.booking-settings.page({path: "media/image/all"})',
+                    visible: true
+                }
+            }
         });
     }
 
@@ -515,7 +636,75 @@ angular.module('BBAdminDashboard.settings-iframe').run(function (RuntimeStates, 
         }).state('settings.basic-settings.page', {
             url: '/page/:path',
             templateUrl: 'core/iframe-page.html',
-            controller: 'SettingsSubIframePageCtrl'
+            controller: 'SettingsSubIframePageCtrl',
+            tabs: {
+                business: {
+                    name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_BUSINESS',
+                    icon: 'fa fa-globe',
+                    path: 'settings.basic-settings.page({path: "conf/setting/user_edit"})',
+                    visible: true
+                },
+                services: {
+                    name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_SERVICES',
+                    icon: 'fa fa-wrench',
+                    path: 'settings.basic-settings.page({path: "conf/setting/service_edit"})',
+                    visible: true
+                },
+                events: {
+                    name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_EVENTS',
+                    icon: 'fa fa-ticket',
+                    path: 'settings.basic-settings.page({path: "conf/setting/session_edit"})',
+                    visible: true
+                },
+                resources: {
+                    name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_RESOURCES',
+                    icon: 'fa fa-archive',
+                    path: 'settings.basic-settings.page({path: "conf/setting/resource_edit"})',
+                    visible: true
+                },
+                widget: {
+                    name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_WIDGET',
+                    icon: 'fa fa-calendar-times-o',
+                    path: 'settings.basic-settings.page({path: "conf/setting/widget_edit"})',
+                    visible: true
+                },
+                bookings: {
+                    name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_BOOKINGS',
+                    icon: 'fa fa-book',
+                    path: 'settings.basic-settings.page({path: "conf/setting/booking_edit"})',
+                    visible: true
+                },
+                notifications: {
+                    name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_NOTIFICATIONS',
+                    icon: 'fa fa-envelope',
+                    path: 'settings.basic-settings.page({path: "conf/setting/notifier_edit"})',
+                    visible: true
+                },
+                pricing: {
+                    name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_PRICING',
+                    icon: 'fa fa-credit-card',
+                    path: 'settings.basic-settings.page({path: "conf/setting/pricing_edit"})',
+                    visible: true
+                },
+                terminology: {
+                    name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_TERMINOLOGY',
+                    icon: 'fa fa-language',
+                    path: 'settings.basic-settings.page({path: "conf/language/user_edit"})',
+                    visible: true
+                },
+                customTerms: {
+                    name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_CUSTOM_TCS',
+                    icon: 'fa fa-pencil-square-o',
+                    path: 'settings.basic-settings.page({path: "conf/text/terms_conditions"})',
+                    visible: true
+                },
+                extraFeatures: {
+                    name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_EXTRA_FEATURES',
+                    icon: 'fa fa-trophy',
+                    path: 'settings.basic-settings.page({path: "conf/setting/features_edit"})',
+                    visible: true
+                }
+            }
         }).state('settings.advanced-settings', {
             url: '/advanced-settings',
             templateUrl: 'core/tabbed-substates-page.html',
@@ -531,7 +720,33 @@ angular.module('BBAdminDashboard.settings-iframe').run(function (RuntimeStates, 
         }).state('settings.advanced-settings.page', {
             url: '/page/:path',
             templateUrl: 'core/iframe-page.html',
-            controller: 'SettingsSubIframePageCtrl'
+            controller: 'SettingsSubIframePageCtrl',
+            tabs: {
+                onlinePayments: {
+                    name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.ADVANCED_SETTINGS.TAB_ONLINE_PAYMENTS',
+                    icon: 'fa fa-credit-card',
+                    path: 'settings.advanced-settings.page({path: "conf/payment/payment_edit"})',
+                    visible: true
+                },
+                accountingIntegrations: {
+                    name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.ADVANCED_SETTINGS.TAB_ACCOUNTING_INTEGRATIONS',
+                    icon: 'fa fa-pencil-square-o',
+                    path: 'settings.advanced-settings.page({path: "conf/accounting/accounting_integration"})',
+                    visible: true
+                },
+                businessQuestions: {
+                    name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.ADVANCED_SETTINGS.TAB_BUSINESS_QUESTIONS',
+                    icon: 'fa fa-question',
+                    path: 'settings.advanced-settings.page({path: "conf/extra_question"})',
+                    visible: true
+                },
+                apiSettings: {
+                    name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.ADVANCED_SETTINGS.TAB_API_SETTINGS',
+                    icon: 'fa fa-code',
+                    path: 'settings.advanced-settings.page({path: "conf/developer/parameter"})',
+                    visible: true
+                }
+            }
         }).state('settings.integrations', {
             url: '/integrations',
             templateUrl: 'core/tabbed-substates-page.html',
@@ -547,7 +762,27 @@ angular.module('BBAdminDashboard.settings-iframe').run(function (RuntimeStates, 
         }).state('settings.integrations.page', {
             url: '/page/:path',
             templateUrl: 'core/iframe-page.html',
-            controller: 'SettingsSubIframePageCtrl'
+            controller: 'SettingsSubIframePageCtrl',
+            tabs: {
+                payment: {
+                    name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.INTEGRATIONS.TAB_PAYMENT',
+                    icon: 'fa fa-credit-card',
+                    path: 'settings.integrations.page({path: "conf/addons/payment"})',
+                    visible: true
+                },
+                accounting: {
+                    name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.INTEGRATIONS.TAB_ACCOUNTING',
+                    icon: 'fa fa-pencil-square-o',
+                    path: 'settings.integrations.page({path: "conf/addons/accounting"})',
+                    visible: true
+                },
+                other: {
+                    name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.INTEGRATIONS.TAB_OTHER',
+                    icon: 'fa fa-question',
+                    path: 'settings.integrations.page({path: "conf/addons/other"})',
+                    visible: true
+                }
+            }
         }).state('settings.subscription', {
             url: '/subscription',
             templateUrl: 'core/tabbed-substates-page.html',
@@ -563,7 +798,27 @@ angular.module('BBAdminDashboard.settings-iframe').run(function (RuntimeStates, 
         }).state('settings.subscription.page', {
             url: '/page/:path',
             templateUrl: 'core/iframe-page.html',
-            controller: 'SettingsSubIframePageCtrl'
+            controller: 'SettingsSubIframePageCtrl',
+            tabs: {
+                status: {
+                    name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.SUBSCRIPTION.TAB_STATUS',
+                    icon: null,
+                    path: 'settings.subscription.page({path: "subscription/show"})',
+                    visible: true
+                },
+                paymentHistory: {
+                    name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.SUBSCRIPTION.TAB_PAYMENT_HISTORY',
+                    icon: null,
+                    path: 'settings.subscription.page({path: "payment_event"})',
+                    visible: true
+                },
+                invoices: {
+                    name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.SUBSCRIPTION.TAB_INVOICES',
+                    icon: null,
+                    path: 'settings.subscription.page({path: "payment_invoice"})',
+                    visible: true
+                }
+            }
         });
     }
 
@@ -1737,7 +1992,7 @@ var BBCalendarViewsService = function () {
 
 
     BBCalendarViewsService.prototype.addCustomViewsToCalendar = function addCustomViewsToCalendar() {
-        var listView = new BBListView();
+        var listView = new BBListView(this.$translate);
 
         $.fullCalendar.views.bbListView = {
             class: listView.fullCalendarClass,
@@ -1774,9 +2029,10 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
  * @returns {object} An object extending the fullcalendar View class. It provides a property called fullCalendarClass which
  * can be registered with the fullcalendar library and is then available to use as a view definition.
  */
-var BBListView = function BBListView() {
+var BBListView = function BBListView($translate) {
     _classCallCheck(this, BBListView);
 
+    this.$translate = $translate;
     this.FC = $.fullCalendar;
     this.FCGrid = this.FC.Grid;
     this.view = this.FC.View;
@@ -1853,9 +2109,9 @@ var BBListView = function BBListView() {
     });
 
     /*
-    Responsible for event rendering and user-interaction.
-    Its "el" is the inner-content of the above view's scroller.
-    */
+     Responsible for event rendering and user-interaction.
+     Its "el" is the inner-content of the above view's scroller.
+     */
 
     var ListViewGrid = this.FCGrid.extend({
 
@@ -2048,7 +2304,7 @@ var BBListView = function BBListView() {
         // generates the HTML for a single event row
         fgSegHtml: function fgSegHtml(seg) {
             var classes = ['fc-list-item'].concat(this.getSegCustomClasses(seg));
-            var bgColor = this.getSegBackgroundColor(seg);
+            //let bgColor = seg.color;
             var event = seg.event;
             var url = event.url;
             var timeHtml = void 0;
@@ -2073,10 +2329,23 @@ var BBListView = function BBListView() {
                 classes.push('fc-has-url');
             }
 
-            return '<tr role="button" style="{margin-top: 30px}" tabindex="0" class="' + classes.join(' ') + '">' + (this.displayEventTime ? '<td class="fc-list-item-time ' + this.view.widgetContentClass + '">' + (timeHtml || '') + '</td>' : '') + '<td class="fc-list-item-marker ' + this.view.widgetContentClass + '">' + '<span class="fc-event-dot"' + (bgColor ? ' style="background-color:' + bgColor + '"' : '') + '></span>' + '</td>' + '<td class="fc-list-item-title ' + this.view.widgetContentClass + '">' + '<a' + (url ? ' href="' + self.FC.htmlEscape(url) + '"' : '') + '>' + self.FC.htmlEscape(seg.event.title || '') + '</a>' + '</td>' + '</tr>';
+            var status = BBLabelStatus.labelStatus(Object.keys(seg.event.multi_status)[0]);
+            var displayEventTimeTd = this.displayEventTime ? '<td class="fc-list-item-time ' + this.view.widgetContentClass + '">\n                      ' + (timeHtml || '') + '\n                    </td>' : '';
+            var urlEscapedTd = '<td class="fc-list-item-title ' + this.view.widgetContentClass + '">\n                    <a href="' + (url ? self.FC.htmlEscape(url) : '') + '">\n                      ' + self.FC.htmlEscape(seg.event.title || '') + '\n                    </a>\n                    </td>';
+
+            return '<tr role="button" style="{margin-top: 30px}" tabindex="0" class="' + classes.join(' ') + '">\n                    ' + displayEventTimeTd + '\n                    ' + urlEscapedTd + '\n                    \n                    <td class="fc-list-item-title status-column text-center">\n                      <span class="status status-' + status.className + '">\n                        ' + $translate.instant(status.translation) + '\n                      </span>\n                     </td>\n                    </tr>';
         }
     });
 };
+
+//TODO Colors will be exposed in the service and used here
+// '<td class="fc-list-item-marker ' + this.view.widgetContentClass + '">' +
+//     '<span class="fc-event-dot"' +
+//     (bgColor ?
+//         ' style="background-color:' + bgColor + '"' :
+//         '') +
+//     '></span>' +
+// '</td>' +
 'use strict';
 
 (function () {
@@ -3034,7 +3303,9 @@ angular.module('BBAdminDashboard.check-in.translations').config(['$translateProv
             },
 
             'CHECK_IN_PAGE': {
+                'BOOKED': 'Booked',
                 'CHECK_IN': 'Check in',
+                'CHECKED_IN': 'Checked in',
                 'EDIT': 'Edit',
                 'NO_SHOW': 'No Show',
                 'WALK_IN': 'Walk in',
@@ -3050,7 +3321,8 @@ angular.module('BBAdminDashboard.check-in.translations').config(['$translateProv
                 'WAITING_FOR': 'Waiting for {{period}}',
                 'BEING_SEEN_FOR': 'Being seen for {{period}}',
                 'WAS_DUE': 'Was due {{period}}',
-                'COMPLETED_BUTTON': 'Completed'
+                'COMPLETED_BUTTON': 'Completed',
+                'STATUS': 'Status'
             }
 
         }
@@ -3299,42 +3571,24 @@ angular.module('BBAdminDashboard.clients.translations').config(['$translateProvi
  * @description
  * Controller for the config page
  */
-angular.module('BBAdminDashboard.config-iframe.controllers').controller('ConfigIframeBookingSettingsPageCtrl', ['$scope', '$state', '$rootScope', function ($scope, $state, $rootScope) {
+angular.module('BBAdminDashboard.config-iframe.controllers').controller('ConfigIframeBookingSettingsPageCtrl', ConfigIframeBookingSettingsPageCtrl);
+
+function ConfigIframeBookingSettingsPageCtrl($scope, $state, $rootScope) {
     $scope.pageHeader = 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BOOKING_SETTINGS.TITLE';
 
-    $scope.tabs = [{
-        name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BOOKING_SETTINGS.TAB_QUESTIONS',
-        icon: 'fa fa-question-circle',
-        path: 'config.booking-settings.page({path: "detail_type"})'
-    }, {
-        name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BOOKING_SETTINGS.TAB_QUESTION_GROUPS',
-        icon: 'fa fa-question-circle',
-        path: 'config.booking-settings.page({path: "detail_group"})'
-    }, {
-        name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BOOKING_SETTINGS.TAB_BOOKING_TEXT',
-        icon: 'fa fa-file-text',
-        path: 'config.booking-settings.page({path: "conf/text/text_edit"})'
-    }, {
-        name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BOOKING_SETTINGS.TAB_ADDRESSES',
-        icon: 'fa fa-building-o',
-        path: 'config.booking-settings.page({path: "address"})'
-    }, {
-        name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BOOKING_SETTINGS.TAB_IMAGES',
-        icon: 'fa fa-picture-o',
-        path: 'config.booking-settings.page({path: "media/image/all"})'
-    }];
+    $scope.tabs = $state.current.getTabs();
 
     $scope.contentsLoading = false;
 
     $scope.$on('iframeLoaded', function () {
         $scope.contentsLoading = false;
-        return $scope.$apply();
+        $scope.$apply();
     });
 
-    return $scope.$on('iframeLoading', function () {
+    $scope.$on('iframeLoading', function () {
         return $scope.contentsLoading = true;
     });
-}]);
+}
 'use strict';
 
 /**
@@ -3344,42 +3598,24 @@ angular.module('BBAdminDashboard.config-iframe.controllers').controller('ConfigI
  * @description
  * Controller for the config page
  */
-angular.module('BBAdminDashboard.config-iframe.controllers').controller('ConfigIframeBusinessPageCtrl', ['$scope', '$state', '$rootScope', function ($scope, $state, $rootScope) {
+angular.module('BBAdminDashboard.config-iframe.controllers').controller('ConfigIframeBusinessPageCtrl', ConfigIframeBusinessPageCtrl);
+
+function ConfigIframeBusinessPageCtrl($scope, $state, $rootScope) {
     $scope.pageHeader = 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BUSINESS.TITLE';
 
-    $scope.tabs = [{
-        name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BUSINESS.TAB_STAFF',
-        icon: 'fa fa-male',
-        path: 'config.business.page({path: "person"})'
-    }, {
-        name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BUSINESS.TAB_RESOURCES',
-        icon: 'fa fa-diamond',
-        path: 'config.business.page({path: "resource"})'
-    }, {
-        name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BUSINESS.TAB_SERVICES',
-        icon: 'fa fa-wrench',
-        path: 'config.business.page({path: "service"})'
-    }, {
-        name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BUSINESS.TAB_WHO_WHAT_WHERE',
-        icon: 'fa fa-question-circle',
-        path: 'config.business.page({path: "grid"})'
-    }, {
-        name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.BUSINESS.TAB_QUEUES',
-        icon: 'fa fa-users',
-        path: 'config.business.page({path: "client_queue"})'
-    }];
+    $scope.tabs = $state.current.getTabs();
 
     $scope.contentsLoading = false;
 
     $scope.$on('iframeLoaded', function () {
         $scope.contentsLoading = false;
-        return $scope.$apply();
+        $scope.$apply();
     });
 
-    return $scope.$on('iframeLoading', function () {
+    $scope.$on('iframeLoading', function () {
         return $scope.contentsLoading = true;
     });
-}]);
+}
 'use strict';
 
 /**
@@ -3389,42 +3625,23 @@ angular.module('BBAdminDashboard.config-iframe.controllers').controller('ConfigI
  * @description
  * Controller for the config page
  */
-angular.module('BBAdminDashboard.config-iframe.controllers').controller('ConfigIframeEventSettingsPageCtrl', ['$scope', '$state', '$rootScope', function ($scope, $state, $rootScope) {
+angular.module('BBAdminDashboard.config-iframe.controllers').controller('ConfigIframeEventSettingsPageCtrl', ConfigIframeEventSettingsPageCtrl);
+
+function ConfigIframeEventSettingsPageCtrl($scope, $state, $rootScope) {
     $scope.pageHeader = 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.EVENT_SETTINGS.TITLE';
 
-    $scope.tabs = [{
-        name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.EVENT_SETTINGS.TAB_COURSES',
-        icon: 'fa fa-clipboard',
-        path: 'config.event-settings.page({path: "sessions/courses"})'
-    }, {
-        name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.EVENT_SETTINGS.TAB_SINGLE_EVENTS',
-        icon: 'fa fa-ticket',
-        path: 'config.event-settings.page({path: "sessions/events"})'
-    }, {
-        name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.EVENT_SETTINGS.TAB_REGULAR_EVENTS',
-        icon: 'fa fa-calendar',
-        path: 'config.event-settings.page({path: "sessions/recurring"})'
-    }, {
-        name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.EVENT_SETTINGS.TAB_GROUPS',
-        icon: 'fa fa-object-group',
-        path: 'config.event-settings.page({path: "sessions/types"})'
-    }, {
-        name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.EVENT_SETTINGS.TAB_TEMPLATES',
-        icon: 'fa fa-folder-open',
-        path: 'config.event-settings.page({path: "sessions/template"})'
-    }];
-
+    $scope.tabs = $state.current.getTabs();
     $scope.contentsLoading = false;
 
     $scope.$on('iframeLoaded', function () {
         $scope.contentsLoading = false;
-        return $scope.$apply();
+        $scope.$apply();
     });
 
-    return $scope.$on('iframeLoading', function () {
+    $scope.$on('iframeLoading', function () {
         return $scope.contentsLoading = true;
     });
-}]);
+}
 'use strict';
 
 /**
@@ -3455,38 +3672,23 @@ angular.module('BBAdminDashboard.config-iframe.controllers').controller('ConfigI
  * @description
  * Controller for the config page
  */
-angular.module('BBAdminDashboard.config-iframe.controllers').controller('ConfigIframePromotionsPageCtrl', ['$scope', '$state', '$rootScope', function ($scope, $state, $rootScope) {
+angular.module('BBAdminDashboard.config-iframe.controllers').controller('ConfigIframePromotionsPageCtrl', ConfigIframePromotionsPageCtrl);
+
+function ConfigIframePromotionsPageCtrl($scope, $state, $rootScope) {
     $scope.pageHeader = 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.PROMOTIONS.TITLE';
 
-    $scope.tabs = [{
-        name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.PROMOTIONS.TAB_DEALS',
-        icon: 'fa fa-exclamation-triangle',
-        path: 'config.promotions.page({path: "price/deal/summary"})'
-    }, {
-        name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.PROMOTIONS.TAB_COUPONS',
-        icon: 'fa fa-money',
-        path: 'config.promotions.page({path: "price/coupon"})'
-    }, {
-        name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.PROMOTIONS.TAB_BULK_PURCHASES',
-        icon: 'fa fa-th',
-        path: 'config.promotions.page({path: "price/block"})'
-    }, {
-        name: 'ADMIN_DASHBOARD.CONFIG_IFRAME_PAGE.PROMOTIONS.TAB_PACKAGES',
-        icon: 'fa fa-gift',
-        path: 'config.promotions.page({path: "package"})'
-    }];
-
+    $scope.tabs = $state.current.getTabs();
     $scope.contentsLoading = false;
 
     $scope.$on('iframeLoaded', function () {
         $scope.contentsLoading = false;
-        return $scope.$apply();
+        $scope.$apply();
     });
 
-    return $scope.$on('iframeLoading', function () {
+    $scope.$on('iframeLoading', function () {
         return $scope.contentsLoading = true;
     });
-}]);
+}
 'use strict';
 
 /**
@@ -3531,7 +3733,7 @@ angular.module('BBAdminDashboard.config-iframe.controllers').controller('ConfigS
      ]
  </pre>
  */
-angular.module('BBAdminDashboard.config-iframe.services').provider('AdminConfigIframeOptions', [function () {
+angular.module('BBAdminDashboard.config-iframe.services').provider('AdminConfigIframeOptions', function () {
     // This list of options is meant to grow
     var options = {
         use_default_states: true,
@@ -3550,10 +3752,11 @@ angular.module('BBAdminDashboard.config-iframe.services').provider('AdminConfigI
             return options[option];
         }
     };
+
     this.$get = function () {
         return options;
     };
-}]);
+});
 'use strict';
 
 /**
@@ -3679,6 +3882,22 @@ angular.module('BBAdminDashboard.config-iframe.translations').config(['$translat
         });
     }
 })();
+'use strict';
+
+/**
+ * @ngdoc filter
+ * @name BBAdminDashboard.filters.filter:minutesToString
+ * @description
+ * Converts a number to the desired format (default is hour minute(HH:mm))
+ */
+angular.module('BBAdminDashboard').filter('minutesToString', function () {
+    return function (minutes, format) {
+        if (format == null) {
+            format = 'HH:mm';
+        }
+        return moment(moment.duration(minutes, 'minutes')._data).format(format);
+    };
+});
 'use strict';
 
 /**
@@ -4207,22 +4426,6 @@ angular.module('BBAdminDashboard').directive('contentHeight', function ($window,
 'use strict';
 
 /**
- * @ngdoc filter
- * @name BBAdminDashboard.filters.filter:minutesToString
- * @description
- * Converts a number to the desired format (default is hour minute(HH:mm))
- */
-angular.module('BBAdminDashboard').filter('minutesToString', function () {
-    return function (minutes, format) {
-        if (format == null) {
-            format = 'HH:mm';
-        }
-        return moment(moment.duration(minutes, 'minutes')._data).format(format);
-    };
-});
-'use strict';
-
-/**
  * @ngdoc service
  * @name BBAdminDashboard.AdminCoreOptions
  *
@@ -4447,6 +4650,25 @@ angular.module('BBAdminDashboard').factory("BusyService", function ($q, $log, $r
 });
 'use strict';
 
+angular.module('BBAdminDashboard').provider('overrideStates', function () {
+    var states = {};
+
+    this.setState = function (state, value) {
+        states[state] = value;
+    };
+
+    this.getState = function (state) {
+        if (states.hasOwnProperty(state)) {
+            return states[state];
+        }
+    };
+
+    this.$get = function () {
+        return states;
+    };
+});
+'use strict';
+
 /**
  * @ngdoc service
  * @name BBAdminDashboard.PageLayout
@@ -4520,15 +4742,34 @@ angular.module('BBAdminDashboard').provider('RuntimeRoutes', ['$urlRouterProvide
  ]
  </pre>
  */
-angular.module('BBAdminDashboard').provider('RuntimeStates', ['$stateProvider', function ($stateProvider) {
-  var stateProvider = $stateProvider;
-  this.setProvider = function (provider) {
-    return stateProvider = provider;
-  };
-  this.$get = function () {
-    return stateProvider;
-  };
-}]);
+angular.module('BBAdminDashboard').provider('RuntimeStates', function ($stateProvider, overrideStatesProvider, bbOptionsProvider) {
+    var _this = this;
+
+    function getTabs() {
+        var visibleTabs = [];
+        for (var tabName in this.tabs) {
+            if (this.tabs[tabName].visible === true) visibleTabs.push(this.tabs[tabName]);
+        }
+
+        return visibleTabs;
+    }
+
+    this.state = function (name, config) {
+        var overrides = overrideStatesProvider.getState(name) || {};
+        var mergedConfig = bbOptionsProvider.setOption({ state: config }, 'state', overrides);
+
+        mergedConfig.state.getTabs = getTabs;
+
+        $stateProvider.state(name, mergedConfig.state);
+        return _this;
+    };
+
+    this.$get = function () {
+        return {
+            state: _this.state
+        };
+    };
+});
 'use strict';
 
 /**
@@ -5950,27 +6191,12 @@ angular.module('BBAdminDashboard.reset-password').config(['$translateProvider', 
  * @description
  * Controller for the settings page
  */
-angular.module('BBAdminDashboard.settings-iframe.controllers').controller('SettingsIframeAdvancedSettingsPageCtrl', ['$scope', '$state', '$rootScope', function ($scope, $state, $rootScope) {
+angular.module('BBAdminDashboard.settings-iframe.controllers').controller('SettingsIframeAdvancedSettingsPageCtrl', SettingsIframeAdvancedSettingsPageCtrl);
+
+function SettingsIframeAdvancedSettingsPageCtrl($scope, $state, $rootScope) {
     $scope.pageHeader = 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.ADVANCED_SETTINGS.TITLE';
 
-    $scope.tabs = [{
-        name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.ADVANCED_SETTINGS.TAB_ONLINE_PAYMENTS',
-        icon: 'fa fa-credit-card',
-        path: 'settings.advanced-settings.page({path: "conf/payment/payment_edit"})'
-    }, {
-        name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.ADVANCED_SETTINGS.TAB_ACCOUNTING_INTEGRATIONS',
-        icon: 'fa fa-pencil-square-o',
-        path: 'settings.advanced-settings.page({path: "conf/accounting/accounting_integration"})'
-    }, {
-        name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.ADVANCED_SETTINGS.TAB_BUSINESS_QUESTIONS',
-        icon: 'fa fa-question',
-        path: 'settings.advanced-settings.page({path: "conf/extra_question"})'
-    }, {
-        name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.ADVANCED_SETTINGS.TAB_API_SETTINGS',
-        icon: 'fa fa-code',
-        path: 'settings.advanced-settings.page({path: "conf/developer/parameter"})'
-    }];
-
+    $scope.tabs = $state.current.getTabs();
     $scope.contentsLoading = false;
 
     $scope.$on('iframeLoaded', function () {
@@ -5981,7 +6207,7 @@ angular.module('BBAdminDashboard.settings-iframe.controllers').controller('Setti
     return $scope.$on('iframeLoading', function () {
         return $scope.contentsLoading = true;
     });
-}]);
+}
 'use strict';
 
 /**
@@ -5991,55 +6217,12 @@ angular.module('BBAdminDashboard.settings-iframe.controllers').controller('Setti
  * @description
  * Controller for the settings page
  */
-angular.module('BBAdminDashboard.settings-iframe.controllers').controller('SettingsIframeBasicSettingsPageCtrl', ['$scope', '$state', '$rootScope', function ($scope, $state, $rootScope) {
+angular.module('BBAdminDashboard.settings-iframe.controllers').controller('SettingsIframeBasicSettingsPageCtrl', SettingsIframeBasicSettingsPageCtrl);
+
+function SettingsIframeBasicSettingsPageCtrl($scope, $state, $rootScope) {
     $scope.pageHeader = 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TITLE';
 
-    $scope.tabs = [{
-        name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_BUSINESS',
-        icon: 'fa fa-globe',
-        path: 'settings.basic-settings.page({path: "conf/setting/user_edit"})'
-    }, {
-        name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_SERVICES',
-        icon: 'fa fa-wrench',
-        path: 'settings.basic-settings.page({path: "conf/setting/service_edit"})'
-    }, {
-        name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_EVENTS',
-        icon: 'fa fa-ticket',
-        path: 'settings.basic-settings.page({path: "conf/setting/session_edit"})'
-    }, {
-        name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_RESOURCES',
-        icon: 'fa fa-archive',
-        path: 'settings.basic-settings.page({path: "conf/setting/resource_edit"})'
-    }, {
-        name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_WIDGET',
-        icon: 'fa fa-calendar-times-o',
-        path: 'settings.basic-settings.page({path: "conf/setting/widget_edit"})'
-    }, {
-        name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_BOOKINGS',
-        icon: 'fa fa-book',
-        path: 'settings.basic-settings.page({path: "conf/setting/booking_edit"})'
-    }, {
-        name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_NOTIFICATIONS',
-        icon: 'fa fa-envelope',
-        path: 'settings.basic-settings.page({path: "conf/setting/notifier_edit"})'
-    }, {
-        name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_PRICING',
-        icon: 'fa fa-credit-card',
-        path: 'settings.basic-settings.page({path: "conf/setting/pricing_edit"})'
-    }, {
-        name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_TERMINOLOGY',
-        icon: 'fa fa-language',
-        path: 'settings.basic-settings.page({path: "conf/language/user_edit"})'
-    }, {
-        name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_CUSTOM_TCS',
-        icon: 'fa fa-pencil-square-o',
-        path: 'settings.basic-settings.page({path: "conf/text/terms_conditions"})'
-    }, {
-        name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.BASIC_SETTINGS.TAB_EXTRA_FEATURES',
-        icon: 'fa fa-trophy',
-        path: 'settings.basic-settings.page({path: "conf/setting/features_edit"})'
-    }];
-
+    $scope.tabs = $state.current.getTabs();
     $scope.contentsLoading = false;
 
     $scope.$on('iframeLoaded', function () {
@@ -6050,7 +6233,7 @@ angular.module('BBAdminDashboard.settings-iframe.controllers').controller('Setti
     return $scope.$on('iframeLoading', function () {
         return $scope.contentsLoading = true;
     });
-}]);
+}
 'use strict';
 
 /**
@@ -6060,23 +6243,12 @@ angular.module('BBAdminDashboard.settings-iframe.controllers').controller('Setti
  * @description
  * Controller for the settings page
  */
-angular.module('BBAdminDashboard.settings-iframe.controllers').controller('SettingsIframeIntegrationsPageCtrl', ['$scope', '$state', '$rootScope', function ($scope, $state, $rootScope) {
+angular.module('BBAdminDashboard.settings-iframe.controllers').controller('SettingsIframeIntegrationsPageCtrl', SettingsIframeIntegrationsPageCtrl);
+
+function SettingsIframeIntegrationsPageCtrl($scope, $state, $rootScope) {
     $scope.pageHeader = 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.INTEGRATIONS.TITLE';
 
-    $scope.tabs = [{
-        name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.INTEGRATIONS.TAB_PAYMENT',
-        icon: 'fa fa-credit-card',
-        path: 'settings.integrations.page({path: "conf/addons/payment"})'
-    }, {
-        name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.INTEGRATIONS.TAB_ACCOUNTING',
-        icon: 'fa fa-pencil-square-o',
-        path: 'settings.integrations.page({path: "conf/addons/accounting"})'
-    }, {
-        name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.INTEGRATIONS.TAB_OTHER',
-        icon: 'fa fa-question',
-        path: 'settings.integrations.page({path: "conf/addons/other"})'
-    }];
-
+    $scope.tabs = $state.current.getTabs();
     $scope.contentsLoading = false;
 
     $scope.$on('iframeLoaded', function () {
@@ -6087,7 +6259,7 @@ angular.module('BBAdminDashboard.settings-iframe.controllers').controller('Setti
     return $scope.$on('iframeLoading', function () {
         return $scope.contentsLoading = true;
     });
-}]);
+}
 'use strict';
 
 /**
@@ -6118,22 +6290,12 @@ angular.module('BBAdminDashboard.settings-iframe.controllers').controller('Setti
  * @description
  * Controller for the settings page
  */
-angular.module('BBAdminDashboard.settings-iframe.controllers').controller('SettingsIframeSubscriptionPageCtrl', ['$scope', '$state', '$rootScope', function ($scope, $state, $rootScope) {
+angular.module('BBAdminDashboard.settings-iframe.controllers').controller('SettingsIframeSubscriptionPageCtrl', SettingsIframeSubscriptionPageCtrl);
+
+function SettingsIframeSubscriptionPageCtrl($scope, $state, $rootScope) {
     $scope.pageHeader = 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.SUBSCRIPTION.TITLE';
 
-    $scope.tabs = [{
-        name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.SUBSCRIPTION.TAB_STATUS',
-        icon: null,
-        path: 'settings.subscription.page({path: "subscription/show"})'
-    }, {
-        name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.SUBSCRIPTION.TAB_PAYMENT_HISTORY',
-        icon: null,
-        path: 'settings.subscription.page({path: "payment_event"})'
-    }, {
-        name: 'ADMIN_DASHBOARD.SETTINGS_IFRAME_PAGE.SUBSCRIPTION.TAB_INVOICES',
-        icon: null,
-        path: 'settings.subscription.page({path: "payment_invoice"})'
-    }];
+    $scope.tabs = $state.current.getTabs();
 
     $scope.contentsLoading = false;
 
@@ -6145,7 +6307,7 @@ angular.module('BBAdminDashboard.settings-iframe.controllers').controller('Setti
     return $scope.$on('iframeLoading', function () {
         return $scope.contentsLoading = true;
     });
-}]);
+}
 'use strict';
 
 /**
@@ -6289,6 +6451,33 @@ angular.module('BBAdminDashboard.settings-iframe.translations').config(['$transl
         }
     });
 }]);
+'use strict';
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var BBLabelStatus = function () {
+    function BBLabelStatus() {
+        _classCallCheck(this, BBLabelStatus);
+    }
+
+    BBLabelStatus.labelStatus = function labelStatus(status) {
+        if (status) {
+            return {
+                className: status.replace(/_/g, '-'),
+                translation: 'ADMIN_DASHBOARD.CHECK_IN_PAGE.' + status.toUpperCase()
+            };
+        } else {
+            return {
+                className: 'booked',
+                translation: 'ADMIN_DASHBOARD.CHECK_IN_PAGE.BOOKED'
+            };
+        }
+    };
+
+    return BBLabelStatus;
+}();
+
+window.BBLabelStatus = BBLabelStatus;
 'use strict';
 
 (function () {
