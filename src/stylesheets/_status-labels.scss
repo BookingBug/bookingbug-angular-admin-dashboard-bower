@@ -9,6 +9,7 @@
   }
 }
 .status{
+  $status-blocked: #777;
   $status-booked: #3c8dbc;
   $status-no-show: #dd4b39;
   $status-action: #f39c12;
@@ -16,6 +17,11 @@
   border: 1px solid;
   text-transform: uppercase;
   @extend .label;
+
+  &-blocked{
+    @extend .label-default;
+    @include status-label($status-blocked);
+  }
   &-booked{
     @extend .label-primary;
     @include status-label($status-booked);
