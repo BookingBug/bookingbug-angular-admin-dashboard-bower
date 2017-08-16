@@ -1501,6 +1501,7 @@ angular.module('BBAdminDashboard.settings-iframe').run(function (RuntimeStates, 
                 booking.start = bbTimeZone.convertToDisplay(booking.start);
                 booking.end = bbTimeZone.convertToDisplay(booking.end);
                 uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('updateEvent', booking);
+                uiCalendarConfig.calendars[vm.calendar_name].fullCalendar('refetchEvents');
             });
         };
 
@@ -2328,12 +2329,12 @@ var BBListView = function BBListView($translate) {
             if (url) {
                 classes.push('fc-has-url');
             }
+            var current_multi_status = seg.event.className[0].replace('status_', '');
+            var status = BBLabelStatus.labelStatus(current_multi_status);
+            var displayEventTimeTd = this.displayEventTime ? '<td class="col-xs-2 fc-list-item-time ' + this.view.widgetContentClass + '">\n                      ' + (timeHtml || '') + '\n                    </td>' : '';
+            var urlEscapedTd = '<td class="col-xs-8 fc-list-item-title ' + this.view.widgetContentClass + '">\n                    <a href="' + (url ? self.FC.htmlEscape(url) : '') + '">\n                      ' + self.FC.htmlEscape(seg.event.title || '') + '\n                    </a>\n                    </td>';
 
-            var status = BBLabelStatus.labelStatus(Object.keys(seg.event.multi_status)[0]);
-            var displayEventTimeTd = this.displayEventTime ? '<td class="fc-list-item-time ' + this.view.widgetContentClass + '">\n                      ' + (timeHtml || '') + '\n                    </td>' : '';
-            var urlEscapedTd = '<td class="fc-list-item-title ' + this.view.widgetContentClass + '">\n                    <a href="' + (url ? self.FC.htmlEscape(url) : '') + '">\n                      ' + self.FC.htmlEscape(seg.event.title || '') + '\n                    </a>\n                    </td>';
-
-            return '<tr role="button" style="{margin-top: 30px}" tabindex="0" class="' + classes.join(' ') + '">\n                    ' + displayEventTimeTd + '\n                    ' + urlEscapedTd + '\n                    \n                    <td class="fc-list-item-title status-column text-center">\n                      <span class="status status-' + status.className + '">\n                        ' + $translate.instant(status.translation) + '\n                      </span>\n                     </td>\n                    </tr>';
+            return '<tr role="button" style="{margin-top: 30px}" tabindex="0" class="' + classes.join(' ') + '">\n                    ' + displayEventTimeTd + '\n                    ' + urlEscapedTd + '\n                    \n                    <td class="col-xs-2 fc-list-item-title status-column text-center">\n                      <span class="status status-' + status.className + '">\n                        ' + $translate.instant(status.translation) + '\n                      </span>\n                     </td>\n                    </tr>';
         }
     });
 };
@@ -3303,6 +3304,7 @@ angular.module('BBAdminDashboard.check-in.translations').config(['$translateProv
             },
 
             'CHECK_IN_PAGE': {
+                'BLOCKED': 'Blocked',
                 'BOOKED': 'Booked',
                 'CHECK_IN': 'Check in',
                 'CHECKED_IN': 'Checked in',
@@ -3885,22 +3887,6 @@ angular.module('BBAdminDashboard.config-iframe.translations').config(['$translat
 'use strict';
 
 /**
- * @ngdoc filter
- * @name BBAdminDashboard.filters.filter:minutesToString
- * @description
- * Converts a number to the desired format (default is hour minute(HH:mm))
- */
-angular.module('BBAdminDashboard').filter('minutesToString', function () {
-    return function (minutes, format) {
-        if (format == null) {
-            format = 'HH:mm';
-        }
-        return moment(moment.duration(minutes, 'minutes')._data).format(format);
-    };
-});
-'use strict';
-
-/**
  * @ngdoc directive
  * @name BBAdminDashboard.directive:adminIframe
  * @scope
@@ -4421,6 +4407,22 @@ angular.module('BBAdminDashboard').directive('contentHeight', function ($window,
                 scope.$broadcast('content.changed', { height: height });
             };
         }
+    };
+});
+'use strict';
+
+/**
+ * @ngdoc filter
+ * @name BBAdminDashboard.filters.filter:minutesToString
+ * @description
+ * Converts a number to the desired format (default is hour minute(HH:mm))
+ */
+angular.module('BBAdminDashboard').filter('minutesToString', function () {
+    return function (minutes, format) {
+        if (format == null) {
+            format = 'HH:mm';
+        }
+        return moment(moment.duration(minutes, 'minutes')._data).format(format);
     };
 });
 'use strict';
