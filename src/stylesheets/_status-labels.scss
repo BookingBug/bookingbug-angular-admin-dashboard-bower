@@ -1,0 +1,46 @@
+@mixin status-label($color, $font-color: $color){
+  border-color: $color;
+  background-color: #fff !important;
+  color: $font-color !important;
+}
+.status-column{
+  div{
+    text-align: center;
+  }
+}
+.status{
+  $status-blocked: #777;
+  $status-booked: #3c8dbc;
+  $status-no-show: #dd4b39;
+  $status-action: #f39c12;
+  $status-complete: #00a65a;
+  border: 1px solid;
+  text-transform: uppercase;
+  @extend .label;
+
+  &-blocked{
+    @extend .label-default;
+    @include status-label($status-blocked);
+  }
+  &-booked{
+    @extend .label-primary;
+    @include status-label($status-booked);
+  }
+  &-no-show{
+    @extend .label-danger;
+    @include status-label($status-no-show);
+  }
+  &-checked-in{
+    @extend .label-info;
+    @include status-label($status-action, lighten(#333, 25%));
+  }
+  &-being-seen{
+    @extend .label-warning;
+    @include status-label($status-action, lighten(#333, 25%));
+  }
+  &-completed{
+    @extend .label-success;
+    @include status-label($status-complete);
+  }
+
+}
