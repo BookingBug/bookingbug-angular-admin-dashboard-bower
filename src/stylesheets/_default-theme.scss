@@ -3,6 +3,9 @@ $theme-color                       : #81bc00 !default;
 $brand-logo-url-path               : "images/bb-logo.svg" !default;
 $screen-header-collapse            : $screen-xs-max;
 
+// Colours
+$data-cell-dividers: #aaa;
+
 &.skin-default {
 
   .ui-select-bootstrap .ui-select-choices-row.active>a {
@@ -83,7 +86,7 @@ $screen-header-collapse            : $screen-xs-max;
 
     .fc-bgevent {
       background: $brand-primary;
-      opacity: 0.1;
+      opacity: 0.4;
     }
 
     .fc-event {
@@ -111,6 +114,20 @@ $screen-header-collapse            : $screen-xs-max;
       }
       .fc-bg {
         background: none;
+      }
+    }
+
+    .fc-bg {
+        .fc-slats {
+          td {
+            border-color: $data-cell-dividers;
+          }
+        }
+    }
+
+    .fc-rows {
+      td.fc-widget-content {
+        border-bottom-color: $data-cell-dividers;
       }
     }
 
