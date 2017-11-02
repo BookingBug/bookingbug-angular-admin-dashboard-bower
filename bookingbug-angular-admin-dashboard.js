@@ -5391,44 +5391,6 @@ angular.module('BBAdminDashboard.dashboard-iframe.translations').config(['$trans
 })(angular);
 'use strict';
 
-/**
- * @ngdoc overview
- * @name BBAdminDashboard.login.translations
- *
- * @description
- * Translations for the admin login module
- */
-angular.module('BBAdminDashboard.login.translations').config(['$translateProvider', function ($translateProvider) {
-    return $translateProvider.translations('en', {
-        'ADMIN_DASHBOARD': {
-            'LOGIN_PAGE': {
-                'COMPANIES': 'Users',
-                'DEPARTMENTS': 'Companies',
-                'FORGOT_PASSWORD': 'Forgot your password?',
-                'HEADING': 'Login to view your account',
-                'LOGIN': ' Login',
-                'PASSWORD': 'Password',
-                'SITE': 'Site',
-                'SEARCH_COMPANY_PLACEHOLDER': 'Select or search a company in the list...',
-                'SEARCH_DEPARTMENT_PLACEHOLDER': 'Select or search a department in the list...',
-                'SELECT': 'Select',
-                'SELECT_COMPANY': 'Select company',
-                'USERNAME': 'Username',
-                'ERROR_ISSUE_WITH_COMPANY': 'Sorry, there seems to be a problem with the company associated with this account',
-                'ERROR_INCORRECT_CREDS': 'Sorry, either your email or password was incorrect',
-                'ERROR_ACCOUNT_ISSUES': 'Sorry, there seems to be a problem with this account',
-                'ERROR_REQUIRED': 'This field is required.',
-                'SSO_INVALID': 'Access Denied due to incorrect user permissions. Please contact your System Administrator',
-                'SEARCH_CHILD_COMPANIES': 'Search for a company',
-                'NO_RESULTS': 'No results',
-                'COMPANY_REFERENCE_LABEL': 'reference: {{ref}}',
-                'ADMIN_PARENT': 'Administer Parent'
-            }
-        }
-    });
-}]);
-'use strict';
-
 (function (angular) {
 
     /*
@@ -5589,6 +5551,44 @@ angular.module('BBAdminDashboard.login.services').factory('LoggedAdmin', ['Admin
             return deferred.promise;
         }
     };
+}]);
+'use strict';
+
+/**
+ * @ngdoc overview
+ * @name BBAdminDashboard.login.translations
+ *
+ * @description
+ * Translations for the admin login module
+ */
+angular.module('BBAdminDashboard.login.translations').config(['$translateProvider', function ($translateProvider) {
+    return $translateProvider.translations('en', {
+        'ADMIN_DASHBOARD': {
+            'LOGIN_PAGE': {
+                'COMPANIES': 'Users',
+                'DEPARTMENTS': 'Companies',
+                'FORGOT_PASSWORD': 'Forgot your password?',
+                'HEADING': 'Login to view your account',
+                'LOGIN': ' Login',
+                'PASSWORD': 'Password',
+                'SITE': 'Site',
+                'SEARCH_COMPANY_PLACEHOLDER': 'Select or search a company in the list...',
+                'SEARCH_DEPARTMENT_PLACEHOLDER': 'Select or search a department in the list...',
+                'SELECT': 'Select',
+                'SELECT_COMPANY': 'Select company',
+                'USERNAME': 'Username',
+                'ERROR_ISSUE_WITH_COMPANY': 'Sorry, there seems to be a problem with the company associated with this account',
+                'ERROR_INCORRECT_CREDS': 'Sorry, either your email or password was incorrect',
+                'ERROR_ACCOUNT_ISSUES': 'Sorry, there seems to be a problem with this account',
+                'ERROR_REQUIRED': 'This field is required.',
+                'SSO_INVALID': 'Access Denied due to incorrect user permissions. Please contact your System Administrator',
+                'SEARCH_CHILD_COMPANIES': 'Search for a company',
+                'NO_RESULTS': 'No results',
+                'COMPANY_REFERENCE_LABEL': 'reference: {{ref}}',
+                'ADMIN_PARENT': 'Administer Parent'
+            }
+        }
+    });
 }]);
 'use strict';
 
