@@ -1,30 +1,5 @@
 (function() {
   'use strict';
-  angular.module('BBAdminDashboard.calendar.controllers', []);
-
-  angular.module('BBAdminDashboard.calendar.services', []);
-
-  angular.module('BBAdminDashboard.calendar.directives', []);
-
-  angular.module('BBAdminDashboard.calendar.translations', []);
-
-  angular.module('BBAdminDashboard.calendar', ['BBAdminDashboard.calendar.controllers', 'BBAdminDashboard.calendar.services', 'BBAdminDashboard.calendar.directives', 'BBAdminDashboard.calendar.translations']).run([
-    'RuntimeStates', 'AdminCalendarOptions', function(RuntimeStates, AdminCalendarOptions) {
-      if (AdminCalendarOptions.use_default_states) {
-        return RuntimeStates.state('calendar', {
-          parent: AdminCalendarOptions.parent_state,
-          url: "/calendar/:assets",
-          templateUrl: "calendar_page.html",
-          controller: 'CalendarPageCtrl'
-        });
-      }
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
   angular.module('BBAdminDashboard.check-in.controllers', []);
 
   angular.module('BBAdminDashboard.check-in.services', []);
@@ -242,6 +217,35 @@
 
 (function() {
   'use strict';
+  angular.module('BBAdminDashboard.dashboard-iframe.controllers', []);
+
+  angular.module('BBAdminDashboard.dashboard-iframe.services', []);
+
+  angular.module('BBAdminDashboard.dashboard-iframe.directives', []);
+
+  angular.module('BBAdminDashboard.dashboard-iframe.translations', []);
+
+  angular.module('BBAdminDashboard.dashboard-iframe', ['BBAdminDashboard.dashboard-iframe.controllers', 'BBAdminDashboard.dashboard-iframe.services', 'BBAdminDashboard.dashboard-iframe.directives', 'BBAdminDashboard.dashboard-iframe.translations']).run([
+    'RuntimeStates', 'AdminDashboardIframeOptions', function(RuntimeStates, AdminDashboardIframeOptions) {
+      if (AdminDashboardIframeOptions.use_default_states) {
+        return RuntimeStates.state('dashboard', {
+          parent: AdminDashboardIframeOptions.parent_state,
+          url: "/dashboard",
+          controller: "DashboardIframePageCtrl",
+          templateUrl: "admin_dashboard_page.html"
+        }).state('dashboard.page', {
+          url: "/page/:path",
+          controller: 'DashboardSubIframePageCtrl',
+          templateUrl: "iframe_page.html"
+        });
+      }
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
   angular.module('BBAdminDashboard.departments.controllers', []);
 
   angular.module('BBAdminDashboard.departments.services', []);
@@ -298,35 +302,6 @@
         },
         controller: 'DepartmentsPageCtrl'
       });
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-  angular.module('BBAdminDashboard.dashboard-iframe.controllers', []);
-
-  angular.module('BBAdminDashboard.dashboard-iframe.services', []);
-
-  angular.module('BBAdminDashboard.dashboard-iframe.directives', []);
-
-  angular.module('BBAdminDashboard.dashboard-iframe.translations', []);
-
-  angular.module('BBAdminDashboard.dashboard-iframe', ['BBAdminDashboard.dashboard-iframe.controllers', 'BBAdminDashboard.dashboard-iframe.services', 'BBAdminDashboard.dashboard-iframe.directives', 'BBAdminDashboard.dashboard-iframe.translations']).run([
-    'RuntimeStates', 'AdminDashboardIframeOptions', function(RuntimeStates, AdminDashboardIframeOptions) {
-      if (AdminDashboardIframeOptions.use_default_states) {
-        return RuntimeStates.state('dashboard', {
-          parent: AdminDashboardIframeOptions.parent_state,
-          url: "/dashboard",
-          controller: "DashboardIframePageCtrl",
-          templateUrl: "admin_dashboard_page.html"
-        }).state('dashboard.page', {
-          url: "/page/:path",
-          controller: 'DashboardSubIframePageCtrl',
-          templateUrl: "iframe_page.html"
-        });
-      }
     }
   ]);
 
@@ -472,983 +447,24 @@
 
 (function() {
   'use strict';
+  angular.module('BBAdminDashboard.calendar.controllers', []);
 
-  /*
-  * @ngdoc controller
-  * @name BBAdminDashboard.calendar.controllers.controller:CalendarPageCtrl
-   *
-  * @description
-  * Controller for the calendar page
-   */
-  angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPageCtrl', [
-    '$scope', '$state', '$log', function($scope, $state, $log) {
-      var pusher_channel, refetch;
-      $scope.adminlte.side_menu = false;
-      $scope.adminlte.heading = null;
-      pusher_channel = $scope.company.getPusherChannel('bookings');
-      refetch = _.throttle(function(data) {
-        $log.info('== booking push received in bookins == ', data);
-        return $scope.$broadcast('refetchBookings', data);
-      }, 1000, {
-        leading: false
-      });
-      pusher_channel.bind('create', refetch);
-      pusher_channel.bind('update', refetch);
-      return pusher_channel.bind('destroy', refetch);
-    }
-  ]);
+  angular.module('BBAdminDashboard.calendar.services', []);
 
-}).call(this);
+  angular.module('BBAdminDashboard.calendar.directives', []);
 
-(function() {
-  angular.module('BBAdminDashboard.calendar.directives').directive('bbResourceCalendar', function(uiCalendarConfig, AdminCompanyService, $q, ModalForm, BBModel, AdminBookingPopup, AdminMoveBookingPopup, $window, $bbug, ColorPalette, Dialog, $timeout, $compile, $templateCache, PrePostTime, $filter) {
-    var controller, link;
-    controller = function($scope, $attrs, BBAssets, ProcessAssetsFilter, $state, GeneralOptions, AdminCalendarOptions, CalendarEventSources, TitleAssembler) {
-      var dayHasAvailability, filters, getBookingTitle, getCalendarAssets, height, isTimeRangeAvailable, pusherBooking, setTimeToMoment;
-      setTimeToMoment = function(date, time) {
-        var newDate;
-        newDate = moment(time, 'HH:mm');
-        newDate.set({
-          'year': parseInt(date.get('year')),
-          'month': parseInt(date.get('month')),
-          'date': parseInt(date.get('date')),
-          'second': 0
+  angular.module('BBAdminDashboard.calendar.translations', []);
+
+  angular.module('BBAdminDashboard.calendar', ['BBAdminDashboard.calendar.controllers', 'BBAdminDashboard.calendar.services', 'BBAdminDashboard.calendar.directives', 'BBAdminDashboard.calendar.translations']).run([
+    'RuntimeStates', 'AdminCalendarOptions', function(RuntimeStates, AdminCalendarOptions) {
+      if (AdminCalendarOptions.use_default_states) {
+        return RuntimeStates.state('calendar', {
+          parent: AdminCalendarOptions.parent_state,
+          url: "/calendar/:assets",
+          templateUrl: "calendar_page.html",
+          controller: 'CalendarPageCtrl'
         });
-        return newDate;
-      };
-      filters = {
-        requestedAssets: ProcessAssetsFilter($state.params.assets)
-      };
-      $scope.showAll = true;
-      if (filters.requestedAssets.length > 0) {
-        $scope.showAll = false;
       }
-      $scope.eventSources = [
-        {
-          events: function(start, end, timezone, callback) {
-            $scope.loading = true;
-            return $scope.getCompanyPromise().then(function(company) {
-              var options;
-              options = {
-                labelAssembler: $scope.labelAssembler ? $scope.labelAssembler : AdminCalendarOptions.bookings_label_assembler,
-                blockLabelAssembler: $scope.blockLabelAssembler ? $scope.blockLabelAssembler : AdminCalendarOptions.block_label_assembler,
-                externalLabelAssembler: $scope.externalLabelAssembler ? $scope.externalLabelAssembler : AdminCalendarOptions.external_label_assembler,
-                noCache: true,
-                showAll: $scope.showAll,
-                selectedResources: $scope.selectedResources.selected,
-                calendarView: uiCalendarConfig.calendars.resourceCalendar.fullCalendar('getView').type
-              };
-              return CalendarEventSources.getAllCalendarEntries(company, start, end, options).then(function(results) {
-                $scope.loading = false;
-                return callback(results);
-              });
-            });
-          }
-        }
-      ];
-      $scope.options = $scope.$eval($attrs.bbResourceCalendar);
-      $scope.options || ($scope.options = {});
-      height = $scope.options.header_height ? $bbug($window).height() - $scope.options.header_height : 800;
-      if ($scope.options.min_time == null) {
-        $scope.options.min_time = GeneralOptions.calendar_min_time;
-      }
-      if ($scope.options.max_time == null) {
-        $scope.options.max_time = GeneralOptions.calendar_max_time;
-      }
-      if ($scope.options.cal_slot_duration == null) {
-        $scope.options.cal_slot_duration = GeneralOptions.calendar_slot_duration;
-      }
-      $scope.uiCalOptions = {
-        calendar: {
-          schedulerLicenseKey: '0598149132-fcs-1443104297',
-          eventStartEditable: false,
-          eventDurationEditable: false,
-          minTime: $scope.options.min_time,
-          maxTime: $scope.options.max_time,
-          height: height,
-          header: {
-            left: 'today,prev,next',
-            center: 'title',
-            right: 'timelineDay,timelineDayThirty,agendaWeek,month'
-          },
-          defaultView: 'timelineDay',
-          views: {
-            agendaWeek: {
-              slotDuration: $filter('minutesToString')($scope.options.cal_slot_duration),
-              buttonText: 'Week',
-              groupByDateAndResource: false
-            },
-            month: {
-              eventLimit: 5,
-              buttonText: 'Month'
-            },
-            timelineDay: {
-              slotDuration: $filter('minutesToString')($scope.options.cal_slot_duration),
-              eventOverlap: false,
-              slotWidth: 25,
-              buttonText: 'Day (' + $scope.options.cal_slot_duration + 'm)',
-              resourceAreaWidth: '18%'
-            }
-          },
-          resourceGroupField: 'group',
-          resourceLabelText: ' ',
-          selectable: true,
-          lazyFetching: false,
-          columnFormat: AdminCalendarOptions.column_format,
-          resources: function(callback) {
-            return getCalendarAssets(callback);
-          },
-          eventDragStop: function(event, jsEvent, ui, view) {
-            return event.oldResourceIds = event.resourceIds;
-          },
-          eventDrop: function(event, delta, revertFunc) {
-            var end, item_defaults, newAssetId, orginal_resource, start;
-            if (event.person_id && event.resource_id || delta.days() > 0) {
-              start = event.start;
-              end = event.end;
-              item_defaults = {
-                date: start.format('YYYY-MM-DD'),
-                time: start.hour() * 60 + start.minute()
-              };
-              if (event.resourceId) {
-                newAssetId = event.resourceId.substring(0, event.resourceId.indexOf('_'));
-                if (event.resourceId.indexOf('_p') > -1) {
-                  item_defaults.person = newAssetId;
-                  orginal_resource = "" + event.person_id + "_p";
-                } else if (event.resourceId.indexOf('_r') > -1) {
-                  item_defaults.resource = newAssetId;
-                  orginal_resource = "" + event.resource_id + "_r";
-                }
-              }
-              $scope.getCompanyPromise().then(function(company) {
-                return AdminMoveBookingPopup.open({
-                  min_date: setTimeToMoment(start, $scope.options.min_time),
-                  max_date: setTimeToMoment(end, $scope.options.max_time),
-                  from_datetime: moment(start.toISOString()),
-                  to_datetime: moment(end.toISOString()),
-                  item_defaults: item_defaults,
-                  company_id: company.id,
-                  booking_id: event.id,
-                  success: (function(_this) {
-                    return function(model) {
-                      return $scope.refreshBooking(event);
-                    };
-                  })(this),
-                  fail: function() {
-                    return $scope.refreshBooking(event);
-                  }
-                });
-              });
-              return;
-            }
-            return Dialog.confirm({
-              model: event,
-              body: "Are you sure you want to move this booking?",
-              success: (function(_this) {
-                return function(model) {
-                  return $scope.updateBooking(event);
-                };
-              })(this),
-              fail: function() {
-                return revertFunc();
-              }
-            });
-          },
-          eventClick: function(event, jsEvent, view) {
-            if (event.$has('edit')) {
-              return $scope.editBooking(event);
-            }
-          },
-          eventRender: function(event, element) {
-            var service;
-            if (event.status === 3 || event.type === 'external') {
-              element.find('.fc-bg').css({
-                'background-color': '#000'
-              });
-            }
-            service = _.findWhere($scope.services, {
-              id: event.service_id
-            });
-            if (service) {
-              element.css('background-color', service.color);
-              element.css('color', service.textColor);
-              return element.css('border-color', service.textColor);
-            }
-          },
-          eventAfterRender: function(event, elements, view) {
-            if ((event.rendering == null) || event.rendering !== 'background') {
-              return PrePostTime.apply(event, elements, view, $scope);
-            }
-          },
-          select: function(start, end, jsEvent, view, resource) {
-            var item_defaults;
-            if (jsEvent && jsEvent.target.className === 'fc-scroller') {
-              return;
-            }
-            view.calendar.unselect();
-            if (isTimeRangeAvailable(start, end, resource) || (Math.abs(start.diff(end, 'days')) === 1 && dayHasAvailability(start))) {
-              if (Math.abs(start.diff(end, 'days')) > 0) {
-                end.subtract(1, 'days');
-                end = setTimeToMoment(end, $scope.options.max_time);
-              }
-              item_defaults = {
-                date: start.format('YYYY-MM-DD'),
-                time: start.hour() * 60 + start.minute()
-              };
-              if (resource && resource.type === 'person') {
-                item_defaults.person = resource.id.substring(0, resource.id.indexOf('_'));
-              } else if (resource && resource.type === 'resource') {
-                item_defaults.resource = resource.id.substring(0, resource.id.indexOf('_'));
-              }
-              return $scope.getCompanyPromise().then(function(company) {
-                return AdminBookingPopup.open({
-                  min_date: setTimeToMoment(start, $scope.options.min_time),
-                  max_date: setTimeToMoment(end, $scope.options.max_time),
-                  from_datetime: moment(start.toISOString()),
-                  to_datetime: moment(end.toISOString()),
-                  item_defaults: item_defaults,
-                  first_page: "quick_pick",
-                  company_id: company.id
-                });
-              });
-            }
-          },
-          viewRender: function(view, element) {
-            var date;
-            date = uiCalendarConfig.calendars.resourceCalendar.fullCalendar('getDate');
-            return $scope.currentDate = date.format('YYYY-MM-DD') + 'T00:00:00';
-          },
-          eventResize: function(event, delta, revertFunc, jsEvent, ui, view) {
-            event.duration = event.end.diff(event.start, 'minutes');
-            return $scope.updateBooking(event);
-          },
-          loading: function(isLoading, view) {
-            return $scope.calendarLoading = isLoading;
-          }
-        }
-      };
-      isTimeRangeAvailable = function(start, end, resource) {
-        var events;
-        events = uiCalendarConfig.calendars.resourceCalendar.fullCalendar('clientEvents', function(event) {
-          return event.rendering === 'background' && start >= event.start && end <= event.end && ((resource && parseInt(event.resourceId) === parseInt(resource.id)) || !resource);
-        });
-        return events.length > 0;
-      };
-      dayHasAvailability = function(start) {
-        var events;
-        events = uiCalendarConfig.calendars.resourceCalendar.fullCalendar('clientEvents', function(event) {
-          return event.rendering === 'background' && event.start.year() === start.year() && event.start.month() === start.month() && event.start.date() === start.date();
-        });
-        return events.length > 0;
-      };
-      $scope.getCompanyPromise = function() {
-        var defer;
-        defer = $q.defer();
-        if ($scope.company) {
-          defer.resolve($scope.company);
-        } else {
-          AdminCompanyService.query($attrs).then(function(company) {
-            $scope.company = company;
-            return defer.resolve($scope.company);
-          });
-        }
-        return defer.promise;
-      };
-      $scope.assets = [];
-      $scope.selectedResources = {
-        selected: []
-      };
-      $scope.changeSelectedResources = function() {
-        if ($scope.showAll) {
-          $scope.selectedResources.selected = [];
-        }
-        uiCalendarConfig.calendars.resourceCalendar.fullCalendar('refetchResources');
-        return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('refetchEvents');
-      };
-      $scope.getCompanyPromise().then(function(company) {
-        $scope.loading = true;
-        return BBAssets(company).then(function(assets) {
-          var asset, i, len;
-          for (i = 0, len = assets.length; i < len; i++) {
-            asset = assets[i];
-            asset.id = asset.identifier;
-          }
-          $scope.loading = false;
-          $scope.assets = assets;
-          if (filters.requestedAssets.length > 0) {
-            angular.forEach($scope.assets, function(asset) {
-              var isInArray;
-              isInArray = _.find(filters.requestedAssets, function(id) {
-                return id === asset.id;
-              });
-              if (typeof isInArray !== 'undefined') {
-                return $scope.selectedResources.selected.push(asset);
-              }
-            });
-            return $scope.changeSelectedResources();
-          }
-        });
-      });
-      $scope.$watch('selectedResources.selected', function(newValue, oldValue) {
-        var assets, params;
-        if (newValue !== oldValue) {
-          assets = [];
-          angular.forEach(newValue, function(asset) {
-            return assets.push(asset.id);
-          });
-          params = $state.params;
-          params.assets = assets.join();
-          return $state.go($state.current.name, params, {
-            notify: false,
-            reload: false
-          });
-        }
-      });
-      getCalendarAssets = function(callback) {
-        $scope.loading = true;
-        return $scope.getCompanyPromise().then(function(company) {
-          if ($scope.showAll) {
-            return BBAssets(company).then(function(assets) {
-              var asset, i, len;
-              for (i = 0, len = assets.length; i < len; i++) {
-                asset = assets[i];
-                asset.id = asset.identifier;
-              }
-              $scope.loading = false;
-              return callback(assets);
-            });
-          } else {
-            $scope.loading = false;
-            return callback($scope.selectedResources.selected);
-          }
-        });
-      };
-      getBookingTitle = function(booking) {
-        var blockLabelAssembler, labelAssembler;
-        labelAssembler = $scope.labelAssembler ? $scope.labelAssembler : AdminCalendarOptions.bookings_label_assembler;
-        blockLabelAssembler = $scope.blockLabelAssembler ? $scope.blockLabelAssembler : AdminCalendarOptions.block_label_assembler;
-        if (booking.status !== 3 && labelAssembler) {
-          return TitleAssembler.getTitle(booking, labelAssembler);
-        } else if (booking.status === 3 && blockLabelAssembler) {
-          return TitleAssembler.getTitle(booking, blockLabelAssembler);
-        }
-        return booking.title;
-      };
-      $scope.refreshBooking = function(booking) {
-        return booking.$refetch().then(function(response) {
-          booking.resourceIds = [];
-          booking.resourceId = null;
-          if (booking.person_id != null) {
-            booking.resourceIds.push(booking.person_id + '_p');
-          }
-          if (booking.resource_id != null) {
-            booking.resourceIds.push(booking.resource_id + '_r');
-          }
-          booking.title = getBookingTitle(booking);
-          return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('updateEvent', booking);
-        });
-      };
-      $scope.updateBooking = function(booking) {
-        var newAssetId;
-        newAssetId = booking.resourceId.substring(0, booking.resourceId.indexOf('_'));
-        if (booking.resourceId.indexOf('_p') > -1) {
-          booking.person_id = newAssetId;
-        } else if (booking.resourceId.indexOf('_r') > -1) {
-          booking.resource_id = newAssetId;
-        }
-        return booking.$update().then(function(response) {
-          booking.resourceIds = [];
-          booking.resourceId = null;
-          if (booking.person_id != null) {
-            booking.resourceIds.push(booking.person_id + '_p');
-          }
-          if (booking.resource_id != null) {
-            booking.resourceIds.push(booking.resource_id + '_r');
-          }
-          booking.title = getBookingTitle(booking);
-          return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('updateEvent', booking);
-        });
-      };
-      $scope.editBooking = function(booking) {
-        var templateUrl, title;
-        if (booking.status === 3) {
-          templateUrl = 'edit_block_modal_form.html';
-          title = 'Edit Block';
-        } else {
-          templateUrl = 'edit_booking_modal_form.html';
-          title = 'Edit Booking';
-        }
-        return ModalForm.edit({
-          templateUrl: templateUrl,
-          model: booking,
-          title: title,
-          success: (function(_this) {
-            return function(response) {
-              var item_defaults;
-              if (typeof response === 'string') {
-                if (response === "move") {
-                  item_defaults = {
-                    person: booking.person_id,
-                    resource: booking.resource_id
-                  };
-                  $scope.getCompanyPromise().then(function(company) {
-                    return AdminMoveBookingPopup.open({
-                      item_defaults: item_defaults,
-                      company_id: company.id,
-                      booking_id: booking.id,
-                      success: (function(_this) {
-                        return function(model) {
-                          return $scope.refreshBooking(booking);
-                        };
-                      })(this),
-                      fail: function() {
-                        return $scope.refreshBooking(booking);
-                      }
-                    });
-                  });
-                }
-              }
-              if (response.is_cancelled) {
-                return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('removeEvents', [response.id]);
-              } else {
-                booking.title = getBookingTitle(booking);
-                return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('updateEvent', booking);
-              }
-            };
-          })(this)
-        });
-      };
-      pusherBooking = function(res) {
-        var booking;
-        if (res.id != null) {
-          booking = _.first(uiCalendarConfig.calendars.resourceCalendar.fullCalendar('clientEvents', res.id));
-          if (booking && booking.$refetch) {
-            return booking.$refetch().then(function() {
-              booking.title = getBookingTitle(booking);
-              return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('updateEvent', booking);
-            });
-          } else {
-            return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('refetchEvents');
-          }
-        }
-      };
-      $scope.pusherSubscribe = (function(_this) {
-        return function() {
-          var pusher_channel;
-          if ($scope.company) {
-            pusher_channel = $scope.company.getPusherChannel('bookings');
-            pusher_channel.bind('create', pusherBooking);
-            pusher_channel.bind('update', pusherBooking);
-            return pusher_channel.bind('destroy', pusherBooking);
-          }
-        };
-      })(this);
-      $scope.openDatePicker = function($event) {
-        $event.preventDefault();
-        $event.stopPropagation();
-        return $scope.datePickerOpened = true;
-      };
-      $scope.updateDate = function(date) {
-        if (uiCalendarConfig.calendars.resourceCalendar) {
-          return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('gotoDate', date);
-        }
-      };
-      $scope.lazyUpdateDate = _.debounce($scope.updateDate, 400);
-      $scope.datePickerOptions = {
-        showButtonBar: false
-      };
-      $scope.$watch('currentDate', function(newDate, oldDate) {
-        if (newDate !== oldDate) {
-          return $scope.lazyUpdateDate(newDate);
-        }
-      });
-      $scope.$on('refetchBookings', function() {
-        return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('refetchEvents');
-      });
-      return $scope.$on('newCheckout', function() {
-        return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('refetchEvents');
-      });
-    };
-    link = function(scope, element, attrs) {
-      scope.getCompanyPromise().then(function(company) {
-        return company.$get('services').then(function(collection) {
-          return collection.$get('services').then(function(services) {
-            var s;
-            scope.services = (function() {
-              var i, len, results1;
-              results1 = [];
-              for (i = 0, len = services.length; i < len; i++) {
-                s = services[i];
-                results1.push(new BBModel.Admin.Service(s));
-              }
-              return results1;
-            })();
-            return ColorPalette.setColors(scope.services);
-          });
-        });
-      });
-      scope.getCompanyPromise().then(function(company) {
-        return scope.pusherSubscribe();
-      });
-      return $timeout(function() {
-        var datePickerElement, toolbarElement, toolbarLeftElement, uiCalElement;
-        uiCalElement = angular.element(document.getElementById('uicalendar'));
-        toolbarElement = angular.element(uiCalElement.children()[0]);
-        toolbarLeftElement = angular.element(toolbarElement.children()[0]);
-        datePickerElement = $compile($templateCache.get('calendar_date_picker.html'))(scope);
-        return toolbarLeftElement.append(datePickerElement);
-      }, 0);
-    };
-    return {
-      controller: controller,
-      link: link,
-      templateUrl: 'resource_calendar_main.html',
-      replace: true,
-      scope: {
-        labelAssembler: '@',
-        blockLabelAssembler: '@',
-        externalLabelAssembler: '@'
-      }
-    };
-  });
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc service
-  * @name BBAdminDashboard.calendar.services.service:AdminCalendarOptions
-  *
-  * @description
-  * Returns a set of admin calendar configuration options
-   */
-
-  /*
-  * @ngdoc service
-  * @name BBAdminDashboard.calendar.services.service:AdminCalendarOptionsProvider
-  *
-  * @description
-  * Provider
-  *
-  * @example
-    <example>
-    angular.module('ExampleModule').config ['AdminCalendarOptionsProvider', (AdminCalendarOptionsProvider) ->
-      AdminCalendarOptionsProvider.setOption('option', 'value')
-    ]
-    </example>
-   */
-  angular.module('BBAdminDashboard.calendar.services').provider('AdminCalendarOptions', [
-    function() {
-      var options;
-      options = {
-        use_default_states: true,
-        show_in_navigation: true,
-        parent_state: 'root',
-        column_format: null,
-        bookings_label_assembler: '{service_name} - {client_name}',
-        block_label_assembler: 'Blocked',
-        external_label_assembler: null
-      };
-      this.setOption = function(option, value) {
-        if (options.hasOwnProperty(option)) {
-          options[option] = value;
-        }
-      };
-      this.getOption = function(option) {
-        if (options.hasOwnProperty(option)) {
-          return options[option];
-        }
-      };
-      this.$get = function() {
-        return options;
-      };
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc service
-  * @name BBAdminDashboard.calendar.services.service:CalendarEventSources
-  *
-  * @description
-  * This services exposes methods to get all event-type information to be shown in the calendar
-   */
-  angular.module('BBAdminDashboard.calendar.services').factory('CalendarEventSources', [
-    '$exceptionHandler', '$q', 'TitleAssembler', 'AdminBookingService', 'AdminScheduleService', function($exceptionHandler, $q, TitleAssembler, AdminBookingService, AdminScheduleService) {
-      var bookingBelongsToSelectedResources;
-      bookingBelongsToSelectedResources = function(resources, booking) {
-        var belongs;
-        belongs = false;
-        _.each(resources, function(asset) {
-          if (_.contains(booking.resourceIds, asset.id)) {
-            return belongs = true;
-          }
-        });
-        return belongs;
-      };
-      return {
-
-        /*
-        * @ngdoc method
-        * @name getBookingsAndBlocks
-        * @methodOf BBAdminDashboard.calendar.services.service:CalendarEventSources
-        * @description
-        * Returns all bookings and blocks for a certain period of time,
-        * filtered by a list of resources if one is provided through the options
-        *
-        * @param {object} company  The company to be queried for bookings and blocks
-        * @param {Moment} start    Moment object containing the start of the requested period
-        * @param {Moment} end      Moment object containing the end of the requested period
-        * @param {object} options  Object which contains usefull flags and params
-                                   The relevant ones for this method are:
-                                   - {boolean} noCache              skips the cache
-                                   - {boolean} showAll              skip the filter by resource filter
-                                   - {array}   selectedResources    array of selected resource to filter against
-                                   - {string}  labelAssembler       the pattern to use for bookings (see TitleAssembler)
-                                   - {string}  blockLabelAssembler  the pattern to use for blocks (see TitleAssembler)
-        
-        * @returns {Promise} Promise which once resolved returns an array of bookings and blocks
-         */
-        getBookingsAndBlocks: function(company, start, end, options) {
-          var deferred, params;
-          if (options == null) {
-            options = {};
-          }
-          deferred = $q.defer();
-          params = {
-            company: company,
-            start_date: start.format('YYYY-MM-DD'),
-            end_date: end.format('YYYY-MM-DD'),
-            skip_cache: (options.noCache != null) && options.noCache ? true : false
-          };
-          AdminBookingService.query(params).then(function(bookings) {
-            var booking, filteredBookings, i, len, ref;
-            filteredBookings = [];
-            ref = bookings.items;
-            for (i = 0, len = ref.length; i < len; i++) {
-              booking = ref[i];
-              booking.resourceIds = [];
-              if (booking.person_id != null) {
-                booking.resourceIds.push(booking.person_id + '_p');
-              }
-              if (booking.resource_id != null) {
-                booking.resourceIds.push(booking.resource_id + '_r');
-              }
-              if ((options.showAll == null) || ((options.showAll != null) && options.showAll) || bookingBelongsToSelectedResources(options.selectedResources, booking)) {
-                booking.useFullTime();
-                if (booking.$has('edit')) {
-                  booking.startEditable = true;
-                }
-                if (booking.status !== 3 && (options.labelAssembler != null)) {
-                  booking.title = TitleAssembler.getTitle(booking, options.labelAssembler);
-                } else if (booking.status === 3 && (options.blockLabelAssembler != null)) {
-                  booking.title = TitleAssembler.getTitle(booking, options.blockLabelAssembler);
-                }
-                filteredBookings.push(booking);
-              }
-            }
-            return deferred.resolve(filteredBookings);
-          }, function(err) {
-            return deferred.reject(err);
-          });
-          return deferred.promise;
-        },
-
-        /*
-        * @ngdoc method
-        * @name getExternalBookings
-        * @methodOf BBAdminDashboard.calendar.services.service:CalendarEventSources
-        * @description
-        * Returns all external bookings for a certain period of time
-        *
-        * @param {object} company  The company to be queried for bookings and blocks
-        * @param {Moment} start    Moment object containing the start of the requested period
-        * @param {Moment} end      Moment object containing the end of the requested period
-        * @param {object} options  Object which contains usefull flags and params
-                                   The relevant ones for this method are:
-                                   - {string}  externalLabelAssembler  the pattern to use for the title (see TitleAssembler)
-        
-        * @returns {Promise} Promise which once resolved returns an array of bookings
-         */
-        getExternalBookings: function(company, start, end, options) {
-          var deferred, params;
-          if (options == null) {
-            options = {};
-          }
-          deferred = $q.defer();
-          if (company.$has('external_bookings')) {
-            params = {
-              start: start.format(),
-              end: end.format(),
-              no_cache: (options.noCache != null) && options.noCache ? true : false
-            };
-            company.$get('external_bookings', params).then(function(collection) {
-              return collection.$get('external_bookings').then(function(bookings) {
-                var booking, i, len;
-                for (i = 0, len = bookings.length; i < len; i++) {
-                  booking = bookings[i];
-                  booking.resourceIds = [];
-                  if (booking.person_id != null) {
-                    booking.resourceIds.push(booking.person_id + '_p');
-                  }
-                  if (booking.resource_id != null) {
-                    booking.resourceIds.push(booking.resource_id + '_r');
-                  }
-                  if (options.externalLabelAssembler != null) {
-                    booking.title = TitleAssembler.getTitle(booking, options.externalLabelAssembler);
-                  }
-                  booking.type = 'external';
-                }
-                return deferred.resolve(bookings);
-              }, function(err) {
-                return deferred.reject(err);
-              });
-            }, function(err) {
-              return deferred.reject(err);
-            });
-          } else {
-            deferred.resolve([]);
-          }
-          return deferred.promise;
-        },
-
-        /*
-        * @ngdoc method
-        * @name getAvailabilityBackground
-        * @methodOf BBAdminDashboard.calendar.services.service:CalendarEventSources
-        * @description
-        * Returns all availability for a certain period of time,
-        * filtered by a list of resources if one is provided through the options,
-        * and grouped per calendar day if in week or month view
-        *
-        * @param {object} company  The company to be queried for bookings and blocks
-        * @param {Moment} start    Moment object containing the start of the requested period
-        * @param {Moment} end      Moment object containing the end of the requested period
-        * @param {object} options  Object which contains usefull flags and params
-                                   The relevant ones for this method are:
-                                   - {boolean} noCache              skips the cache
-                                   - {boolean} showAll              skip the filter by resource filter
-                                   - {array}   selectedResources    array of selected resource to filter against
-                                   - {string}  calendarView         identifies which view the calendar is curently displaying (enum: 'timelineDay', 'agendaWeek', 'month')
-        
-        * @returns {Promise} Promise which once resolved returns an array of availability background events
-         */
-        getAvailabilityBackground: function(company, start, end, options) {
-          var deferred;
-          if (options == null) {
-            options = {};
-          }
-          deferred = $q.defer();
-          AdminScheduleService.getAssetsScheduleEvents(company, start, end, !options.showAll, options.selectedResources).then(function(availabilities) {
-            var overAllAvailabilities;
-            if (options.calendarView === 'timelineDay') {
-              return deferred.resolve(availabilities);
-            } else {
-              overAllAvailabilities = [];
-              angular.forEach(availabilities, function(availability, index) {
-                var dayAvailability;
-                dayAvailability = _.filter(overAllAvailabilities, function(overAllAvailability) {
-                  if (moment(overAllAvailability.start).dayOfYear() === moment(availability.start).dayOfYear()) {
-                    return true;
-                  }
-                  return false;
-                });
-                if (dayAvailability.length > 0) {
-                  if (moment(availability.start).unix() < moment(dayAvailability[0].start).unix()) {
-                    dayAvailability[0].start = availability.start;
-                  }
-                  if (moment(availability.end).unix() > moment(dayAvailability[0].end).unix()) {
-                    return dayAvailability[0].end = availability.end;
-                  }
-                } else {
-                  return overAllAvailabilities.push({
-                    start: availability.start,
-                    end: availability.end,
-                    rendering: "background",
-                    title: "Joined availability " + moment(availability.start).format('YYYY-MM-DD'),
-                    allDay: options.calendarView === 'month' ? true : false
-                  });
-                }
-              });
-              return deferred.resolve(overAllAvailabilities);
-            }
-          }, function(err) {
-            return deferred.reject(err);
-          });
-          return deferred.promise;
-        },
-
-        /*
-        * @ngdoc method
-        * @name getAllCalendarEntries
-        * @methodOf BBAdminDashboard.calendar.services.service:CalendarEventSources
-        * @description
-        * Returns all event type information to be displayed in the calendar
-        *
-        * @param {object} company  The company to be queried for bookings and blocks
-        * @param {Moment} start    Moment object containing the start of the requested period
-        * @param {Moment} end      Moment object containing the end of the requested period
-        * @param {object} options  Object which contains usefull flags and params (see above methodds for details)
-        *
-        * @returns {Promise} Promise which once resolved returns an array of availability background events
-         */
-        getAllCalendarEntries: function(company, start, end, options) {
-          var deferred, promises;
-          if (options == null) {
-            options = {};
-          }
-          deferred = $q.defer();
-          promises = [this.getBookingsAndBlocks(company, start, end, options), this.getExternalBookings(company, start, end, options), this.getAvailabilityBackground(company, start, end, options)];
-          $q.all(promises).then(function(resolutions) {
-            var allResults;
-            allResults = [];
-            angular.forEach(resolutions, function(results, index) {
-              return allResults = allResults.concat(results);
-            });
-            return deferred.resolve(allResults);
-          }, function(err) {
-            return deferred.reject(err);
-          });
-          return deferred.promise;
-        }
-      };
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  angular.module('BBAdminDashboard.calendar.services').factory("PrePostTime", [
-    '$compile', function($compile) {
-      return {
-        apply: function(event, elements, view, scope) {
-          var contentDiv, e, element, i, len, post, postHeight, postWidth, pre, preHeight, preWidth, results, totalDuration;
-          results = [];
-          for (i = 0, len = elements.length; i < len; i++) {
-            e = elements[i];
-            element = angular.element(e);
-            totalDuration = event.duration + event.pre_time + event.post_time;
-            if (event.pre_time) {
-              switch (view.name) {
-                case "agendaWeek":
-                case "agendaDay":
-                  preHeight = event.pre_time * (element.height() + 2) / totalDuration;
-                  pre = $compile("<div class='pre' style='height:" + preHeight + "px'></div>")(scope);
-                  element.prepend(pre);
-                  break;
-                case "timelineDay":
-                  contentDiv = element.children()[0];
-                  preWidth = event.pre_time * (element.width() + 2) / totalDuration;
-                  pre = $compile("<div class='pre' style='width:" + preWidth + "px'></div>")(scope);
-                  element.prepend(pre);
-                  angular.element(contentDiv).css("padding-left", preWidth + "px");
-              }
-            }
-            if (event.post_time) {
-              switch (view.name) {
-                case "agendaWeek":
-                case "agendaDay":
-                  postHeight = event.post_time * (element.height() + 2) / totalDuration;
-                  post = $compile("<div class='post' style='height:" + postHeight + "px'></div>")(scope);
-                  results.push(element.append(post));
-                  break;
-                case "timelineDay":
-                  postWidth = event.post_time * (element.width() + 2) / totalDuration;
-                  post = $compile("<div class='post' style='width:" + postWidth + "px'></div>")(scope);
-                  results.push(element.append(post));
-                  break;
-                default:
-                  results.push(void 0);
-              }
-            } else {
-              results.push(void 0);
-            }
-          }
-          return results;
-        }
-      };
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc service
-  * @name BBAdminDashboard.calendar.services.service:TitleAssembler
-  *
-  * @description
-  * Assembles a string based on a pattern and an object provided according to the following rules
-  * ex: '{service_name} - {client_name} - {created_at|date:shortTime}'
-  * everything outside  {} will remain as is, inside the {} the first param (required) is the property name
-  * second after the '|' (optional) is the filter and third after the ':' (optional) are the options for filter
-  * if the requested property is not part of the given object it will be skipped
-   */
-  angular.module('BBAdminDashboard.calendar.services').factory('TitleAssembler', [
-    function() {
-      var expression;
-      expression = new RegExp("\\{([a-zA-z_-]+)\\|?([a-zA-z_-]+)?:?([a-zA-z0-9{}_-]+)?\\}", "g");
-      return {
-        getTitle: function(object, pattern) {
-          var i, index, label, len, match, parts, patternMatches, replaceWith;
-          if ((object == null) || (pattern == null)) {
-            return null;
-          }
-          patternMatches = pattern.match(expression);
-          if ((patternMatches == null) || patternMatches.length === 0) {
-            return pattern;
-          }
-          label = pattern;
-          for (index = i = 0, len = patternMatches.length; i < len; index = ++i) {
-            match = patternMatches[index];
-            parts = match.split(expression);
-            parts.splice(0, 1);
-            parts.pop();
-            if (object.hasOwnProperty(parts[0])) {
-              replaceWith = object[parts[0]];
-              if ((parts[1] != null) && ($filter(parts[1]) != null)) {
-                if (parts[2] != null) {
-                  replaceWith = $filter(parts[1])(replaceWith, $scope.$eval(parts[2]));
-                } else {
-                  replaceWith = $filter(parts[1])(replaceWith);
-                }
-              }
-              label = label.replace(match, replaceWith);
-            } else {
-              label = label.replace(match, '');
-            }
-          }
-          return label;
-        }
-      };
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc overview
-  * @name BBAdminDashboard.calendar.translations
-   *
-  * @description
-  * Translations for the admin calendar module
-   */
-  angular.module('BBAdminDashboard.calendar.translations').config([
-    '$translateProvider', function($translateProvider) {
-      return $translateProvider.translations('en', {
-        'TEXT_2': 'Hello there!'
-      });
     }
   ]);
 
@@ -2551,105 +1567,6 @@
 
   /*
   * @ngdoc controller
-  * @name BBAdminDashboard.departments.controllers.controller:DepartmentsPageCtrl
-   *
-  * @description
-  * Controller for the departments page
-   */
-  angular.module('BBAdminDashboard.departments.controllers').controller('DepartmentsPageCtrl', [
-    '$scope', 'company', 'departments', 'AdminLoginService', '$state', '$timeout', function($scope, company, departments, AdminLoginService, $state, $timeout) {
-      $scope.company = company;
-      $scope.departments = departments;
-      return $scope.selectDepartment = function(department) {
-        return AdminLoginService.setCompany(department.id).then(function(user) {
-          return $timeout(function() {
-            return $state.go('calendar', {}, {
-              reload: true
-            });
-          });
-        });
-      };
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc service
-  * @name BBAdminDashboard.departments.services.service:AdminDepartmentsOptions
-  *
-  * @description
-  * Returns a set of admin calendar configuration options
-   */
-
-  /*
-  * @ngdoc service
-  * @name BBAdminDashboard.departments.services.service:AdminDepartmentsOptionsProvider
-  *
-  * @description
-  * Provider
-  *
-  * @example
-    <example>
-    angular.module('ExampleModule').config ['AdminDepartmentsOptionsProvider', (AdminDepartmentsOptionsProvider) ->
-      AdminDepartmentsOptionsProvider.setOption('option', 'value')
-    ]
-    </example>
-   */
-  angular.module('BBAdminDashboard.departments.services').provider('AdminDepartmentsOptions', [
-    function() {
-      var options;
-      options = {
-        use_default_states: true,
-        show_in_navigation: true,
-        parent_state: 'bb-admin'
-      };
-      this.setOption = function(option, value) {
-        if (options.hasOwnProperty(option)) {
-          options[option] = value;
-        }
-      };
-      this.getOption = function(option) {
-        if (options.hasOwnProperty(option)) {
-          return options[option];
-        }
-      };
-      this.$get = function() {
-        return options;
-      };
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc overview
-  * @name BBAdminDashboard.departments.translations
-   *
-  * @description
-  * Translations for the admin departments module
-   */
-  angular.module('BBAdminDashboard.departments.translations').config([
-    '$translateProvider', function($translateProvider) {
-      return $translateProvider.translations('en', {
-        'TEXT_1': 'Hello here!'
-      });
-    }
-  ]);
-
-}).call(this);
-
-(function() {
-  'use strict';
-
-  /*
-  * @ngdoc controller
   * @name BBAdminDashboard.dashboard-iframe.controllers.controller:DashboardIframePageCtrl
    *
   * @description
@@ -2763,6 +1680,105 @@
   * Translations for the admin dashboard-iframe module
    */
   angular.module('BBAdminDashboard.dashboard-iframe.translations').config([
+    '$translateProvider', function($translateProvider) {
+      return $translateProvider.translations('en', {
+        'TEXT_1': 'Hello here!'
+      });
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.departments.controllers.controller:DepartmentsPageCtrl
+   *
+  * @description
+  * Controller for the departments page
+   */
+  angular.module('BBAdminDashboard.departments.controllers').controller('DepartmentsPageCtrl', [
+    '$scope', 'company', 'departments', 'AdminLoginService', '$state', '$timeout', function($scope, company, departments, AdminLoginService, $state, $timeout) {
+      $scope.company = company;
+      $scope.departments = departments;
+      return $scope.selectDepartment = function(department) {
+        return AdminLoginService.setCompany(department.id).then(function(user) {
+          return $timeout(function() {
+            return $state.go('calendar', {}, {
+              reload: true
+            });
+          });
+        });
+      };
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc service
+  * @name BBAdminDashboard.departments.services.service:AdminDepartmentsOptions
+  *
+  * @description
+  * Returns a set of admin calendar configuration options
+   */
+
+  /*
+  * @ngdoc service
+  * @name BBAdminDashboard.departments.services.service:AdminDepartmentsOptionsProvider
+  *
+  * @description
+  * Provider
+  *
+  * @example
+    <example>
+    angular.module('ExampleModule').config ['AdminDepartmentsOptionsProvider', (AdminDepartmentsOptionsProvider) ->
+      AdminDepartmentsOptionsProvider.setOption('option', 'value')
+    ]
+    </example>
+   */
+  angular.module('BBAdminDashboard.departments.services').provider('AdminDepartmentsOptions', [
+    function() {
+      var options;
+      options = {
+        use_default_states: true,
+        show_in_navigation: true,
+        parent_state: 'bb-admin'
+      };
+      this.setOption = function(option, value) {
+        if (options.hasOwnProperty(option)) {
+          options[option] = value;
+        }
+      };
+      this.getOption = function(option) {
+        if (options.hasOwnProperty(option)) {
+          return options[option];
+        }
+      };
+      this.$get = function() {
+        return options;
+      };
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc overview
+  * @name BBAdminDashboard.departments.translations
+   *
+  * @description
+  * Translations for the admin departments module
+   */
+  angular.module('BBAdminDashboard.departments.translations').config([
     '$translateProvider', function($translateProvider) {
       return $translateProvider.translations('en', {
         'TEXT_1': 'Hello here!'
@@ -3270,6 +2286,990 @@
     '$translateProvider', function($translateProvider) {
       return $translateProvider.translations('en', {
         'TEXT_1': 'Hello here!'
+      });
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc controller
+  * @name BBAdminDashboard.calendar.controllers.controller:CalendarPageCtrl
+   *
+  * @description
+  * Controller for the calendar page
+   */
+  angular.module('BBAdminDashboard.calendar.controllers').controller('CalendarPageCtrl', [
+    '$scope', '$state', '$log', function($scope, $state, $log) {
+      var pusher_channel, refetch;
+      $scope.adminlte.side_menu = false;
+      $scope.adminlte.heading = null;
+      pusher_channel = $scope.company.getPusherChannel('bookings');
+      refetch = _.throttle(function(data) {
+        $log.info('== booking push received in bookins == ', data);
+        return $scope.$broadcast('refetchBookings', data);
+      }, 1000, {
+        leading: false
+      });
+      pusher_channel.bind('create', refetch);
+      pusher_channel.bind('update', refetch);
+      return pusher_channel.bind('destroy', refetch);
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  angular.module('BBAdminDashboard.calendar.directives').directive('bbResourceCalendar', function(uiCalendarConfig, AdminCompanyService, $q, ModalForm, BBModel, AdminBookingPopup, AdminMoveBookingPopup, $window, $bbug, ColorPalette, Dialog, $timeout, $compile, $templateCache, PrePostTime, $filter) {
+    var controller, link;
+    controller = function($scope, $attrs, BBAssets, ProcessAssetsFilter, $state, GeneralOptions, AdminCalendarOptions, CalendarEventSources, TitleAssembler) {
+      var dayHasAvailability, filters, getBookingTitle, getCalendarAssets, height, isTimeRangeAvailable, pusherBooking, setTimeToMoment;
+      setTimeToMoment = function(date, time) {
+        var newDate;
+        newDate = moment(time, 'HH:mm');
+        newDate.set({
+          'year': parseInt(date.get('year')),
+          'month': parseInt(date.get('month')),
+          'date': parseInt(date.get('date')),
+          'second': 0
+        });
+        return newDate;
+      };
+      filters = {
+        requestedAssets: ProcessAssetsFilter($state.params.assets)
+      };
+      $scope.showAll = true;
+      if (filters.requestedAssets.length > 0) {
+        $scope.showAll = false;
+      }
+      $scope.eventSources = [
+        {
+          events: function(start, end, timezone, callback) {
+            $scope.loading = true;
+            return $scope.getCompanyPromise().then(function(company) {
+              var options;
+              options = {
+                labelAssembler: $scope.labelAssembler ? $scope.labelAssembler : AdminCalendarOptions.bookings_label_assembler,
+                blockLabelAssembler: $scope.blockLabelAssembler ? $scope.blockLabelAssembler : AdminCalendarOptions.block_label_assembler,
+                externalLabelAssembler: $scope.externalLabelAssembler ? $scope.externalLabelAssembler : AdminCalendarOptions.external_label_assembler,
+                noCache: true,
+                showAll: $scope.showAll,
+                selectedResources: $scope.selectedResources.selected,
+                calendarView: uiCalendarConfig.calendars.resourceCalendar.fullCalendar('getView').type
+              };
+              return CalendarEventSources.getAllCalendarEntries(company, start, end, options).then(function(results) {
+                $scope.loading = false;
+                return callback(results);
+              });
+            });
+          }
+        }
+      ];
+      $scope.options = $scope.$eval($attrs.bbResourceCalendar);
+      $scope.options || ($scope.options = {});
+      height = $scope.options.header_height ? $bbug($window).height() - $scope.options.header_height : 800;
+      if ($scope.options.min_time == null) {
+        $scope.options.min_time = GeneralOptions.calendar_min_time;
+      }
+      if ($scope.options.max_time == null) {
+        $scope.options.max_time = GeneralOptions.calendar_max_time;
+      }
+      if ($scope.options.cal_slot_duration == null) {
+        $scope.options.cal_slot_duration = GeneralOptions.calendar_slot_duration;
+      }
+      $scope.uiCalOptions = {
+        calendar: {
+          schedulerLicenseKey: '0598149132-fcs-1443104297',
+          eventStartEditable: false,
+          eventDurationEditable: false,
+          minTime: $scope.options.min_time,
+          maxTime: $scope.options.max_time,
+          height: height,
+          header: {
+            left: 'today,prev,next',
+            center: 'title',
+            right: 'timelineDay,timelineDayThirty,agendaWeek,month'
+          },
+          defaultView: 'timelineDay',
+          views: {
+            agendaWeek: {
+              slotDuration: $filter('minutesToString')($scope.options.cal_slot_duration),
+              buttonText: 'Week',
+              groupByDateAndResource: false
+            },
+            month: {
+              eventLimit: 5,
+              buttonText: 'Month'
+            },
+            timelineDay: {
+              slotDuration: $filter('minutesToString')($scope.options.cal_slot_duration),
+              eventOverlap: false,
+              slotWidth: 25,
+              buttonText: 'Day (' + $scope.options.cal_slot_duration + 'm)',
+              resourceAreaWidth: '18%'
+            }
+          },
+          resourceGroupField: 'group',
+          resourceLabelText: ' ',
+          selectable: true,
+          lazyFetching: false,
+          columnFormat: AdminCalendarOptions.column_format,
+          resources: function(callback) {
+            return getCalendarAssets(callback);
+          },
+          eventDragStop: function(event, jsEvent, ui, view) {
+            return event.oldResourceIds = event.resourceIds;
+          },
+          eventDrop: function(event, delta, revertFunc) {
+            var end, item_defaults, newAssetId, orginal_resource, start;
+            if (event.person_id && event.resource_id || delta.days() > 0) {
+              start = event.start;
+              end = event.end;
+              item_defaults = {
+                date: start.format('YYYY-MM-DD'),
+                time: start.hour() * 60 + start.minute()
+              };
+              if (event.resourceId) {
+                newAssetId = event.resourceId.substring(0, event.resourceId.indexOf('_'));
+                if (event.resourceId.indexOf('_p') > -1) {
+                  item_defaults.person = newAssetId;
+                  orginal_resource = "" + event.person_id + "_p";
+                } else if (event.resourceId.indexOf('_r') > -1) {
+                  item_defaults.resource = newAssetId;
+                  orginal_resource = "" + event.resource_id + "_r";
+                }
+              }
+              $scope.getCompanyPromise().then(function(company) {
+                return AdminMoveBookingPopup.open({
+                  min_date: setTimeToMoment(start, $scope.options.min_time),
+                  max_date: setTimeToMoment(end, $scope.options.max_time),
+                  from_datetime: moment(start.toISOString()),
+                  to_datetime: moment(end.toISOString()),
+                  item_defaults: item_defaults,
+                  company_id: company.id,
+                  booking_id: event.id,
+                  success: (function(_this) {
+                    return function(model) {
+                      return $scope.refreshBooking(event);
+                    };
+                  })(this),
+                  fail: function() {
+                    return $scope.refreshBooking(event);
+                  }
+                });
+              });
+              return;
+            }
+            return Dialog.confirm({
+              model: event,
+              body: "Are you sure you want to move this booking?",
+              success: (function(_this) {
+                return function(model) {
+                  return $scope.updateBooking(event);
+                };
+              })(this),
+              fail: function() {
+                return revertFunc();
+              }
+            });
+          },
+          eventClick: function(event, jsEvent, view) {
+            if (event.$has('edit')) {
+              return $scope.editBooking(event);
+            }
+          },
+          eventRender: function(event, element) {
+            var service;
+            if (event.status === 3 || event.type === 'external') {
+              element.find('.fc-bg').css({
+                'background-color': '#000'
+              });
+            }
+            service = _.findWhere($scope.services, {
+              id: event.service_id
+            });
+            if (service) {
+              element.css('background-color', service.color);
+              element.css('color', service.textColor);
+              return element.css('border-color', service.textColor);
+            }
+          },
+          eventAfterRender: function(event, elements, view) {
+            if ((event.rendering == null) || event.rendering !== 'background') {
+              return PrePostTime.apply(event, elements, view, $scope);
+            }
+          },
+          select: function(start, end, jsEvent, view, resource) {
+            var item_defaults;
+            if (jsEvent && jsEvent.target.className === 'fc-scroller') {
+              return;
+            }
+            view.calendar.unselect();
+            if (isTimeRangeAvailable(start, end, resource) || (Math.abs(start.diff(end, 'days')) === 1 && dayHasAvailability(start))) {
+              if (Math.abs(start.diff(end, 'days')) > 0) {
+                end.subtract(1, 'days');
+                end = setTimeToMoment(end, $scope.options.max_time);
+              }
+              item_defaults = {
+                date: start.format('YYYY-MM-DD'),
+                time: start.hour() * 60 + start.minute()
+              };
+              if (resource && resource.type === 'person') {
+                item_defaults.person = resource.id.substring(0, resource.id.indexOf('_'));
+              } else if (resource && resource.type === 'resource') {
+                item_defaults.resource = resource.id.substring(0, resource.id.indexOf('_'));
+              }
+              return $scope.getCompanyPromise().then(function(company) {
+                return AdminBookingPopup.open({
+                  min_date: setTimeToMoment(start, $scope.options.min_time),
+                  max_date: setTimeToMoment(end, $scope.options.max_time),
+                  from_datetime: moment(start.toISOString()),
+                  to_datetime: moment(end.toISOString()),
+                  item_defaults: item_defaults,
+                  first_page: "quick_pick",
+                  company_id: company.id
+                });
+              });
+            }
+          },
+          viewRender: function(view, element) {
+            var date;
+            date = uiCalendarConfig.calendars.resourceCalendar.fullCalendar('getDate');
+            return $scope.currentDate = date.format('YYYY-MM-DD') + 'T00:00:00';
+          },
+          eventResize: function(event, delta, revertFunc, jsEvent, ui, view) {
+            event.duration = event.end.diff(event.start, 'minutes');
+            return $scope.updateBooking(event);
+          },
+          loading: function(isLoading, view) {
+            return $scope.calendarLoading = isLoading;
+          }
+        }
+      };
+      isTimeRangeAvailable = function(start, end, resource) {
+        var events;
+        events = uiCalendarConfig.calendars.resourceCalendar.fullCalendar('clientEvents', function(event) {
+          return event.rendering === 'background' && start >= event.start && end <= event.end && ((resource && parseInt(event.resourceId) === parseInt(resource.id)) || !resource);
+        });
+        return events.length > 0;
+      };
+      dayHasAvailability = function(start) {
+        var events;
+        events = uiCalendarConfig.calendars.resourceCalendar.fullCalendar('clientEvents', function(event) {
+          return event.rendering === 'background' && event.start.year() === start.year() && event.start.month() === start.month() && event.start.date() === start.date();
+        });
+        return events.length > 0;
+      };
+      $scope.getCompanyPromise = function() {
+        var defer;
+        defer = $q.defer();
+        if ($scope.company) {
+          defer.resolve($scope.company);
+        } else {
+          AdminCompanyService.query($attrs).then(function(company) {
+            $scope.company = company;
+            return defer.resolve($scope.company);
+          });
+        }
+        return defer.promise;
+      };
+      $scope.assets = [];
+      $scope.selectedResources = {
+        selected: []
+      };
+      $scope.changeSelectedResources = function() {
+        if ($scope.showAll) {
+          $scope.selectedResources.selected = [];
+        }
+        uiCalendarConfig.calendars.resourceCalendar.fullCalendar('refetchResources');
+        return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('refetchEvents');
+      };
+      $scope.getCompanyPromise().then(function(company) {
+        $scope.loading = true;
+        return BBAssets(company).then(function(assets) {
+          var asset, i, len;
+          for (i = 0, len = assets.length; i < len; i++) {
+            asset = assets[i];
+            asset.id = asset.identifier;
+          }
+          $scope.loading = false;
+          $scope.assets = assets;
+          if (filters.requestedAssets.length > 0) {
+            angular.forEach($scope.assets, function(asset) {
+              var isInArray;
+              isInArray = _.find(filters.requestedAssets, function(id) {
+                return id === asset.id;
+              });
+              if (typeof isInArray !== 'undefined') {
+                return $scope.selectedResources.selected.push(asset);
+              }
+            });
+            return $scope.changeSelectedResources();
+          }
+        });
+      });
+      $scope.$watch('selectedResources.selected', function(newValue, oldValue) {
+        var assets, params;
+        if (newValue !== oldValue) {
+          assets = [];
+          angular.forEach(newValue, function(asset) {
+            return assets.push(asset.id);
+          });
+          params = $state.params;
+          params.assets = assets.join();
+          return $state.go($state.current.name, params, {
+            notify: false,
+            reload: false
+          });
+        }
+      });
+      getCalendarAssets = function(callback) {
+        $scope.loading = true;
+        return $scope.getCompanyPromise().then(function(company) {
+          if ($scope.showAll) {
+            return BBAssets(company).then(function(assets) {
+              var asset, i, len;
+              for (i = 0, len = assets.length; i < len; i++) {
+                asset = assets[i];
+                asset.id = asset.identifier;
+              }
+              $scope.loading = false;
+              return callback(assets);
+            });
+          } else {
+            $scope.loading = false;
+            return callback($scope.selectedResources.selected);
+          }
+        });
+      };
+      getBookingTitle = function(booking) {
+        var blockLabelAssembler, labelAssembler;
+        labelAssembler = $scope.labelAssembler ? $scope.labelAssembler : AdminCalendarOptions.bookings_label_assembler;
+        blockLabelAssembler = $scope.blockLabelAssembler ? $scope.blockLabelAssembler : AdminCalendarOptions.block_label_assembler;
+        if (booking.status !== 3 && labelAssembler) {
+          return TitleAssembler.getTitle(booking, labelAssembler);
+        } else if (booking.status === 3 && blockLabelAssembler) {
+          return TitleAssembler.getTitle(booking, blockLabelAssembler);
+        }
+        return booking.title;
+      };
+      $scope.refreshBooking = function(booking) {
+        return booking.$refetch().then(function(response) {
+          booking.resourceIds = [];
+          booking.resourceId = null;
+          if (booking.person_id != null) {
+            booking.resourceIds.push(booking.person_id + '_p');
+          }
+          if (booking.resource_id != null) {
+            booking.resourceIds.push(booking.resource_id + '_r');
+          }
+          booking.title = getBookingTitle(booking);
+          return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('updateEvent', booking);
+        });
+      };
+      $scope.updateBooking = function(booking) {
+        var newAssetId;
+        newAssetId = booking.resourceId.substring(0, booking.resourceId.indexOf('_'));
+        if (booking.resourceId.indexOf('_p') > -1) {
+          booking.person_id = newAssetId;
+        } else if (booking.resourceId.indexOf('_r') > -1) {
+          booking.resource_id = newAssetId;
+        }
+        return booking.$update().then(function(response) {
+          booking.resourceIds = [];
+          booking.resourceId = null;
+          if (booking.person_id != null) {
+            booking.resourceIds.push(booking.person_id + '_p');
+          }
+          if (booking.resource_id != null) {
+            booking.resourceIds.push(booking.resource_id + '_r');
+          }
+          booking.title = getBookingTitle(booking);
+          return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('updateEvent', booking);
+        });
+      };
+      $scope.editBooking = function(booking) {
+        var templateUrl, title;
+        if (booking.status === 3) {
+          templateUrl = 'edit_block_modal_form.html';
+          title = 'Edit Block';
+        } else {
+          templateUrl = 'edit_booking_modal_form.html';
+          title = 'Edit Booking';
+        }
+        return ModalForm.edit({
+          templateUrl: templateUrl,
+          model: booking,
+          title: title,
+          success: (function(_this) {
+            return function(response) {
+              var item_defaults;
+              if (typeof response === 'string') {
+                if (response === "move") {
+                  item_defaults = {
+                    person: booking.person_id,
+                    resource: booking.resource_id
+                  };
+                  $scope.getCompanyPromise().then(function(company) {
+                    return AdminMoveBookingPopup.open({
+                      item_defaults: item_defaults,
+                      company_id: company.id,
+                      booking_id: booking.id,
+                      success: (function(_this) {
+                        return function(model) {
+                          return $scope.refreshBooking(booking);
+                        };
+                      })(this),
+                      fail: function() {
+                        return $scope.refreshBooking(booking);
+                      }
+                    });
+                  });
+                }
+              }
+              if (response.is_cancelled) {
+                return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('removeEvents', [response.id]);
+              } else {
+                booking.title = getBookingTitle(booking);
+                return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('updateEvent', booking);
+              }
+            };
+          })(this)
+        });
+      };
+      pusherBooking = function(res) {
+        var booking;
+        if (res.id != null) {
+          booking = _.first(uiCalendarConfig.calendars.resourceCalendar.fullCalendar('clientEvents', res.id));
+          if (booking && booking.$refetch) {
+            return booking.$refetch().then(function() {
+              booking.title = getBookingTitle(booking);
+              return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('updateEvent', booking);
+            });
+          } else {
+            return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('refetchEvents');
+          }
+        }
+      };
+      $scope.pusherSubscribe = (function(_this) {
+        return function() {
+          var pusher_channel;
+          if ($scope.company) {
+            pusher_channel = $scope.company.getPusherChannel('bookings');
+            pusher_channel.bind('create', pusherBooking);
+            pusher_channel.bind('update', pusherBooking);
+            return pusher_channel.bind('destroy', pusherBooking);
+          }
+        };
+      })(this);
+      $scope.openDatePicker = function($event) {
+        $event.preventDefault();
+        $event.stopPropagation();
+        return $scope.datePickerOpened = true;
+      };
+      $scope.updateDate = function(date) {
+        if (uiCalendarConfig.calendars.resourceCalendar) {
+          return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('gotoDate', date);
+        }
+      };
+      $scope.lazyUpdateDate = _.debounce($scope.updateDate, 400);
+      $scope.datePickerOptions = {
+        showButtonBar: false
+      };
+      $scope.$watch('currentDate', function(newDate, oldDate) {
+        if (newDate !== oldDate) {
+          return $scope.lazyUpdateDate(newDate);
+        }
+      });
+      $scope.$on('refetchBookings', function() {
+        return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('refetchEvents');
+      });
+      return $scope.$on('newCheckout', function() {
+        return uiCalendarConfig.calendars.resourceCalendar.fullCalendar('refetchEvents');
+      });
+    };
+    link = function(scope, element, attrs) {
+      scope.getCompanyPromise().then(function(company) {
+        return company.$get('services').then(function(collection) {
+          return collection.$get('services').then(function(services) {
+            var s;
+            scope.services = (function() {
+              var i, len, results1;
+              results1 = [];
+              for (i = 0, len = services.length; i < len; i++) {
+                s = services[i];
+                results1.push(new BBModel.Admin.Service(s));
+              }
+              return results1;
+            })();
+            return ColorPalette.setColors(scope.services);
+          });
+        });
+      });
+      scope.getCompanyPromise().then(function(company) {
+        return scope.pusherSubscribe();
+      });
+      return $timeout(function() {
+        var datePickerElement, toolbarElement, toolbarLeftElement, uiCalElement;
+        uiCalElement = angular.element(document.getElementById('uicalendar'));
+        toolbarElement = angular.element(uiCalElement.children()[0]);
+        toolbarLeftElement = angular.element(toolbarElement.children()[0]);
+        datePickerElement = $compile($templateCache.get('calendar_date_picker.html'))(scope);
+        return toolbarLeftElement.append(datePickerElement);
+      }, 0);
+    };
+    return {
+      controller: controller,
+      link: link,
+      templateUrl: 'resource_calendar_main.html',
+      replace: true,
+      scope: {
+        labelAssembler: '@',
+        blockLabelAssembler: '@',
+        externalLabelAssembler: '@'
+      }
+    };
+  });
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc service
+  * @name BBAdminDashboard.calendar.services.service:AdminCalendarOptions
+  *
+  * @description
+  * Returns a set of admin calendar configuration options
+   */
+
+  /*
+  * @ngdoc service
+  * @name BBAdminDashboard.calendar.services.service:AdminCalendarOptionsProvider
+  *
+  * @description
+  * Provider
+  *
+  * @example
+    <example>
+    angular.module('ExampleModule').config ['AdminCalendarOptionsProvider', (AdminCalendarOptionsProvider) ->
+      AdminCalendarOptionsProvider.setOption('option', 'value')
+    ]
+    </example>
+   */
+  angular.module('BBAdminDashboard.calendar.services').provider('AdminCalendarOptions', [
+    function() {
+      var options;
+      options = {
+        use_default_states: true,
+        show_in_navigation: true,
+        parent_state: 'root',
+        column_format: null,
+        bookings_label_assembler: '{service_name} - {client_name}',
+        block_label_assembler: 'Blocked',
+        external_label_assembler: null
+      };
+      this.setOption = function(option, value) {
+        if (options.hasOwnProperty(option)) {
+          options[option] = value;
+        }
+      };
+      this.getOption = function(option) {
+        if (options.hasOwnProperty(option)) {
+          return options[option];
+        }
+      };
+      this.$get = function() {
+        return options;
+      };
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc service
+  * @name BBAdminDashboard.calendar.services.service:CalendarEventSources
+  *
+  * @description
+  * This services exposes methods to get all event-type information to be shown in the calendar
+   */
+  angular.module('BBAdminDashboard.calendar.services').factory('CalendarEventSources', [
+    '$exceptionHandler', '$q', 'TitleAssembler', 'AdminBookingService', 'AdminScheduleService', function($exceptionHandler, $q, TitleAssembler, AdminBookingService, AdminScheduleService) {
+      var bookingBelongsToSelectedResources;
+      bookingBelongsToSelectedResources = function(resources, booking) {
+        var belongs;
+        belongs = false;
+        _.each(resources, function(asset) {
+          if (_.contains(booking.resourceIds, asset.id)) {
+            return belongs = true;
+          }
+        });
+        return belongs;
+      };
+      return {
+
+        /*
+        * @ngdoc method
+        * @name getBookingsAndBlocks
+        * @methodOf BBAdminDashboard.calendar.services.service:CalendarEventSources
+        * @description
+        * Returns all bookings and blocks for a certain period of time,
+        * filtered by a list of resources if one is provided through the options
+        *
+        * @param {object} company  The company to be queried for bookings and blocks
+        * @param {Moment} start    Moment object containing the start of the requested period
+        * @param {Moment} end      Moment object containing the end of the requested period
+        * @param {object} options  Object which contains usefull flags and params
+                                   The relevant ones for this method are:
+                                   - {boolean} noCache              skips the cache
+                                   - {boolean} showAll              skip the filter by resource filter
+                                   - {array}   selectedResources    array of selected resource to filter against
+                                   - {string}  labelAssembler       the pattern to use for bookings (see TitleAssembler)
+                                   - {string}  blockLabelAssembler  the pattern to use for blocks (see TitleAssembler)
+        
+        * @returns {Promise} Promise which once resolved returns an array of bookings and blocks
+         */
+        getBookingsAndBlocks: function(company, start, end, options) {
+          var deferred, params;
+          if (options == null) {
+            options = {};
+          }
+          deferred = $q.defer();
+          params = {
+            company: company,
+            start_date: start.format('YYYY-MM-DD'),
+            end_date: end.format('YYYY-MM-DD'),
+            skip_cache: (options.noCache != null) && options.noCache ? true : false
+          };
+          AdminBookingService.query(params).then(function(bookings) {
+            var booking, filteredBookings, i, len, ref;
+            filteredBookings = [];
+            ref = bookings.items;
+            for (i = 0, len = ref.length; i < len; i++) {
+              booking = ref[i];
+              booking.resourceIds = [];
+              if (booking.person_id != null) {
+                booking.resourceIds.push(booking.person_id + '_p');
+              }
+              if (booking.resource_id != null) {
+                booking.resourceIds.push(booking.resource_id + '_r');
+              }
+              if ((options.showAll == null) || ((options.showAll != null) && options.showAll) || bookingBelongsToSelectedResources(options.selectedResources, booking)) {
+                booking.useFullTime();
+                if (booking.$has('edit')) {
+                  booking.startEditable = true;
+                }
+                if (booking.status !== 3 && (options.labelAssembler != null)) {
+                  booking.title = TitleAssembler.getTitle(booking, options.labelAssembler);
+                } else if (booking.status === 3 && (options.blockLabelAssembler != null)) {
+                  booking.title = TitleAssembler.getTitle(booking, options.blockLabelAssembler);
+                }
+                filteredBookings.push(booking);
+              }
+            }
+            return deferred.resolve(filteredBookings);
+          }, function(err) {
+            return deferred.reject(err);
+          });
+          return deferred.promise;
+        },
+
+        /*
+        * @ngdoc method
+        * @name getExternalBookings
+        * @methodOf BBAdminDashboard.calendar.services.service:CalendarEventSources
+        * @description
+        * Returns all external bookings for a certain period of time
+        *
+        * @param {object} company  The company to be queried for bookings and blocks
+        * @param {Moment} start    Moment object containing the start of the requested period
+        * @param {Moment} end      Moment object containing the end of the requested period
+        * @param {object} options  Object which contains usefull flags and params
+                                   The relevant ones for this method are:
+                                   - {string}  externalLabelAssembler  the pattern to use for the title (see TitleAssembler)
+        
+        * @returns {Promise} Promise which once resolved returns an array of bookings
+         */
+        getExternalBookings: function(company, start, end, options) {
+          var deferred, params;
+          if (options == null) {
+            options = {};
+          }
+          deferred = $q.defer();
+          if (company.$has('external_bookings')) {
+            params = {
+              start: start.format(),
+              end: end.format(),
+              no_cache: (options.noCache != null) && options.noCache ? true : false
+            };
+            company.$get('external_bookings', params).then(function(collection) {
+              return collection.$get('external_bookings').then(function(bookings) {
+                var booking, i, len;
+                for (i = 0, len = bookings.length; i < len; i++) {
+                  booking = bookings[i];
+                  booking.resourceIds = [];
+                  if (booking.person_id != null) {
+                    booking.resourceIds.push(booking.person_id + '_p');
+                  }
+                  if (booking.resource_id != null) {
+                    booking.resourceIds.push(booking.resource_id + '_r');
+                  }
+                  if (options.externalLabelAssembler != null) {
+                    booking.title = TitleAssembler.getTitle(booking, options.externalLabelAssembler);
+                  }
+                  booking.type = 'external';
+                }
+                return deferred.resolve(bookings);
+              }, function(err) {
+                return deferred.reject(err);
+              });
+            }, function(err) {
+              return deferred.reject(err);
+            });
+          } else {
+            deferred.resolve([]);
+          }
+          return deferred.promise;
+        },
+
+        /*
+        * @ngdoc method
+        * @name getAvailabilityBackground
+        * @methodOf BBAdminDashboard.calendar.services.service:CalendarEventSources
+        * @description
+        * Returns all availability for a certain period of time,
+        * filtered by a list of resources if one is provided through the options,
+        * and grouped per calendar day if in week or month view
+        *
+        * @param {object} company  The company to be queried for bookings and blocks
+        * @param {Moment} start    Moment object containing the start of the requested period
+        * @param {Moment} end      Moment object containing the end of the requested period
+        * @param {object} options  Object which contains usefull flags and params
+                                   The relevant ones for this method are:
+                                   - {boolean} noCache              skips the cache
+                                   - {boolean} showAll              skip the filter by resource filter
+                                   - {array}   selectedResources    array of selected resource to filter against
+                                   - {string}  calendarView         identifies which view the calendar is curently displaying (enum: 'timelineDay', 'agendaWeek', 'month')
+        
+        * @returns {Promise} Promise which once resolved returns an array of availability background events
+         */
+        getAvailabilityBackground: function(company, start, end, options) {
+          var deferred;
+          if (options == null) {
+            options = {};
+          }
+          deferred = $q.defer();
+          AdminScheduleService.getAssetsScheduleEvents(company, start, end, !options.showAll, options.selectedResources).then(function(availabilities) {
+            var overAllAvailabilities;
+            if (options.calendarView === 'timelineDay') {
+              return deferred.resolve(availabilities);
+            } else {
+              overAllAvailabilities = [];
+              angular.forEach(availabilities, function(availability, index) {
+                var dayAvailability;
+                dayAvailability = _.filter(overAllAvailabilities, function(overAllAvailability) {
+                  if (moment(overAllAvailability.start).dayOfYear() === moment(availability.start).dayOfYear()) {
+                    return true;
+                  }
+                  return false;
+                });
+                if (dayAvailability.length > 0) {
+                  if (moment(availability.start).unix() < moment(dayAvailability[0].start).unix()) {
+                    dayAvailability[0].start = availability.start;
+                  }
+                  if (moment(availability.end).unix() > moment(dayAvailability[0].end).unix()) {
+                    return dayAvailability[0].end = availability.end;
+                  }
+                } else {
+                  return overAllAvailabilities.push({
+                    start: availability.start,
+                    end: availability.end,
+                    rendering: "background",
+                    title: "Joined availability " + moment(availability.start).format('YYYY-MM-DD'),
+                    allDay: options.calendarView === 'month' ? true : false
+                  });
+                }
+              });
+              return deferred.resolve(overAllAvailabilities);
+            }
+          }, function(err) {
+            return deferred.reject(err);
+          });
+          return deferred.promise;
+        },
+
+        /*
+        * @ngdoc method
+        * @name getAllCalendarEntries
+        * @methodOf BBAdminDashboard.calendar.services.service:CalendarEventSources
+        * @description
+        * Returns all event type information to be displayed in the calendar
+        *
+        * @param {object} company  The company to be queried for bookings and blocks
+        * @param {Moment} start    Moment object containing the start of the requested period
+        * @param {Moment} end      Moment object containing the end of the requested period
+        * @param {object} options  Object which contains usefull flags and params (see above methodds for details)
+        *
+        * @returns {Promise} Promise which once resolved returns an array of availability background events
+         */
+        getAllCalendarEntries: function(company, start, end, options) {
+          var deferred, promises;
+          if (options == null) {
+            options = {};
+          }
+          deferred = $q.defer();
+          promises = [this.getBookingsAndBlocks(company, start, end, options), this.getExternalBookings(company, start, end, options), this.getAvailabilityBackground(company, start, end, options)];
+          $q.all(promises).then(function(resolutions) {
+            var allResults;
+            allResults = [];
+            angular.forEach(resolutions, function(results, index) {
+              return allResults = allResults.concat(results);
+            });
+            return deferred.resolve(allResults);
+          }, function(err) {
+            return deferred.reject(err);
+          });
+          return deferred.promise;
+        }
+      };
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  angular.module('BBAdminDashboard.calendar.services').factory("PrePostTime", [
+    '$compile', function($compile) {
+      return {
+        apply: function(event, elements, view, scope) {
+          var contentDiv, e, element, i, len, post, postHeight, postWidth, pre, preHeight, preWidth, results, totalDuration;
+          results = [];
+          for (i = 0, len = elements.length; i < len; i++) {
+            e = elements[i];
+            element = angular.element(e);
+            totalDuration = event.duration + event.pre_time + event.post_time;
+            if (event.pre_time) {
+              switch (view.name) {
+                case "agendaWeek":
+                case "agendaDay":
+                  preHeight = event.pre_time * (element.height() + 2) / totalDuration;
+                  pre = $compile("<div class='pre' style='height:" + preHeight + "px'></div>")(scope);
+                  element.prepend(pre);
+                  break;
+                case "timelineDay":
+                  contentDiv = element.children()[0];
+                  preWidth = event.pre_time * (element.width() + 2) / totalDuration;
+                  pre = $compile("<div class='pre' style='width:" + preWidth + "px'></div>")(scope);
+                  element.prepend(pre);
+                  angular.element(contentDiv).css("padding-left", preWidth + "px");
+              }
+            }
+            if (event.post_time) {
+              switch (view.name) {
+                case "agendaWeek":
+                case "agendaDay":
+                  postHeight = event.post_time * (element.height() + 2) / totalDuration;
+                  post = $compile("<div class='post' style='height:" + postHeight + "px'></div>")(scope);
+                  results.push(element.append(post));
+                  break;
+                case "timelineDay":
+                  postWidth = event.post_time * (element.width() + 2) / totalDuration;
+                  post = $compile("<div class='post' style='width:" + postWidth + "px'></div>")(scope);
+                  results.push(element.append(post));
+                  break;
+                default:
+                  results.push(void 0);
+              }
+            } else {
+              results.push(void 0);
+            }
+          }
+          return results;
+        }
+      };
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc service
+  * @name BBAdminDashboard.calendar.services.service:TitleAssembler
+  *
+  * @description
+  * Assembles a string based on a pattern and an object provided according to the following rules
+  * ex: '{service_name} - {client_name} - {created_at|date:shortTime}'
+  * everything outside  {} will remain as is, inside the {} the first param (required) is the property name
+  * second after the '|' (optional) is the filter and third after the ':' (optional) are the options for filter
+  * if the requested property is not part of the given object it will be skipped
+   */
+  angular.module('BBAdminDashboard.calendar.services').factory('TitleAssembler', [
+    function() {
+      var expression;
+      expression = new RegExp("\\{([a-zA-z_-]+)\\|?([a-zA-z_-]+)?:?([a-zA-z0-9{}_-]+)?\\}", "g");
+      return {
+        getTitle: function(object, pattern) {
+          var i, index, label, len, match, parts, patternMatches, replaceWith;
+          if ((object == null) || (pattern == null)) {
+            return null;
+          }
+          patternMatches = pattern.match(expression);
+          if ((patternMatches == null) || patternMatches.length === 0) {
+            return pattern;
+          }
+          label = pattern;
+          for (index = i = 0, len = patternMatches.length; i < len; index = ++i) {
+            match = patternMatches[index];
+            parts = match.split(expression);
+            parts.splice(0, 1);
+            parts.pop();
+            if (object.hasOwnProperty(parts[0])) {
+              replaceWith = object[parts[0]];
+              if ((parts[1] != null) && ($filter(parts[1]) != null)) {
+                if (parts[2] != null) {
+                  replaceWith = $filter(parts[1])(replaceWith, $scope.$eval(parts[2]));
+                } else {
+                  replaceWith = $filter(parts[1])(replaceWith);
+                }
+              }
+              label = label.replace(match, replaceWith);
+            } else {
+              label = label.replace(match, '');
+            }
+          }
+          return label;
+        }
+      };
+    }
+  ]);
+
+}).call(this);
+
+(function() {
+  'use strict';
+
+  /*
+  * @ngdoc overview
+  * @name BBAdminDashboard.calendar.translations
+   *
+  * @description
+  * Translations for the admin calendar module
+   */
+  angular.module('BBAdminDashboard.calendar.translations').config([
+    '$translateProvider', function($translateProvider) {
+      return $translateProvider.translations('en', {
+        'TEXT_2': 'Hello there!'
       });
     }
   ]);
